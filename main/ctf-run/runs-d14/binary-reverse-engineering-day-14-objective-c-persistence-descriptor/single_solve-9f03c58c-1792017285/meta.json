@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-14-objective-c-persistence-descriptor",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "9f03c58c-72e5-47b2-a776-a19101555cf6",
+  "started_at": "2026-10-14T22:31:52.442Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1380.25602,
+  "start_ttfb_ms": 1378.922371,
+  "clock": {
+    "start_sent": "2026-10-14T22:34:45.810Z",
+    "start_received": "2026-10-14T22:34:47.190Z",
+    "start_date_header": "2026-10-14T22:34:47.000Z",
+    "last_delivery": "2026-10-14T22:34:53.925Z",
+    "submit_sent": "2026-10-14T22:34:53.925Z",
+    "submit_received": "2026-10-14T22:34:56.223Z",
+    "submit_date_header": "2026-10-14T22:34:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32246719,
+      "wire": 32246719,
+      "ttfb_ms": 1183.8165789999998,
+      "total_ms": 6442.857878,
+      "done_at_ms": 7823.493215,
+      "analyse_ms": 291.463169
+    }
+  ]
+}

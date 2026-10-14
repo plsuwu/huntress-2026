@@ -1,0 +1,10 @@
+.direnv/
+fixtures/
+.claude/settings.local.json
+
+# these aren't really "sensitive" in the sense that i 
+# will likely never use them again
+.env
+huntress-2026.ovpn
+huntress-id_ed25519
+**/artifacts/

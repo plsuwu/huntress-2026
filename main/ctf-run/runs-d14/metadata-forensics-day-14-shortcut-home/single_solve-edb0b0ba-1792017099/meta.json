@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-14-shortcut-home",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "edb0b0ba-bebb-46a0-92c6-9657e8959518",
+  "started_at": "2026-10-14T22:31:40.304Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1262.3800489999999,
+  "start_ttfb_ms": 1261.46895,
+  "clock": {
+    "start_sent": "2026-10-14T22:31:39.226Z",
+    "start_received": "2026-10-14T22:31:40.489Z",
+    "start_date_header": "2026-10-14T22:31:40.000Z",
+    "last_delivery": "2026-10-14T22:31:41.680Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-14-evidence.zip",
+      "bytes": 475,
+      "wire": 475,
+      "ttfb_ms": 1189.302426,
+      "total_ms": 1190.609476,
+      "done_at_ms": 2453.4910760000002,
+      "analyse_ms": 0.055804000000000006
+    }
+  ]
+}

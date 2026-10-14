@@ -1,0 +1,25 @@
+[package]
+name = "ctf-run"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.88"
+
+# The default build is std-only. `--features tls` adds https:// support for the external API
+# (rustls with bundled Mozilla roots); the CourseStack proxy is plain http and needs none of it.
+
+[features]
+tls = ["dep:rustls", "dep:webpki-roots"]
+
+[dependencies]
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+webpki-roots = { version = "1", optional = true }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.test]
+opt-level = 2

@@ -1,0 +1,265 @@
+# ctf-run rewrite plan (v2, 2026-10-15)
+
+A from-scratch reimplementation in pure, extensible Rust. The previous `ctf-run` (local and jumpbox copies) is
+discarded. Primary target: the CourseStack proxy `http://10.0.0.219/huntress-ctf-proxy`, run from the jumpbox
+`HuntressCTF@10.1.181.90`. Solvers are **per lane**, built from shared format/codec/script modules, so a new day is
+"add a question kind, a container reader or a language front-end", never "write a new challenge solver".
+Background on what changes day to day: `../utils/LANE_PATTERNS.md`.
+
+Principles: std-only in the default build (hand-written parsers and scanners, no regex engine), `--features tls` for
+the external https API only; every lane is a full native port of its proven Python reference, gated by replaying the
+saved fixtures; nothing ever submits a guess.
+
+## 1. What the proxy costs (measured from the jumpbox, 2026-10-15)
+
+| Request | Time to first byte | Notes |
+|---|---|---|
+| TCP connect | ~2 ms | connection setup is irrelevant on this link |
+| `status` (small) | 0.35-0.7 s | same with 6 in parallel; keep-alive works (HTTP/1.1, Vercel behind Cloudflare) |
+| `start` reconnect, SA d13 single (485 KB JSON) | 0.45-0.55 s | gzip: 485 KB -> 15 KB, TTFB unchanged on this LAN |
+| `status` SA d13 mastery (2.8 MB JSON) | ~1.0 s | gzip: 2.8 MB -> 102 KB (28x), saves ~0.15 s here, far more off-LAN |
+| small artifact / capability download | p50 0.3-0.4 s, p90 ~0.9 s | **tail: ~10-20 % take 2.3-7.8 s**, any size, any concurrency |
+| 32 MB binary-RE zip | 2.7-8.9 s TTFB, then ~0.6 s transfer | proxy appears to buffer the whole body; 5 in parallel = 9.5 s wall |
+| `op=list` | 8-24 s | never on the timed path |
+
+- Proxy honours `Accept-Encoding: gzip` (and `br`); responses are then chunked.
+- 30 s idle before a request costs only ~0.1-0.2 s - cold starts are not the tail.
+- Hedging probe (40 trials, duplicate GET after 0.8 s): inconclusive (only 4 hedges fired, mild tail that sample).
+- Unmeasured so far: a **fresh** `start` (older off-LAN notes: 4-6 s), a real `submit` (~3-4 s off-LAN), the download
+  shape of timed vs regular starts, and partial-submit behaviour. Phase 0 measures them.
+
+### Phase 0 results (2026-10-15, `tools/phase0_probe.py`, raw data in `fixtures/raw/phase0/`)
+
+| Leg | mobile d13 mastery (regular, 5 sets) | warmups d13 mastery (**timed**, 63 sets) |
+|---|---|---|
+| fresh `retry` TTFB | **6.5 s** | **4.0 s** |
+| downloads | 5 per-set APKs (`downloads[]` + `artifacts[]`), 0.38-1.93 s, all in parallel | **one top-level `download`** (bundle zip, 63 members), 1.6 s |
+| partial submit | `accepted`, `remaining: 4`, 1.9 s | `accepted`, `remaining: 32`, 1.6 s (on a timed attempt) |
+| final submit | `CORRECT`, 3.5 s | `CORRECT`, 2.5 s (Hall of Fame eligible) |
+
+- The fresh start is the single biggest leg (4-6.5 s) and cannot be overlapped with anything we control.
+- Download shape varies by attempt: an earlier warmups timed mastery used 63 per-question `downloads`, this one a single
+  bundle. Normalise: top-level `download` | `downloads[]` | `artifacts[]{download, filename, sha256, kind?}`.
+- `op=artifact&challenge=<id>&delivery=0` returns the same bundle; `delivery=1` -> HTTP 400 (0-based, bundle = 0).
+- Correct partial submits are accepted mid-timer on timed attempts, so per-set early submits are safe for answers the
+  lane has self-validated (an `incorrect` partial was not tested and stays unsafe).
+- The server gzips everything it sends with `Accept-Encoding: gzip`, including `application/octet-stream` downloads.
+- Proxy download links come back as `/api/huntress/game-master/download/<cap>`; `?op=download&capability=<cap>` works.
+- Submit latency (1.6-3.5 s) suggests the final `CORRECT` includes CourseStack scoring; partial submits are cheaper.
+
+**On the proxy, bytes on the wire are not the bottleneck; server think-time and its tail are.** The networking goals are
+therefore: fewest sequential round trips, maximum overlap after `start`, fewest requests exposed to the tail.
+
+1. **Fewest tail-exposed requests**: normalise the start response's download shape and prefer a bundle when one is
+   offered (warmups timed mastery delivered 63 per-question files; its regular attempt advertises one `kind:"bundle"`
+   zip). Never fetch the same delivery twice.
+2. **Overlap after `start`**: all downloads at once on pre-opened keep-alive connections; each delivery is analysed the
+   moment it lands; nothing (disk writes, logging, pretty-printing) between the last answer and `submit`.
+3. **Free time before `start`** (the timer starts at `start`): route preflight via `status`, connection warm-up, solver
+   self-check against the lane's fixtures.
+4. **gzip** on every request (inflate is already needed for zip); a no-op where the server does not compress.
+5. Experimental, off by default: `--hedge MS` for idempotent GETs; `--early-submit` (per-set partial submits) only if
+   Phase 0 shows partial submits are safe on timed attempts.
+6. Not building: brotli, HTTP/2, streaming JSON parse of the start body.
+
+Jumpbox constraint: 2 vCPUs (Xeon 8259CL, AES-NI/AVX2), 1.9 GB RAM (~1.3 GB free), Rust 1.99 stable. A 5-set
+binary-RE mastery is 5 x 32 MB AES zips expanding past 100 MB each, so evidence is decrypted/inflated **one member at a
+time, on demand**, and the code stays stable-Rust compatible (local toolchain is nightly).
+
+## 2. Architecture
+
+```
+src/
+  main.rs            CLI: run | replay | oracle | facts | bench
+  run.rs             pipeline: preflight -> start -> fetch+analyse -> answer -> submit -> persist (after submit)
+  replay.rs          run a lane over saved fixtures, diff against the graded answers
+  oracle.rs          untimed subset submits to localise wrong fields (the `accepted`/`remaining` oracle)
+  net/  http.rs (keep-alive HTTP/1.1, gzip, chunked, per-request timing; tls feature)
+        pool.rs (pre-opened connections, one kept hot for submit)  fetch.rs (parallel scheduler, completion order)
+  gm.rs              protocol: proxy vs external dialect, start/retry/practice/submit bodies, route preflight
+                     (run_for_time_supported, pools, deadline, set count), response-shape normalisation, one-shot guard
+  json.rs            parser, writer, pretty-printer
+  evidence.rs        deliveries -> lazily opened nested zips (stored/deflate/WinZip-AES `infected`), members addressed by
+                     set / delivery / path; question routing (`setN.` prefix, `delivery N:`, `a.zip -> member` labels)
+  crypto/            aes (AES-NI via std::arch + portable fallback), sha1/hmac/pbkdf2 (HMAC midstates), sha256, md5, crc32
+  formats/           inflate, zip, elf, pe (+ VS_VERSION_INFO), macho, jvm (class constant pool / jar), dotnet
+                     (metadata tables, #GUID/#Strings), png, jpeg, pdf, cfb (+ MSI string pool / Property), lnk
+  codec/             text codecs shared by every lane: base64/base64url/base32/hex/binary/decimal/octal/percent/html
+                     entities/backslash escapes/rot-n/atbash/reverse/xor/split; strict detectors + English/template scoring
+  script/            the script-analysis toolkit (see section 3)
+  lanes/  mod.rs (registry by id prefix)  warmups.rs  mobile.rs  metadata.rs  binary_re.rs  script_analysis.rs
+```
+
+### Lane contract: analyse once, answer many
+
+Python solvers parse each specimen once and answer many questions from it (~10 per binary-RE specimen, ~11 per
+script file, up to 4565 answers per mastery), and some answers depend on the mode or set. So:
+
+```rust
+pub struct Lane {
+    pub prefix: &'static str,                                  // "binary-reverse-engineering-day-", ...
+    pub analyse: fn(&Specimen, &RunCtx) -> Result<Analysis, Facts>,  // once per specimen, in the fetch pipeline
+    pub kinds: &'static [Kind],                                // most specific first
+}
+pub struct Kind {
+    pub name: &'static str,
+    pub matches: fn(&Question) -> bool,                        // id suffix / answer_format test
+    pub answer: fn(&Question, &Analysis, &RunCtx) -> Option<String>,
+}
+pub struct RunCtx { pub day: u8, pub mode: Mode, pub set: Option<u16> }
+```
+
+- No matching kind, or `None` from `answer` -> FACTS dump (everything the parsers can see) and **no submit**.
+- Self-validation wherever the lane allows: warmups template, mobile `^ANS-[0-9A-F]{16}$`, HCFG CRC32, descriptor `v=`.
+- Day/mode-specific grading quirks are data tables (binary-RE `format` casing per specimen; batch-expansion labels per mode).
+
+### Lane notes
+
+| Lane | Analysis | Shared modules used |
+|---|---|---|
+| warmups | whole-blob layer peeling + `NN<TAB>fragment` rows (whitespace-faithful, fixed row->codec map, dash padding) | codec |
+| mobile | APK (zip) -> `assets/huntress_puzzle.json` -> codec by name, generic search fallback | evidence, json, codec |
+| metadata | per-file FACTS map (hashes, magic, sizes, SOF/IHDR/PDF/EOCD/CD names/PE/.NET/MSI/LNK fields) | formats, crypto |
+| binary-RE | per-specimen summary: container (ELF/PE/Mach-O/JAR), arch/machine/class/entry/symtab/sections, CRC-validated HCFG (raw, `.hcfg`, base64 `SENGR`, class constant) + offsets | formats, crypto |
+| script-analysis | per-file family dispatch -> decoded descriptor + structural facts -> field answers | script/, codec, evidence |
+
+## 3. Script-analysis: full native port
+
+The Python reference is ~4.5k lines (days 3-13; day-13 `stager_relationships.py` chains day-7 -> 6 -> 5 -> 4 -> 3)
+and is cumulative: every day's question set contains all previous days'. Most of it is reusable machinery rather than
+per-day logic, so it becomes a toolkit:
+
+```
+script/
+  descriptor.rs   pipe descriptors (v=1/v=2/v=3), nested hex / dotted-hex / base64 / hex-of-base64 literal decoding
+  pipeline.rs     the common decoder IR: representation (decimal_space, hex_compact, percent_hex, base64_chunks, ...)
+                  + byte transforms (identity, xor, rolling/chained xor, repeating-key xor, add/sub mod 256, reverse,
+                  passes) - every language front-end lowers its Decode/recover body to this IR
+  expr.rs         tiny integer/byte expression evaluator shared by front-ends (JS loop bodies, $(( )), VBS Chr/Xor, ...)
+  lex.rs          shared lexing helpers: quoted strings per language, comments, line continuations, number literals
+  taxonomy.rs     role_of / attack_of / stage_count / steps tables (language technique T1059.00x), batch-expansion rule
+  lang/
+    powershell.rs jscript.rs batch.rs (cmd.exe model: %/!/FOR/CALL expansion) vbscript.rs
+    python.rs     whitelisted subset parser + evaluator (the py_static.py construct list; nothing executed)
+    bash.rs       (+ advanced bash forms)   node.rs
+    polyglot.rs   descriptor-literal families: php, lua, mof, ts, au3, applescript, hta/wsf/sct hosts - one literal
+                  scanner table; the `HUNTRESS_ANALYSIS_V1:` marker as a language-independent fallback
+```
+
+Port order follows the cumulative question set, each step gated by replay of that day's graded fixtures before moving on:
+d3 (PS + JScript + Batch) -> d4 VBS -> d5 Python -> d6 Bash -> d7 Node + advanced Bash -> d8 polyglot/host descriptors ->
+d9-d13 polyglot literal families. The Python reference wins any disagreement (fix the port).
+
+## 4. Phases
+
+**Phase 0 - ground truth (first; mostly measurement)**
+- Live protocol measurement on the jumpbox (small Python probe, untimed where possible):
+  - one untimed regular `retry` on `mobile-android-day-13-keystore-misuse/mastery` (regular pool 8, 5 sets, trivial
+    solver): time a **fresh** `start`, the downloads, a **partial** submit (set 1 only -> expect `accepted`/`remaining`)
+    and the final submit; record the response shapes;
+  - one **timed** `warmups-day-13/mastery` attempt (ranked pool 256, 80 s deadline): does a timed start offer a bundle,
+    per-question files, or both? (solved with the existing Python runner, so it also counts as a normal attempt);
+  - `op=artifact&delivery=N` behaviour on that attempt.
+- Fixture normalisation moved to the start of each lane's port (Phase 3/4): layouts differ per lane and many saved
+  runs lack `start.json` or expected answers. Each lane gets `tools/fixtures_<lane>.py`, which writes manifests
+  `fixtures/<lane>/<case>.json` = {start (path or synthesised questions), deliveries (paths, in order), expected answers
+  (saved graded answers, else the Python reference's output), graded: correct|solver}. Manifests point at the original
+  files - nothing large is copied.
+- Replace `src/` wholesale; rewrite `AGENTS.md`/`README.md` skeletons (the old docs describe the discarded design).
+
+**Phase 1 - core**: `json`, `net/*`, `gm`, `run`, `replay`, `oracle`, CLI. Validated on the jumpbox with single-solve
+reconnects and untimed regular attempts only, and compared against curl timings from section 1.
+
+**Phase 2 - crypto, formats, evidence, codec**, each with unit tests on real fixture bytes; `ctf-run bench` for
+AES/inflate/hash throughput on a real 32 MB binary-RE zip (local and jumpbox).
+
+**Phase 3 - native lanes**: warmups -> mobile -> metadata -> binary-RE, each gated by 100 % replay agreement with its
+graded fixtures, then one live untimed run per lane.
+
+**Phase 4 - script-analysis** per section 3, gated per day by replay.
+
+**Phase 5 - docs**: AGENTS.md "new day" recipe per lane (dry run -> FACTS -> add kind/reader/front-end -> oracle ->
+replay -> timed), module map, testing rules.
+
+## 5. Safety rules
+- Never test new code against a timed or one-shot route; timed attempts are only spent deliberately (Phase 0 list).
+- Read-only ops (`status`, `artifact`, `download`) and `start` reconnects are free to use for latency tests.
+- The one-shot guard refuses `run_for_time_supported:false` routes with ranked pool 1 unless `--one-shot-ok` is given.
+- Token from env only (`HUNTRESS_GM_TOKEN`), never printed, never sent over plain http; the proxy needs none.
+
+## 6. Progress log
+
+- 2026-10-15 - Phase 0 done (live measurements above). Phase 1 done: `net/` (keep-alive, gzip for JSON only -
+  downloads go identity: gzip of AES zips was larger and cost ~1 s of decode on 32 MB), `gm.rs` (shape
+  normalisation, bundle preference, solved-attempt material via `status`), `run.rs` (fail-closed route guard incl.
+  `--dry`, pipelined fetch+analyse, early submit banked by `accepted_ids`, UTC clock stamps vs `started_at`),
+  `replay.rs`, `oracle.rs`, `routes` cache. Phase 2 started: crc32, sha1/hmac/pbkdf2, AES (AES-NI + portable),
+  inflate (table-driven), zip (AES/ZipCrypto/ZIP64); `bench` = 194 MB/s on the jumpbox (a 32 MB binary-RE set in 0.41 s).
+- Warmups lane native: `src/lanes/warmups.rs` + `src/codec.rs`; `tools/fixtures_warmups.py` -> 32 manifests,
+  `ctf-run replay fixtures/warmups` 32/32 clean (days 5-13, incl. the burned day-12 mastery and the Phase 0 bundle).
+  Live: single-solve dry run correct. Timed `warmups-day-13/mastery --retry --timed` (approved: up to 50 such runs):
+  CORRECT, start->result 1.97 s client-side (Python runner ~9 s); 1 bundle download 315 ms, solve 1 ms, submit 774 ms.
+- **The server timer excludes `start`**: start sent -797 ms / received +86 ms relative to `started_at`, submit received
+  +1177 ms. `started_at` is stamped at the end of the server's start processing, so the timed window is
+  download + solve + submit only; the 4-6 s fresh-start cost is free. Optimise the post-start legs.
+- Mobile lane native (`src/lanes/mobile.rs`): known codecs + bounded transform search + `java.util.Random`
+  keystreams for seeded puzzles (Day 14 guess); `tools/fixtures_mobile.py` -> 68/68 clean; live single+mastery dry
+  runs match the graded answers.
+- Metadata lane native (`src/lanes/metadata.rs`, `src/evidence.rs`, formats: media/pe/elf/dotnet/cfb(MSI)/lnk,
+  crypto md5/sha256): suffix handler table + LNK field kinds (Day 14 guess) + FACTS on unknown kinds;
+  `tools/fixtures_metadata.py` -> 28/28 clean (incl. the 90-answer d13 mastery); live dry runs answer everything.
+- Binary-RE lane native (`src/lanes/binary_re.rs`, formats: hcfg/jvm/macho/x86): one generic specimen analysis for
+  every dNN; container casing/ELF-class format follow the question's `answer_format.kind` (exact_text -> `elf`,
+  integer -> `64`) instead of a per-day table; `tools/fixtures_binary_re.py` -> 30/30 clean; live 130/130 + 390/390.
+  Perf: SWAR memchr + hashing big specimens on a side thread: d08 (67 MB) specimen 262 -> 156 ms locally.
+  Next perf step if needed: stream inflate -> SHA-256 on another thread (hash is now the floor, ~0.4 s on the jumpbox).
+- Script-analysis lane native (`src/lanes/script_analysis.rs`, `src/script/`, `src/rx.rs`): Python-`re`-compatible
+  regex engine so reference patterns port verbatim; label-driven decoding (Codec_ labels were truthful in every
+  fixture) validated by descriptor parse, replacing the Python/Bash/VBScript/Node interpreters; faithful ports of the
+  cmd.exe model and JScript decoder evaluator; polyglot literal finder with marker/any-string fallbacks (Day 14 guess).
+  Batch `expansion` grading follows eras (days <= 11: Day 3 rule; day >= 12: Day 13 rule; day-13 single = old labels).
+  `tools/fixtures_script.py` -> 35/35 clean (days 4-13, every mode, incl. the 4565-answer d13 mastery); live 913/913
+  and 4565/4565 dry runs. Perf: fast PBKDF2 (2 compressions/iteration) + parallel member decryption: 163 -> 50 ms/set.
+- All lanes: 193/193 fixtures clean, 0 warnings, tls build green. Docs: AGENTS.md (rules, layout, new-day recipe), README.md.
+- Remaining ideas: streaming inflate -> SHA-256 for binary-RE (hash is the floor); hedged downloads (inconclusive);
+  `--early-submit` live trial on a dual-pool mastery (correct partials are banked mid-timer, verified in Phase 0).
+- Fix (advisor review): the live loop marked early-answered questions done even when they failed, so an answer that
+  needed another delivery (warmups row transform learned from another set, per-file mastery) was never retried.
+  Now `run::Answerer` (shared by live runs and replay) keeps failures open and retries them in `finish`; replay feeds
+  deliveries in reverse order through the same path. Regression test `early_failures_are_retried_once_everything_landed`.
+  193/193 fixtures still clean.
+- Verification status: real submits through the new client so far: warmups (1 timed mastery, CORRECT). Mobile,
+  metadata, binary-RE and script-analysis are verified offline (fixtures) and by live dry runs only; their submit paths
+  (incl. the ~250 KB 4565-answer script mastery body) are not yet exercised live.
+- 2026-10-15 - Timing campaign (`tools/campaign.py`, jumpbox, arm `direct+nopre+gap10` = external API, no preflight,
+  10 s gaps): 358 timed runs, 352 CORRECT. Failures: chunk-norris mastery (delivery-order bug, fixed; re-run 5/5 CORRECT,
+  best submit_sent 235 ms), one `503 temporarily_unavailable`, four day-13 masteries `503 retry_rotation_invalid`
+  (server refused another variant). Direct beat the proxy (warmups d13 mastery p50 ~300 vs ~1000 ms); `--warm` hurt.
+  Small routes: timer ~200-650 ms, dominated by the download's server TTFB (150-250 ms); link RTT ~8 ms
+  (t3.small us-east-1, Cloudflare IAD), 5x31 MB lands in ~1 s. Binary-RE mastery (3.4-7.3 s) is CPU-bound:
+  ~5.5 s per set analysis with 5 sets on 2 burstable vCPUs.
+- 2026-10-15 - Day 14: all five single-solves CORRECT. Warmups/mobile/script/binary-RE needed no change (pre-built
+  guesses held: rot search, PRNG keystreams, MSBuild literal fallback, Mach-O). Metadata: `lnk-target-path-windows`
+  -> `lnk_target` (LinkInfo base+suffix, IDList shell-item path, literal environment target must all agree
+  case-insensitively; disagreement/relative-only = Err; no source = `none`); `formats/lnk.rs` gained `idlist_path`
+  (My Computer root, volume, file entries with 0xBEEF0004 long names validated against the short name; an unvalidated name drops the IDList source instead of vetoing). Warmups row 14 pinned to Rot(19) (graded).
+  Day-14 time_trial/mastery routes are ONE-SHOT (ranked pool 1, 30 s): never add them to campaign.py's VERIFIED.
+  `tools/fixtures_from_runs.py` turns graded run dirs into fixtures; 198/198 clean.
+- Latency experiments (2026-10-15, `tools/campaign.py`, warmups-day-13/mastery, metric submit_sent - started_at):
+  direct API (bearer) beat the proxy (best 221 vs 370 ms; noisy); a `--warm 6` status burst before `start` made every
+  run slower (downloads 726-1074 ms) - extra requests just before `start` hurt; skipping the preflight status and
+  leaving ~10-20 s idle before `start` gave the tightest results (median ~234 ms). Default campaign arm:
+  `direct+nopre+gap10`. The jumpbox t3.small gets CPU-throttled under sustained load (bench 414 -> 830 ms, ~12 % steal):
+  binary-RE masteries (3.2-5 s) and day-8/9 script masteries (~1.5 s) are CPU-bound - a non-burstable compute instance in
+  us-east-1 (direct API) would help those; small-download lanes are server-bound (~180-250 ms best per route).
+- Campaign: 368 timed runs over days 4-13 (results: jumpbox `~/ctf-run-v2/campaign/*.jsonl`, runs in `runs-campaign/`):
+  362 CORRECT; failures = 1 metadata bug (two mastery deliveries with the same file name: `delivery N:` label must win -
+  fixed), 1 server 503 `temporarily_unavailable`, 4 x `retry_rotation_invalid` (server refuses a second timed `retry`
+  right after a completed timed day-13 mastery; no attempt consumed). Experiments also found a warmups variant whose
+  final row is padded with `-<digits>` (fixed; test `digit_padded_final_row`).
+- 2026-10-15 - Day 14 one-shots (user-approved, run on the jumpbox via direct API, `-t/-m --one-shot-ok`, preflight
+  on): all 10 CORRECT first time. submit_sent vs started_at: warmups TT 594 / M 243 ms (68 sets), script TT 597 /
+  M 884 ms (1942 answers), binary-RE TT 1401 / M 3234 ms (3x32 MB, ~2 s analysis per set on 2 vCPUs), mobile TT 202
+  / M 805 ms, metadata TT 229 / M 232 ms. Every LNK (TT + 2 mastery sets) had agreeing LinkInfo/IDList targets
+  (`C:\Windows\System32\cmd.exe`); the "impossible destination" never surfaced as a disagreement. One-shot routes:
+  the server's timer can start before our `start` response lands (warmups TT: +467 ms). Fixtures: 208/208 clean.

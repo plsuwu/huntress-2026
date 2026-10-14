@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-14-predictable-crypto",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "26bde03b-b23b-482f-be26-2c7b3d8039e7",
+  "started_at": "2026-10-14T22:32:02.976Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1341.947916,
+  "start_ttfb_ms": 1341.8001610000001,
+  "clock": {
+    "start_sent": "2026-10-14T22:32:01.815Z",
+    "start_received": "2026-10-14T22:32:03.157Z",
+    "start_date_header": "2026-10-14T22:32:03.000Z",
+    "last_delivery": "2026-10-14T22:32:04.342Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "predictable_crypto.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1183.448085,
+      "total_ms": 1184.620441,
+      "done_at_ms": 2526.947082,
+      "analyse_ms": 0.059495
+    }
+  ]
+}

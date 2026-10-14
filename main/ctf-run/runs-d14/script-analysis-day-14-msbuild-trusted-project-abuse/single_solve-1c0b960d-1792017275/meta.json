@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-14-msbuild-trusted-project-abuse",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "1c0b960d-282f-4904-a63d-eff8b263f048",
+  "started_at": "2026-10-14T22:31:47.597Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 3086.7677759999997,
+  "start_ttfb_ms": 3074.636348,
+  "clock": {
+    "start_sent": "2026-10-14T22:34:35.888Z",
+    "start_received": "2026-10-14T22:34:38.975Z",
+    "start_date_header": "2026-10-14T22:34:38.000Z",
+    "last_delivery": "2026-10-14T22:34:40.249Z",
+    "submit_sent": "2026-10-14T22:34:40.254Z",
+    "submit_received": "2026-10-14T22:34:44.287Z",
+    "submit_date_header": "2026-10-14T22:34:44.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 103827,
+      "wire": 103827,
+      "ttfb_ms": 1179.781121,
+      "total_ms": 1200.577965,
+      "done_at_ms": 4287.601191000001,
+      "analyse_ms": 72.535314
+    }
+  ]
+}
