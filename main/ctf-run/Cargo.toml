@@ -13,6 +13,8 @@ tls = ["dep:rustls", "dep:webpki-roots"]
 
 [dependencies]
 ring = "0.17"
+# Pure-Rust zstd decoder (no C in the static musl build): Cloudflare serves the big JSON bodies as zstd.
+ruzstd = "0.8"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
 webpki-roots = { version = "1", optional = true }
 

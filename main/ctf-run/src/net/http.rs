@@ -1,5 +1,5 @@
 //! Blocking HTTP/1.1 client: keep-alive TCP with TCP_NODELAY/TCP_QUICKACK, every request sent
-//! in one write, `Accept-Encoding: gzip` with transparent decoding, and per-request timings.
+//! in one write, `Accept-Encoding: zstd, gzip` with transparent decoding, and per-request timings.
 //! `http://` always; `https://` with `--features tls`.
 
 use crate::formats::inflate;
@@ -302,7 +302,9 @@ impl Client {
         let mut req = Vec::with_capacity(256 + body_len.unwrap_or(0));
         let _ = write!(req, "{method} {target} HTTP/1.1\r\nHost: {}\r\n{}", self.ep.host, self.ep.auth);
         if gzip {
-            req.extend_from_slice(b"Accept-Encoding: gzip\r\n");
+            // zstd first: on the 3 MB script-mastery start body (inside the timed window) Cloudflare sends
+            // ~40 KB zstd vs ~110 KB gzip, and the body lands ~30-150 ms sooner (jumpbox curl, 2026-10-16).
+            req.extend_from_slice(b"Accept-Encoding: zstd, gzip\r\n");
         }
         if let Some(n) = body_len {
             let _ = write!(req, "Content-Type: application/json\r\nContent-Length: {n}\r\n");
@@ -381,7 +383,7 @@ impl Client {
             Some(v) => Some(v.parse::<usize>().map_err(|_| invalid("bad content-length"))?),
             None => None,
         };
-        let gzip = hv("content-encoding").is_some_and(|v| v.eq_ignore_ascii_case("gzip"));
+        let encoding = hv("content-encoding").map(|v| v.trim().to_ascii_lowercase());
 
         let mut body = Vec::with_capacity(length.unwrap_or(16 * 1024).min(MAX_BODY));
         if status == 204 || status == 304 {
@@ -399,8 +401,17 @@ impl Client {
             self.stream = None;
         }
         let wire_len = body.len();
-        if gzip {
-            body = inflate::gunzip(&body).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        match encoding.as_deref() {
+            None | Some("identity") => {}
+            Some("gzip") => body = inflate::gunzip(&body).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            Some("zstd") => {
+                let mut out = Vec::with_capacity(body.len() * 8);
+                let mut src: &[u8] = &body;
+                let mut dec = ruzstd::decoding::StreamingDecoder::new(&mut src).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("zstd: {e}")))?;
+                dec.read_to_end(&mut out)?;
+                body = out;
+            }
+            Some(other) => return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unsupported content-encoding {other:?}"))),
         }
         Ok(Response { status, headers, body, wire_len, ttfb, total: t0.elapsed(), reused })
     }
@@ -549,6 +560,6 @@ mod tests {
         let seen = h.join().unwrap();
         assert!(seen[0].starts_with("GET /p?op=status HTTP/1.1\r\n"));
         assert!(seen[1].contains("Content-Type: application/json\r\nContent-Length: 7\r\n"));
-        assert!(seen.iter().all(|h| h.contains("Accept-Encoding: gzip") && !h.contains("Authorization")));
+        assert!(seen.iter().all(|h| h.contains("Accept-Encoding: zstd, gzip") && !h.contains("Authorization")));
     }
 }

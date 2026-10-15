@@ -69,8 +69,10 @@ pub fn check_route(mode: Mode, op: StartOp, timed: bool, dry: bool, one_shot_ok:
         return Err("--dry --timed would start a ranked attempt and never submit it".into());
     }
     let timed_by_default = !r.run_for_time_supported && op != StartOp::Practice;
-    if dry && timed_by_default {
-        return Err("--dry on a timed-by-default route would start the clock and never submit".into());
+    // Exception: a plain `start` on a route whose attempt is already solved only reconnects (the material comes
+    // from `status`), so it is a free live test of the lane - the hand check before spending ranked attempts.
+    if dry && timed_by_default && !(op == StartOp::Start && r.solved) {
+        return Err("--dry on a timed-by-default route would start the clock and never submit (unless it is solved: plain start reconnects)".into());
     }
     if timed_by_default && r.one_shot() && !one_shot_ok {
         return Err("one-shot route (timed by default, ranked pool 1): pass --one-shot-ok to spend it".into());
@@ -625,6 +627,11 @@ mod tests {
         // --dry never starts a clock.
         assert!(check_route(Mastery, Start, false, true, true, Some(&one_shot)).is_err());
         assert!(check_route(TimeTrial, Retry, false, true, false, Some(&timed_default)).is_err());
+        // A solved timed-by-default route: a plain start only reconnects, so --dry is a free test; retry is not.
+        let solved = Route { solved: true, ..route(false, 2) };
+        assert!(check_route(TimeTrial, Start, false, true, false, Some(&solved)).is_ok());
+        assert!(check_route(TimeTrial, Retry, false, true, false, Some(&solved)).is_err());
+        assert!(check_route(TimeTrial, Start, false, true, false, Some(&timed_default)).is_err());
         assert!(check_route(Mastery, Start, true, true, false, Some(&dual)).is_err());
         assert!(check_route(Mastery, Start, false, true, false, Some(&dual)).is_ok());
         assert!(check_route(Mastery, Practice, false, true, false, Some(&one_shot)).is_ok());

@@ -35,6 +35,28 @@ HUNTRESS_GM_TOKEN=gm1.a95b647824bcb4ffda7d362554fa6712.9c1806ce647b69001bff42e70
 | Retry challenge                   | POST   | `/` - `{"op":"retry","challenge":"<id>"}`                                      |
 | Continue legacy practice          | POST   | `/` - `{"op":"practice","challenge":"<id>"}`                                   |
 
+### Hall of Fame leaderboard (undocumented)
+
+Not part of the Game Master `op=` API or its OpenAPI description - found via the browser's leaderboard page. Same
+host and `Bearer` token:
+
+```
+GET https://2026.huntress.ctf.games/api/speed-scoreboard?mode=mastery&view=rankings&limit=3&offset=0&sort=elapsed_ms&direction=asc&challenge=script-analysis-day-15-credential-store-clues
+```
+
+| Parameter   | Meaning                                                                    |
+| ---         | ---                                                                        |
+| `mode`      | `time_trial` or `mastery`                                                  |
+| `view`      | `rankings`                                                                 |
+| `limit`/`offset` | paging (`limit=200` returns every team on a route)                    |
+| `sort`/`direction` | `elapsed_ms` / `asc`                                                |
+| `challenge` | the **base** challenge id (no `/time_trial` or `/mastery` suffix)          |
+
+Rows carry `team_name` (ours is **`help`**), `rank`, `elapsed_ms`, `par_ms`, `answer_count`, `set_count`.
+`elapsed_ms` ~= (submit sent - `started_at`) + server grading time; the scoring round trip after grading is not
+counted. Pair it with `?op=status&challenge=<id>/<mode>` (`ranked_attempts_remaining`, `hall_of_fame_eligible`)
+to decide where ranked attempts are worth spending.
+
 - Send `POST` requests with `Content-Type: application/json`.
 - The `run_for_time` property only applies to dual-pool challenges.
 - The `start` response returns `answer_ids`. Use those exact values as the keys in answers.
