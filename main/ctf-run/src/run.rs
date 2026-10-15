@@ -80,6 +80,27 @@ pub fn check_route(mode: Mode, op: StartOp, timed: bool, dry: bool, one_shot_ok:
     Ok(())
 }
 
+/// `CTF_NO_RANKED=1` (set for unattended lane agents): refuse anything that could spend a ranked attempt -
+/// `--timed`, `--one-shot-ok`, and non-dry starts/retries on timed-by-default or uncached routes. Untimed
+/// regular play (dual-pool routes), single-solve, practice and dry reconnects stay allowed.
+pub fn check_unranked(mode: Mode, op: StartOp, timed: bool, dry: bool, one_shot_ok: bool, route: Option<&Route>) -> Result<(), String> {
+    let deny = |why: &str| Err(format!("CTF_NO_RANKED is set: {why} (ranked attempts are the coordinator's call)"));
+    if timed {
+        return deny("--timed starts a ranked attempt");
+    }
+    if one_shot_ok {
+        return deny("--one-shot-ok spends a one-shot attempt");
+    }
+    if mode == Mode::Single || op == StartOp::Practice || dry {
+        return Ok(()); // dry runs are already limited to safe reconnects by check_route
+    }
+    match route {
+        Some(r) if r.run_for_time_supported => Ok(()),
+        Some(_) => deny("this route is timed by default - a start or retry here is ranked"),
+        None => deny("route not in the cache, cannot tell whether it is timed"),
+    }
+}
+
 /// What one delivery worker hands back.
 struct Landed {
     index: usize,
@@ -307,6 +328,9 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
     }
     let route = gm::cached_routes().and_then(|rs| rs.into_iter().find(|r| r.id == opts.challenge));
     check_route(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?;
+    if std::env::var_os("CTF_NO_RANKED").is_some() {
+        check_unranked(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?;
+    }
 
     let sets = route.as_ref().and_then(|r| if opts.timed { r.ranked_set_count } else { r.regular_set_count.or(r.ranked_set_count) });
     let warm = opts.jobs.unwrap_or_else(|| sets.unwrap_or(4).clamp(4, MAX_JOBS as i64) as usize) * if opts.hedge { 2 } else { 1 };
@@ -632,6 +656,14 @@ mod tests {
         assert!(check_route(TimeTrial, Start, false, true, false, Some(&solved)).is_ok());
         assert!(check_route(TimeTrial, Retry, false, true, false, Some(&solved)).is_err());
         assert!(check_route(TimeTrial, Start, false, true, false, Some(&timed_default)).is_err());
+        // CTF_NO_RANKED: only untimed play gets through.
+        assert!(check_unranked(Mastery, Retry, false, false, false, Some(&dual)).is_ok());
+        assert!(check_unranked(Mastery, Retry, true, false, false, Some(&dual)).is_err());
+        assert!(check_unranked(Mastery, Start, false, false, false, Some(&timed_default)).is_err());
+        assert!(check_unranked(Mastery, Start, false, false, true, Some(&one_shot)).is_err());
+        assert!(check_unranked(Mastery, Start, false, false, false, None).is_err());
+        assert!(check_unranked(Single, Start, false, false, false, None).is_ok());
+        assert!(check_unranked(TimeTrial, Start, false, true, false, Some(&solved)).is_ok());
         assert!(check_route(Mastery, Start, true, true, false, Some(&dual)).is_err());
         assert!(check_route(Mastery, Start, false, true, false, Some(&dual)).is_ok());
         assert!(check_route(Mastery, Practice, false, true, false, Some(&one_shot)).is_ok());

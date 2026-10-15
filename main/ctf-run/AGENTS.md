@@ -88,3 +88,19 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 - Measured: the server timer starts at the end of `start` processing (start latency is free); the timed window is
   download + analyse + submit. Downloads are the long pole (server think-time, 2-8 s tail); prefer bundles, fetch all
   in parallel on warm connections, analyse on the fetch workers, nothing between the last answer and `submit`.
+
+## Day release automation (`tools/rush/`)
+
+- `install-timer.sh` installs a systemd user timer (12:45 UTC = 22:45 AEST, event days) running `rush.py all`:
+  **prep** (persistent lane worktrees `../../wt/<lane>` reset to `master` on branch `dayNN/<lane>`, symlinked
+  `ctf-run/fixtures` + `.env`, every target pre-built) -> **launch** (tmux `-L huntress`, session `rush`, one Claude per
+  lane in auto mode with `--add-dir <repo>`, primed by `prompts/prime.md`) -> **watch** (polls `op=list&day=N` from
+  22:58:30, merges the day into the route cache, then per lane in parallel the **first pass**: single-solve, untimed
+  regular time trial + mastery, grouped oracle on `incorrect`; writes `runs-dNN/rush/brief-<lane>.md` and sends that
+  lane's agent "read the brief" the moment its own pass ends).
+- Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
+  timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
+  merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.
+- Commit to `master` before 22:45 - lanes branch from the committed HEAD. Follow: `journalctl --user -fu huntress-rush`,
+  `tmux -L huntress attach -t rush`, `rush.py status --day N`. Rehearse on a released day with
+  `rush.py watch --day N --rehearse [--lanes x] [--no-agents]` (solved routes only reconnect; submits say already_solved).

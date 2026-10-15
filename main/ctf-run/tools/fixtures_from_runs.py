@@ -17,7 +17,10 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SOLVERS = os.path.normpath(os.path.join(ROOT, "..", "utils", "solver_py_scripts"))
+# Resolve through symlinks: lane worktrees (tools/rush) symlink fixtures/ to the main checkout's, and manifest
+# paths are relative to the real fixtures directory, so artifacts must land beside the real one too.
+FIXTURES = os.path.realpath(os.path.join(ROOT, "fixtures"))
+SOLVERS = os.path.normpath(os.path.join(FIXTURES, "..", "..", "utils", "solver_py_scripts"))
 LANES = {"warmups": "warmups", "mobile-android": "mobile", "metadata-forensics": "metadata",
          "binary-reverse-engineering": "binary_re", "script-analysis": "script"}
 
@@ -45,13 +48,13 @@ def one(run, slug_override):
     deliveries = []
     for name in sorted(os.listdir(os.path.join(run, "deliveries"))):
         shutil.copy(os.path.join(run, "deliveries", name), os.path.join(dest, name))
-        deliveries.append({"path": os.path.relpath(os.path.join(dest, name), os.path.join(ROOT, "fixtures", LANES[lane])),
+        deliveries.append({"path": os.path.relpath(os.path.join(dest, name), os.path.join(FIXTURES, LANES[lane])),
                            "name": name.split("-", 1)[1] if re.match(r"^\d+-", name) else name})
     answers = json.load(open(os.path.join(run, "answers.json")))
     answers = answers.get("answers", answers)
     manifest = {
         "challenge": challenge,
-        "start": os.path.relpath(os.path.join(dest, "start.json"), os.path.join(ROOT, "fixtures", LANES[lane])),
+        "start": os.path.relpath(os.path.join(dest, "start.json"), os.path.join(FIXTURES, LANES[lane])),
         "deliveries": deliveries,
         "expected": answers,
         "graded": "correct",
