@@ -289,3 +289,10 @@ replay -> timed), module map, testing rules.
   script 8587 ms (2.9 MB start, delivery +3.7 s, then a 4.7 s server-side submit for 5130 answers - the next lever is
   the submit leg: try `--early-submit` per-set partials overlapping the download, or check whether a gzip request body
   is accepted). Fixtures: `dNN-mastery_ranked.json` for the four small lanes; 231/231 clean.
+- Submit-leg experiments (2026-10-16, jumpbox, untimed regular variants of script d15 mastery, 5130 answers / 302 KB;
+  `tools/submit_experiment.py`): **gzip request bodies are rejected** (`400 invalid_json` - the server ignores
+  Content-Encoding). **Parallel partial submits are safe but not faster**: no lost updates (`remaining` steps down
+  serially, the last one returns CORRECT), but wall time full 1832/2486/2704/2826 ms vs 5 parallel chunks
+  2106/2652/2995 ms vs 10 chunks 2402/3337 ms - the server appears to serialise one attempt's submits, and the ranked
+  run's 4.7 s was server variance. Keep the single full submit; `--early-submit` only helps when per-set deliveries
+  land at different times (multi-delivery masteries), never for bundles. Cost: 11 regular script-mastery variants.
