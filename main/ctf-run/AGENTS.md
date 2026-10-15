@@ -79,7 +79,9 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   The jumpbox runs the static musl binary from `nix build .#ctf-run` (repo flake), shipped by `tools/deploy.sh`; never
   compile on the burstable t3.small before ranked runs (`--remote-build` only if the flake is unavailable).
 - Hall of Fame: `/api/speed-scoreboard?mode=...&challenge=<base id>&sort=elapsed_ms` (team "help"); elapsed ~= submit
-  sent + server grading, so every ms before the submit counts. `tools/run_legs.py <run dirs>` splits a run into legs. Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
+  sent + server grading, so every ms before the submit counts. `tools/run_legs.py <run dirs>` splits a run into legs.
+  Ranked runs on small-delivery lanes (warmups/mobile/metadata): add `--hedge` (duplicate downloads beat the ranked
+  straggler tail); never on binary-RE. Downloads always use the capability link (op=artifact is slower). Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
   with `--release --features tls`: a plain `cargo build --release` overwrites the binary with one that refuses https.
   Keep a day's live runs in `runs-dNN/` (`-o runs-dNN`); prune pure `--dry` duplicates once graded runs exist. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).
 - `CTF_PROFILE=1` prints per-specimen / per-file analysis timings and replay analyse/answer splits.

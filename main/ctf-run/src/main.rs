@@ -65,6 +65,7 @@ run options:
   --one-shot-ok        allow starting a one-shot route, or a route missing from the cache
   --no-preflight       skip the route check and status warm-up
   --warm N             fire N concurrent status requests just before start (warms the server side)
+  --hedge              fetch each delivery twice on separate connections, keep the first (small deliveries)
 
 environment:
   HUNTRESS_GM_URL      default endpoint (https://... needs a build with --features tls)
@@ -111,6 +112,7 @@ fn real_main() -> Res<bool> {
         one_shot_ok: false,
         preflight: true,
         warm: 0,
+        hedge: false,
     };
     let (mut suffix, mut refresh, mut show, mut chunk) = ("", false, false, 64usize);
     while let Some(a) = it.next() {
@@ -123,6 +125,7 @@ fn real_main() -> Res<bool> {
             "--timed" => o.timed = true,
             "-n" | "--dry" => o.dry = true,
             "--early-submit" => o.early_submit = true,
+            "--hedge" => o.hedge = true,
             "--partial" => o.partial = true,
             "--lane" => o.lane = Some(val("--lane")?),
             "-j" | "--jobs" => o.jobs = Some(val("--jobs")?.parse().map_err(|_| "--jobs takes a number")?),

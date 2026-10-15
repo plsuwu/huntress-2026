@@ -41,6 +41,8 @@ pub struct Opts {
     pub preflight: bool,
     /// Requests in the warm-up burst fired just before `start` (0 = off).
     pub warm: usize,
+    /// Fetch every delivery twice on separate connections and take the first (small deliveries only).
+    pub hedge: bool,
 }
 
 pub const MAX_JOBS: usize = 64;
@@ -305,7 +307,7 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
     check_route(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?;
 
     let sets = route.as_ref().and_then(|r| if opts.timed { r.ranked_set_count } else { r.regular_set_count.or(r.ranked_set_count) });
-    let warm = opts.jobs.unwrap_or_else(|| sets.unwrap_or(4).clamp(4, MAX_JOBS as i64) as usize);
+    let warm = opts.jobs.unwrap_or_else(|| sets.unwrap_or(4).clamp(4, MAX_JOBS as i64) as usize) * if opts.hedge { 2 } else { 1 };
     pool.warm(warm);
     if opts.preflight {
         preflight(opts, pool, route.as_ref());
@@ -377,7 +379,7 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
 
     std::thread::scope(|scope| {
         let (tx, rx) = mpsc::channel();
-        fetch::spawn_all(scope, pool, &queries, &next, jobs, &work, tx);
+        fetch::spawn_all(scope, pool, opts.hedge, &queries, &next, jobs, &work, tx);
         for landed in rx {
             let i = landed.index;
             st.last_delivery = time::now_ms();

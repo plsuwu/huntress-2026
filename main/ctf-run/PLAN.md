@@ -311,3 +311,14 @@ replay -> timed), module map, testing rules.
   `flake.nix` packages.ctf-run is a static x86_64-musl build (+tls, mimalloc - musl malloc was 40-70 % slower; inflate
   now copies matches inline - musl memcpy per match was ~25 % slower), and `tools/deploy.sh` ships that binary
   (`--remote-build` keeps the old path). A Nix glibc binary cannot run there (glibc 2.44 vs Ubuntu 2.39).
+- 2026-10-16 - Mobile mastery / warmups TT (server-bound routes). Our client time is ~0 on both; elapsed = server
+  start lag (normally ~70 ms, 280-365 ms in bad moments) + slowest download + ~150-250 ms grading. Probes on untimed
+  regular variants (`tools/download_probe.py`): the capability link is consistently faster than `op=artifact&delivery=N`
+  (50-500 ms) - never use op=artifact for downloads; regular downloads are tight (~150-280 ms TTFB, no stragglers), but
+  **ranked downloads are slower and straggly** (mobile: one run all 628-791 ms, one with a single 671 ms straggler;
+  warmups TT 342-657 ms vs ~200-300 regular). New `--hedge`: each delivery fetched twice on detached threads (the loser
+  never delays the submit), first good response wins - neutral when quiet (A/B 321 vs 325 ms), aimed at the single-
+  straggler case; use it for small-delivery lanes (warmups/mobile/metadata), never binary-RE (doubles 32 MB downloads).
+  It cannot help when the server is slow for every request (warmups' single file stayed 469-610 ms hedged).
+  Ranked re-rolls (6 each lane, all CORRECT): warmups TT #9 -> #3 (660 ms; #1 559), mobile mastery #13 -> #4
+  (621 ms; #1 391). Remaining gap = server luck; more re-rolls are a lottery, not engineering.
