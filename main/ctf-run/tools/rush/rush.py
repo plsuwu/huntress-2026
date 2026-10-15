@@ -123,8 +123,11 @@ def launch(day):
         with open(launcher, "w") as f:
             f.write("#!/bin/sh\n"
                     # --add-dir: briefs, first-pass runs, done markers and the real fixtures/artifacts live in the
-                    # main checkout; without it every read there stops at a permission dialog.
-                    f'exec claude --permission-mode auto --add-dir "{REPO}" -n "d{day:02d}-{lane}" "$(cat {prompt_file})"\n')
+                    # main checkout's ctf-run/ and utils/; without it every read there stops at a permission dialog.
+                    # Deliberately not the repo root: that holds the jumpbox SSH key, and CTF_NO_RANKED only guards
+                    # this machine - workers must not be able to reach a ranked run on the jumpbox.
+                    f'exec claude --permission-mode auto --add-dir "{CTF}" "{os.path.join(REPO, "utils")}" '
+                    f'-n "d{day:02d}-{lane}" "$(cat {prompt_file})"\n')
         os.chmod(launcher, 0o755)
         sh(TMUX + ["new-window", "-t", SESSION, "-n", lane, "-c", os.path.join(WT_ROOT, lane)] + envflags + [launcher])
         log(f"{lane}: agent launched (window rush:{lane})")
