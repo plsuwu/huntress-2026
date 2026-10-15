@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-15-credential-store-clues/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7d4caeb7-9ee5-4fbb-ad6c-1efb397631a4",
+  "started_at": "2026-10-15T13:15:06.937Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 7265.340067,
+  "start_ttfb_ms": 7106.970294,
+  "clock": {
+    "start_sent": "2026-10-15T13:15:01.984Z",
+    "start_received": "2026-10-15T13:15:09.249Z",
+    "start_date_header": "2026-10-15T13:15:09.000Z",
+    "last_delivery": "2026-10-15T13:15:11.528Z",
+    "submit_sent": "2026-10-15T13:15:11.568Z",
+    "submit_received": "2026-10-15T13:15:17.705Z",
+    "submit_date_header": "2026-10-15T13:15:17.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-15-credential-store-clues-mastery.zip",
+      "bytes": 534819,
+      "wire": 534819,
+      "ttfb_ms": 1814.6411520000001,
+      "total_ms": 1968.075226,
+      "done_at_ms": 9233.629112999999,
+      "analyse_ms": 310.319164
+    }
+  ]
+}

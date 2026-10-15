@@ -1,4 +1,4 @@
-# Lane patterns & per-day "gimmick" predictions (as of Day 14, 2026-10-15)
+# Lane patterns & per-day "gimmick" predictions (as of Day 15, 2026-10-15)
 
 Derived from every `utils/solver_py_scripts/day-*/**/NOTES.md` (days 2-13) plus the GM `op=list` route metadata.
 Read this before starting a new day: most of the day's "gimmick" is predictable, and the real risk is usually the
@@ -69,7 +69,7 @@ oracle.
 - Single/TT: the whole blob in the day's encoding, decoding to the fixed template; answer = slug `word-word-word-NN`.
 - Mastery: `NN<TAB>fragment` rows, raggedly sliced from the template; **row N uses day N's encoding**:
   01 base64, 02 rot13, 03 hex, 04 8-bit binary, 05 decimal, 06 octal, 07 %-hex, 08 `&#dec;`, 09 `"\uXXXX"`, 10 base32,
-  11 base64url (unpadded), 12 reversed (+ `-` right padding to 13 chars), 13 atbash.
+  11 base64url (unpadded), 12 reversed (+ `-` right padding to 13 chars), 13 atbash, 14 caesar +7, 15 ROT47.
 - Mastery set count = **5N - 2** (23 on d5 ... 63 on d13; d14 route lists 68).
 - Parse rows whitespace-faithfully (leading spaces matter), use the fixed index->codec mapping first, enumerate only as fallback.
 
@@ -85,7 +85,33 @@ oracle.
 - Same tiny hand-built APK every day; answer = `assets/huntress_puzzle.json` decoded, `ANS-` + 16 uppercase hex. The
   Android story (PendingIntent, providers, WebView, cleartext, trust, keystore) is pure decoration.
 - Codecs seen (by day): 4 xor, 5 split(parts/order), 6 hex, 7 caesar(key), 8 reverse, 9 base64, 10 split, 11 xor,
-  12 hex, 13 base64. Per-APK keys differ - read them from the JSON. Mastery = N bare APKs, ids `setN.answer`.
+  12 hex, 13 base64, 14 caesar (printable-ASCII shift, `key`), 15 native (plain `data` + `libarena.so`). Since d15 mastery mixes earlier
+  days' codecs (each APK has a `day` field). Per-APK keys differ - read them from the JSON. Mastery = N bare APKs, ids `setN.answer`.
+
+## Day 15 outcome (2026-10-15)
+
+Routes went back to **dual-pool** (`run_for_time_supported:true`, ranked pools 16-256, regular pools 16-128): free
+untimed TT/mastery attempts + per-field oracle again. All 15 routes CORRECT via untimed regular attempts, solved directly in
+ctf-run (no Python step). Details in `solver_py_scripts/day-15-*/*/NOTES.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | ROT47 ("Room Forty-Seven") | ROT47 output looks like `\NN` escapes - try letter/rotation transforms for a template match before structural peels; mastery row 15 = ROT47 |
+| metadata | `ooxml-external-relationship-targets` (.docx) | JSON list **sorted by value**, not `.rels` file order |
+| script | `polyglot-perl-*` + `host-perl-cgi-perl` | route every `host-` id to the literal family; mastery grades FOR-over-`h<N>` as `for_indirect` (single accepted `call_double`) |
+| binary-RE | d15 = `-symbolized` + `-stripped` ELF pair | `artifact_sha256_N` in zip CD order; `analysis_<tag>_<field>` per specimen; integer `machine` = e_machine |
+| mobile | `codec:"native"` (answer in `data`, also in `libarena.so`) | nothing; mastery now samples earlier days' codecs (`day` field per APK) |
+
+## Day 16 predictions
+
+- Warmups: another whole-string transform (Vigenere/keyed, rail fence, base85/ascii85/uuencode, XOR-hex?) - row 16 joins
+  the mastery rows; keep the template-match-first loop and add the decoder to `T` + `fixed_codec`.
+- Metadata: another OOXML/Office field (xlsx/pptx rels, core props, custom XML, macros `vbaProject.bin` presence,
+  `docProps/app.xml` Application) - `ooxml_answer` already answers ids/counts/hyperlinks/core+app props by name; check
+  list ordering with the untimed oracle (value-sorted so far).
+- Script: one more `polyglot-<lang>` + `host-<lang>-*` family (descriptor literal; `analyse_literal` fallbacks cover it).
+- Binary-RE: `d16` may again be a multi-file specimen (tagged variants) - the tag routing is generic; HCFG unchanged.
+- Mobile: a new `codec` name; if `data` is not the answer, look in `lib/*/*.so` strings for `ANS-`.
 
 ## Day 14 predictions (verify against single-solve; implement robustly, not as a single guess)
 

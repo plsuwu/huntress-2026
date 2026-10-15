@@ -332,6 +332,11 @@ pub fn rot(t: &str, n: u8) -> String {
         .collect()
 }
 
+/// ROT47: rotates printable ASCII `!`..`~` by 47 (self-inverse).
+pub fn rot47(t: &str) -> String {
+    t.chars().map(|c| if ('!'..='~').contains(&c) { (b'!' + (c as u8 - b'!' + 47) % 94) as char } else { c }).collect()
+}
+
 pub fn atbash(t: &str) -> String {
     t.chars()
         .map(|c| match c {
@@ -415,6 +420,7 @@ mod tests {
         assert_eq!(backslash_unescape_all(r#""N\x69\143\n😀""#), "Nic\n😀");
         assert_eq!(rot("Nice", 13), "Avpr");
         assert_eq!(atbash("Nice"), "Mrxv");
+        assert_eq!(rot47("Nice-65!"), "}:46\\edP");
         assert!(is_slug("zesty-sunset-quartz-65") && !is_slug("zesty-sunset-65"));
         assert!(englishness("Nice work decoding this warmup!") > englishness("Avpr jbex"));
         assert!(letter_score("sunset") > letter_score(&rot("sunset", 7)));

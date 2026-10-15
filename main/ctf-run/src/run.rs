@@ -644,14 +644,14 @@ mod tests {
         use crate::lanes::warmups::Warmups;
         use crate::model::DeliverySpec;
         let set1 = format!(
-            "01\t{}\n02\t{}\n15\t{}\n13\t{}\n",
+            "01\t{}\n02\t{}\n16\t{}\n13\t{}\n",
             "TmljZSB3b3Jr",
             rot(" decoding this warmup! To solve,", 13),
             rot(" submit this exact answer", 7),
             atbash(" to the Game Master: zesty-sunset-quartz-65")
         );
         let set2 = format!(
-            "01\t{}\n15\t{}\n",
+            "01\t{}\n16\t{}\n",
             "TmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZSwgc3VibWl0IHRoaXMgZXhhY3QgYW5zd2VyIHRvIHRoZSBHYW1lIE1hc3RlcjogaGFwcHkt",
             rot("piano-whale-26", 7)
         );

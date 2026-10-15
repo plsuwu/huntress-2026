@@ -10,39 +10,71 @@ const K: [u32; 64] = [
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,
 ];
 
+#[allow(unused_assignments)] // the last rounds write schedule words nobody reads
 fn compress(h: &mut [u32; 8], block: &[u8]) {
-    let mut w = [0u32; 64];
-    for i in 0..16 {
-        w[i] = u32::from_be_bytes(block[i * 4..i * 4 + 4].try_into().unwrap());
-    }
-    for i in 16..64 {
-        let s0 = w[i - 15].rotate_right(7) ^ w[i - 15].rotate_right(18) ^ (w[i - 15] >> 3);
-        let s1 = w[i - 2].rotate_right(17) ^ w[i - 2].rotate_right(19) ^ (w[i - 2] >> 10);
-        w[i] = w[i - 16].wrapping_add(s0).wrapping_add(w[i - 7]).wrapping_add(s1);
+    // Fully unrolled rounds with a rolling 16-word schedule; the eight working variables rotate by
+    // renaming (macro arguments) instead of moves. ~1.5x the naive loop on the scalar-only jumpbox.
+    let block: &[u8; 64] = block.try_into().unwrap();
+    let mut w = [0u32; 16];
+    for (i, c) in block.chunks_exact(4).enumerate() {
+        w[i] = u32::from_be_bytes([c[0], c[1], c[2], c[3]]);
     }
     let [mut a, mut b, mut c, mut d, mut e, mut f, mut g, mut hh] = *h;
-    for i in 0..64 {
-        let s1 = e.rotate_right(6) ^ e.rotate_right(11) ^ e.rotate_right(25);
-        let ch = (e & f) ^ (!e & g);
-        let t1 = hh.wrapping_add(s1).wrapping_add(ch).wrapping_add(K[i]).wrapping_add(w[i]);
-        let s0 = a.rotate_right(2) ^ a.rotate_right(13) ^ a.rotate_right(22);
-        let maj = (a & b) ^ (a & c) ^ (b & c);
-        let t2 = s0.wrapping_add(maj);
-        hh = g;
-        g = f;
-        f = e;
-        e = d.wrapping_add(t1);
-        d = c;
-        c = b;
-        b = a;
-        a = t1.wrapping_add(t2);
+    macro_rules! round {
+        ($a:ident, $b:ident, $c:ident, $d:ident, $e:ident, $f:ident, $g:ident, $h:ident, $i:expr) => {{
+            let wi = if $i < 16 {
+                w[$i & 15]
+            } else {
+                let x = w[($i + 1) & 15];
+                let y = w[($i + 14) & 15];
+                let s0 = x.rotate_right(7) ^ x.rotate_right(18) ^ (x >> 3);
+                let s1 = y.rotate_right(17) ^ y.rotate_right(19) ^ (y >> 10);
+                let v = w[$i & 15].wrapping_add(s0).wrapping_add(w[($i + 9) & 15]).wrapping_add(s1);
+                w[$i & 15] = v;
+                v
+            };
+            let t1 = $h
+                .wrapping_add($e.rotate_right(6) ^ $e.rotate_right(11) ^ $e.rotate_right(25))
+                .wrapping_add($g ^ ($e & ($f ^ $g)))
+                .wrapping_add(K[$i])
+                .wrapping_add(wi);
+            let t2 = ($a.rotate_right(2) ^ $a.rotate_right(13) ^ $a.rotate_right(22)).wrapping_add(($a & $b) | ($c & ($a | $b)));
+            $d = $d.wrapping_add(t1);
+            $h = t1.wrapping_add(t2);
+        }};
     }
+    macro_rules! eight {
+        ($i:expr) => {
+            round!(a, b, c, d, e, f, g, hh, $i);
+            round!(hh, a, b, c, d, e, f, g, $i + 1);
+            round!(g, hh, a, b, c, d, e, f, $i + 2);
+            round!(f, g, hh, a, b, c, d, e, $i + 3);
+            round!(e, f, g, hh, a, b, c, d, $i + 4);
+            round!(d, e, f, g, hh, a, b, c, $i + 5);
+            round!(c, d, e, f, g, hh, a, b, $i + 6);
+            round!(b, c, d, e, f, g, hh, a, $i + 7);
+        };
+    }
+    eight!(0);
+    eight!(8);
+    eight!(16);
+    eight!(24);
+    eight!(32);
+    eight!(40);
+    eight!(48);
+    eight!(56);
     for (x, y) in h.iter_mut().zip([a, b, c, d, e, f, g, hh]) {
         *x = x.wrapping_add(y);
     }
 }
 
+/// SHA-256 via ring (assembly with AVX2/SHA-NI dispatch); `sha256_portable` is the reference.
 pub fn sha256(data: &[u8]) -> [u8; 32] {
+    ring::digest::digest(&ring::digest::SHA256, data).as_ref().try_into().unwrap()
+}
+
+/// Portable SHA-256 (kept as the cross-check in tests).
+pub fn sha256_portable(data: &[u8]) -> [u8; 32] {
     let mut h: [u32; 8] = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
     let mut chunks = data.chunks_exact(64);
     for b in &mut chunks {
@@ -79,5 +111,10 @@ mod tests {
         assert_eq!(hex(&sha256(b"abc")), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
         let m = b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
         assert_eq!(hex(&sha256(m)), "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1");
+        // The portable implementation agrees with ring on every padding boundary.
+        let data: Vec<u8> = (0..300u32).map(|i| (i * 31 + 7) as u8).collect();
+        for n in 0..data.len() {
+            assert_eq!(sha256_portable(&data[..n]), sha256(&data[..n]), "len {n}");
+        }
     }
 }

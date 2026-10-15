@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-15-assembly-and-symbol-loss/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "64e641dd-ac8c-45e9-bfe1-9e5bc976eaaa",
+  "started_at": "2026-10-15T13:15:04.965Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 4325.1798260000005,
+  "start_ttfb_ms": 4313.449219,
+  "clock": {
+    "start_sent": "2026-10-15T13:15:01.526Z",
+    "start_received": "2026-10-15T13:15:05.852Z",
+    "start_date_header": "2026-10-15T13:15:05.000Z",
+    "last_delivery": "2026-10-15T13:15:19.260Z",
+    "submit_sent": "2026-10-15T13:15:19.260Z",
+    "submit_received": "2026-10-15T13:15:23.895Z",
+    "submit_date_header": "2026-10-15T13:15:23.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 32358310,
+      "wire": 32358310,
+      "ttfb_ms": 1614.4314650000001,
+      "total_ms": 8515.176687000001,
+      "done_at_ms": 12840.912901,
+      "analyse_ms": 300.903578
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32358300,
+      "wire": 32358300,
+      "ttfb_ms": 1643.997968,
+      "total_ms": 11703.212739999999,
+      "done_at_ms": 16028.796603,
+      "analyse_ms": 296.96875900000003
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 32251448,
+      "wire": 32251448,
+      "ttfb_ms": 1603.714164,
+      "total_ms": 11974.349469,
+      "done_at_ms": 16299.991613,
+      "analyse_ms": 283.541937
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 32251460,
+      "wire": 32251460,
+      "ttfb_ms": 1597.9243250000002,
+      "total_ms": 12972.215549999999,
+      "done_at_ms": 17297.935457,
+      "analyse_ms": 294.994286
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 32358325,
+      "wire": 32358325,
+      "ttfb_ms": 1686.435621,
+      "total_ms": 13124.477276,
+      "done_at_ms": 17450.15684,
+      "analyse_ms": 283.193242
+    }
+  ]
+}

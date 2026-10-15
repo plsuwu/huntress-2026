@@ -36,7 +36,10 @@ def one(run, slug_override):
     lane, day, slug = m.group(1), int(m.group(2)), slug_override or m.group(3)
     if not slug:
         sys.exit(f"{challenge}: no slug in the id; pass --slug")
-    dest = os.path.join(SOLVERS, f"day-{day:02d}-{lane}", slug, "artifacts", mode)
+    # Ranked (run_for_time) attempts get their own artifact dir and fixture name, so they never
+    # overwrite the regular attempt's copies.
+    tag = mode + ("_ranked" if meta.get("run_for_time") else "")
+    dest = os.path.join(SOLVERS, f"day-{day:02d}-{lane}", slug, "artifacts", tag)
     os.makedirs(dest, exist_ok=True)
     shutil.copy(os.path.join(run, "start.json"), os.path.join(dest, "start.json"))
     deliveries = []
@@ -54,7 +57,7 @@ def one(run, slug_override):
         "graded": "correct",
         "note": f"ctf-run {os.path.basename(run)}, graded CORRECT",
     }
-    out = os.path.join(ROOT, "fixtures", LANES[lane], f"d{day:02d}-{mode}.json")
+    out = os.path.join(ROOT, "fixtures", LANES[lane], f"d{day:02d}-{tag}.json")
     with open(out, "w") as f:
         json.dump(manifest, f, indent=1)
         f.write("\n")

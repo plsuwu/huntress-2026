@@ -2,7 +2,7 @@
 
 `ctf-run` solves Huntress CTF Game Master challenges **per lane** (warmups, mobile-android, metadata-forensics,
 binary-reverse-engineering, script-analysis) with a low-latency runner built for the CourseStack proxy
-(`http://10.0.0.219/huntress-ctf-proxy`, reached from the jumpbox `HuntressCTF@10.1.181.90`). Std-only Rust;
+(`http://10.0.0.219/huntress-ctf-proxy`, reached from the jumpbox `HuntressCTF@10.1.181.90`). Rust, std-only apart from `ring` (fast SHA-256; also rustls's provider);
 `--features tls` adds the external https API. Background: `PLAN.md` (measurements, design, progress log) and
 `../utils/LANE_PATTERNS.md` (how each lane evolves day to day).
 
@@ -37,7 +37,7 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/script/` | script-analysis toolkit: descriptor model + rubric, label-driven decode, cmd.exe model, JScript evaluator, families |
 | `src/evidence.rs` | nested-zip registry (`a.zip -> member` labels) |
 | `src/rx.rs` | Python-`re`-compatible backtracking regex (backrefs, lookaround) so reference patterns port verbatim; `re!()` caches compiled patterns |
-| `tools/` | `deploy.sh` (build+test on the jumpbox), `fixtures_<lane>.py` (manifest generators), `phase0_probe.py` |
+| `tools/` | `deploy.sh` (build+test on the jumpbox), `fixtures_<lane>.py` (manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `campaign.py`, `phase0_probe.py` |
 | `fixtures/<lane>/*.json` | replay manifests (point at the original files under `../utils/solver_py_scripts`) |
 
 ## The lane contract (`src/lanes/mod.rs`)
@@ -61,16 +61,23 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
      field -> a row in `answer_spec`. Formats follow the question's `answer_format.kind`.
    - **script-analysis**: a new language with a descriptor literal is found by `families::analyse_literal`'s fallbacks;
      add an explicit pattern there if not. A new `Codec_` representation/transform -> `script/labelled.rs`.
-4. Submit single-solve (`ctf-run <id>`). On `incorrect`: `ctf-run oracle runs/<id>/<dir>` localises the wrong fields.
-5. Regression: `ctf-run replay fixtures/<lane> runs/<new run>`; regenerate manifests with `tools/fixtures_<lane>.py`
-   when the Python references gain fixtures.
+4. Submit single-solve (`ctf-run <id>`). On `incorrect`: `ctf-run oracle runs/<id>/<dir>` localises the wrong fields;
+   for thousands of answers use `python3 -I tools/oracle_groups.py <run dir>` first (one partial submit per question
+   family, then per field - minutes instead of a long blind bisection). Single-solve resubmits are free, so test an
+   alternative format with one curl submit before encoding it. Dual-pool TT/mastery: plain `-t`/`-m` is an untimed
+   regular attempt (flag + unlock, same oracle).
+5. Regression: `ctf-run replay fixtures/<lane> runs/<new run>`; turn graded runs into fixtures with
+   `python3 -I tools/fixtures_from_runs.py <run dirs> [--slug S]` (warmups need `--slug`); notes go in
+   `../utils/solver_py_scripts/day-NN-<lane>/<slug>/NOTES.md`, day summary + next-day predictions in `../utils/LANE_PATTERNS.md`.
 6. Timed: dual-pool routes use `--timed` (Hall of Fame) and `--retry` for the next variant; timed-by-default routes are
    timed on plain `start` (one-shot needs `--one-shot-ok`). Self-validating lanes may add `--early-submit`.
 
 ## Testing and performance
 
-- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 193 cases),
-  `cargo build --features tls` must stay green. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).
+- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 227 cases),
+  `cargo build --features tls` must stay green. Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
+  with `--release --features tls`: a plain `cargo build --release` overwrites the binary with one that refuses https.
+  Keep a day's live runs in `runs-dNN/` (`-o runs-dNN`); prune pure `--dry` duplicates once graded runs exist. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).
 - `CTF_PROFILE=1` prints per-specimen / per-file analysis timings and replay analyse/answer splits.
 - Measured: the server timer starts at the end of `start` processing (start latency is free); the timed window is
   download + analyse + submit. Downloads are the long pole (server think-time, 2-8 s tail); prefer bundles, fetch all

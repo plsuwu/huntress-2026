@@ -4,13 +4,15 @@ version = "0.2.0"
 edition = "2024"
 rust-version = "1.88"
 
-# The default build is std-only. `--features tls` adds https:// support for the external API
-# (rustls with bundled Mozilla roots); the CourseStack proxy is plain http and needs none of it.
+# `--features tls` adds https:// support for the external API (rustls with bundled Mozilla roots); the
+# CourseStack proxy is plain http and needs none of it. `ring` (already rustls's crypto provider) supplies
+# SHA-256: its BoringSSL assembly is ~2x the portable Rust hash on the jumpbox (no SHA-NI there).
 
 [features]
 tls = ["dep:rustls", "dep:webpki-roots"]
 
 [dependencies]
+ring = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
 webpki-roots = { version = "1", optional = true }
 

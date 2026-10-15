@@ -263,3 +263,24 @@ replay -> timed), module map, testing rules.
   / M 805 ms, metadata TT 229 / M 232 ms. Every LNK (TT + 2 mastery sets) had agreeing LinkInfo/IDList targets
   (`C:\Windows\System32\cmd.exe`); the "impossible destination" never surfaced as a disagreement. One-shot routes:
   the server's timer can start before our `start` response lands (warmups TT: +467 ms). Fixtures: 208/208 clean.
+- 2026-10-15 - Day 15 (Rust-only, no Python reference first; all TT/mastery routes dual-pool): all 15 routes CORRECT via
+  untimed regular attempts (no timed runs yet). Changes: warmups ROT47 (`codec::rot47`, row 15 pinned; a letter transform
+  that yields the template now beats structural peeling - ROT47 output `\42` was being eaten as an octal escape);
+  metadata `ooxml-<field>` kinds (`formats/ooxml.rs`: `.rels` relationships, core/app props) - list answers are graded
+  **sorted by value** (file order rId9,rId10 was `incorrect`); script `host-<lang>-` ids all route to the literal family
+  (new `host-perl-`); binary-RE d15 ships `-stripped` + `-symbolized` builds: every non-.json specimen is analysed,
+  `analysis_<tag>_<field>` routes to the specimen named `...-<tag>`, `analysis_machine` with `integer` format = raw
+  e_machine (62), and `artifact_sha256_N` follows **central-directory order** (symbolized before stripped; name sort was
+  wrong). Script mastery: `for %%G in (..) do call set "cfg=%%cfg%%%%h%%G%%"` is graded `for_indirect` on mastery
+  (Day 3 rule said call_double; d14 single-solve had accepted call_double) - v13 rule now mode-dependent. New
+  `tools/oracle_groups.py`: family-grouped partial submits (found the 1 wrong field in ~70 requests vs slow bisection).
+  Fixtures: 222/222 clean.
+- 2026-10-15/16 - Day 15 follow-up. Perf (binary-RE mastery is the only CPU-bound route on the 2-vCPU jumpbox): SHA-256
+  now via `ring` (BoringSSL asm; already rustls's provider) - jumpbox 182 -> 362 MB/s (OpenSSL 412; a hand-unrolled
+  Rust compress only reached ~200, `-C target-cpu=native` ~219); the .NET `BSJB` scan runs only on PE/unknown containers;
+  `has_mangled` stops at the first hit. Per-set analysis on the jumpbox 3.7-3.9 s -> 1.2-2.7 s (5 sets in parallel);
+  `bench` now reports SHA-256 throughput. Bug fixed: `routes --refresh` cached a 503 body and wiped the jumpbox route
+  cache - op=list is validated before caching. Ranked (user-approved, jumpbox, direct API, `--retry --timed
+  --no-preflight`, 10 s gaps): all five d15 time trials CORRECT, Hall of Fame eligible; submit received vs started_at:
+  mobile 1061, warmups 1619, metadata 2138, script 1806, binary-RE 2613 ms (download TTFB dominated). Ranked runs become
+  `fixtures/<lane>/dNN-<mode>_ranked.json` (`fixtures_from_runs.py` tags `run_for_time` runs). 227/227 clean.

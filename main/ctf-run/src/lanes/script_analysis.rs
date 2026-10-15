@@ -50,7 +50,8 @@ pub struct Bundle {
 }
 
 fn family_of(key: &str) -> Family {
-    if families::ML_PREFIXES.iter().any(|p| key.starts_with(p)) {
+    // Every `host-<lang>-` family so far (hta, wsf, php, sct, lua, perl) is a descriptor literal.
+    if families::ML_PREFIXES.iter().any(|p| key.starts_with(p)) || key.starts_with("host-") {
         Family::Literal
     } else if key.starts_with("bash-advanced-") {
         Family::AdvBash
@@ -188,7 +189,7 @@ fn classify_expansion(raw: &str, ctx: &RunCtx) -> Result<&'static str, String> {
     if day <= 11 || (day == 13 && ctx.mode == Mode::Single) {
         batch::classify_expansion_v3(raw)
     } else {
-        batch::classify_expansion_v13(raw)
+        batch::classify_expansion_v13(raw, ctx.mode == Mode::Single)
     }
 }
 

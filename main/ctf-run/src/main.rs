@@ -143,14 +143,21 @@ fn real_main() -> Res<bool> {
             let t = std::time::Instant::now();
             let z = formats::zip::Zip::parse(&data)?;
             let mut total = 0usize;
+            let mut hash_time = std::time::Duration::ZERO;
             for e in z.files() {
                 let t1 = std::time::Instant::now();
                 let out = z.read(e, pw.as_bytes())?;
                 total += out.len();
+                let th = std::time::Instant::now();
+                std::hint::black_box(crypto::sha256::sha256(&out));
+                hash_time += th.elapsed();
                 say!("bench", "{} {} -> {} B in {:.1} ms (method {}, aes {:?})", e.name, e.csize, out.len(), log::ms(t1.elapsed()), e.method, e.aes);
             }
             let secs = t.elapsed().as_secs_f64();
-            say!("bench", "{} B in {:.1} ms = {:.0} MB/s (output)", total, secs * 1e3, total as f64 / secs / 1e6);
+            let secs = secs - hash_time.as_secs_f64();
+            say!("bench", "{} B in {:.1} ms = {:.0} MB/s (output, decrypt+inflate)", total, secs * 1e3, total as f64 / secs / 1e6);
+            let hs = hash_time.as_secs_f64();
+            say!("bench", "sha256 {:.1} ms = {:.0} MB/s", hs * 1e3, total as f64 / hs / 1e6);
             Ok(true)
         }
         "lanes" => {
@@ -186,8 +193,10 @@ fn real_main() -> Res<bool> {
                     let pool = Pool::new(endpoint(url)?);
                     let (v, resp) = Gm { pool: &pool }.list()?;
                     say!("routes", "op=list HTTP {} in {:.0} ms", resp.status, log::ms(resp.total));
+                    // Validate before caching: a 503 body must never replace a good cache.
+                    let r = gm::routes_from_list(&v).filter(|r| !r.is_empty()).ok_or_else(|| format!("op=list HTTP {}: no challenges; cache left untouched", resp.status))?;
                     say!("routes", "cached at {}", gm::save_routes(&v)?.display());
-                    gm::routes_from_list(&v).ok_or("op=list response has no challenges")?
+                    r
                 }
             };
             let filter = pos.first().map(String::as_str).unwrap_or("");

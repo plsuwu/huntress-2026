@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-15-assembly-and-symbol-loss/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "31758fc5-5e64-4b31-bb5a-987218248f5d",
+  "started_at": "2026-10-15T13:14:44.275Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2989.653159,
+  "start_ttfb_ms": 2986.0807889999996,
+  "clock": {
+    "start_sent": "2026-10-15T13:14:41.686Z",
+    "start_received": "2026-10-15T13:14:44.676Z",
+    "start_date_header": "2026-10-15T13:14:44.000Z",
+    "last_delivery": "2026-10-15T13:14:49.136Z",
+    "submit_sent": "2026-10-15T13:14:49.136Z",
+    "submit_received": "2026-10-15T13:14:53.004Z",
+    "submit_date_header": "2026-10-15T13:14:53.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32251453,
+      "wire": 32251453,
+      "ttfb_ms": 1498.504689,
+      "total_ms": 4165.528978,
+      "done_at_ms": 7155.5679,
+      "analyse_ms": 293.745156
+    }
+  ]
+}

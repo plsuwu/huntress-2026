@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{cfb, dotnet, elf, lnk, media, pe, zip};
+use crate::formats::{cfb, dotnet, elf, lnk, media, ooxml, pe, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -98,6 +98,43 @@ const HANDLERS: &[(&str, Handler)] = &[
     ("msi-revision-number", |b| cfb::summary_string(b, 9)),
 ];
 
+/// `...-ooxml-<field>` -> a package field: relationship lists (compact JSON, **sorted by value**: the
+/// d15 single-solve graded `[control, evidence/..]` against file order rId9, rId10 - a value sort and an
+/// rId string sort agree there) or a core/app property.
+fn ooxml_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("ooxml-")?;
+    let want = key[i + 6..].replace('-', "_");
+    let Some(p) = ooxml::Package::parse(b) else { return Some(Err("not an OOXML package".into())) };
+    let rels = p.relationships();
+    let list = |f: &dyn Fn(&ooxml::Rel) -> bool, g: &dyn Fn(&ooxml::Rel) -> String| {
+        let mut v: Vec<String> = rels.iter().filter(|r| f(r)).map(g).collect();
+        v.sort();
+        compact_json(&v)
+    };
+    let ext = |r: &ooxml::Rel| r.external;
+    Some(Ok(match want.as_str() {
+        "external_relationship_targets" | "external_targets" | "external_relationship_target_list" => list(&ext, &|r| r.target.clone()),
+        "external_relationship_ids" => list(&ext, &|r| r.id.clone()),
+        "external_relationship_count" => rels.iter().filter(|r| r.external).count().to_string(),
+        "relationship_count" => rels.len().to_string(),
+        "hyperlink_targets" => list(&|r| r.kind.ends_with("/hyperlink"), &|r| r.target.clone()),
+        other => {
+            let props: Vec<(String, String)> = p.core_properties().into_iter().chain(p.app_properties()).collect();
+            let flat = |s: &str| s.replace('_', "").to_ascii_lowercase();
+            let name = other.strip_prefix("core_").or_else(|| other.strip_prefix("app_")).unwrap_or(other);
+            match props.iter().find(|(k, _)| flat(k) == flat(name)) {
+                Some((_, v)) => v.clone(),
+                None => return Some(Err(format!("unknown OOXML field {other:?}; {}", ooxml_facts(&p)))),
+            }
+        }
+    }))
+}
+
+fn ooxml_facts(p: &ooxml::Package) -> String {
+    let rels: Vec<String> = p.relationships().iter().map(|r| format!("{}#{} {} -> {}{}", r.part, r.id, r.kind.rsplit('/').next().unwrap_or(""), r.target, if r.external { " (External)" } else { "" })).collect();
+    format!("ooxml parts {:?} rels {rels:?} core {:?} app {:?}", p.parts.iter().map(|x| &x.0).collect::<Vec<_>>(), p.core_properties(), p.app_properties())
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -155,6 +192,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(v) = media::pdf_header_version(b) {
         let (versions, eofs) = media::pdf_facts(b);
         f.push(format!("pdf header {v} /Version {versions:?} %%EOF x{eofs}"));
+    }
+    if let Some(p) = ooxml::Package::parse(b) {
+        f.push(ooxml_facts(&p));
     }
     if let Some(e) = eocd(b) {
         f.push(format!("zip EOCD total {} cd_size {} cd_off {} comment {}; names {:?}", e.0, e.1, e.2, e.3, cd_names(b)));
@@ -260,6 +300,9 @@ impl Lane for Metadata {
             }
         }
         if let Some(r) = lnk_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = ooxml_answer(&key, data) {
             return r;
         }
         Err(format!("unknown kind {key:?}; {}", facts(member, data)))

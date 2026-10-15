@@ -1,0 +1,24 @@
+{
+  "answers": {
+    "roster-filename": "roster.csv",
+    "evidence-note-size-bytes": "33",
+    "evidence-note-md5": "17bff825dfae486ae47b82b59467a235",
+    "evidence-note-sha1": "b63c8dacacecaf21e7ae5faf2346a5f5cd48b1a9",
+    "evidence-note-sha256": "fb6600bedf596ffb4f9d3d8595facbd704ff36705f495d30a4b7c539eb99a286",
+    "evidence-note-magic-prefix-hex-16": "43617365203436384434373131434541",
+    "evidence-note-text-utf8-bom-present": "false",
+    "d04-jpeg-001-jpeg-sof-dimensions-pixels": "569x539",
+    "d05-png-001-png-ihdr-dimensions-pixels": "783x817",
+    "d06-pdf-001-pdf-header-version": "1.4",
+    "d07-zip-001-zip-eocd-total-entries": "2",
+    "d07-zip-001-zip-central-directory-member-names": "[\"room-01/item-1.txt\",\"room-02/item-1.txt\"]",
+    "d09-pe-001-pe-coff-machine-u16-hex": "0x014c",
+    "d09-pe-001-pe-address-of-entry-point-rva-hex": "0x00065bd0",
+    "d09-pe-001-pe-version-original-filename": "pe-base-386.exe",
+    "d12-dotnet-001-dotnet-mvid-guid": "21e410f3-c977-465c-80eb-6890ddd3085c",
+    "d13-msi-001-msi-product-code-guid": "{DD1A80D5-0250-4F4D-B289-13096D633C61}",
+    "d14-lnk-001-lnk-target-path-windows": "C:\\Windows\\System32\\cmd.exe",
+    "d15-ooxml-001-ooxml-external-relationship-targets": "[\"https://example.test/control\",\"https://example.test/evidence/d87ca62c5bb7\"]",
+    "metadata-day-15-synthesis-sha256-order": "[\"telemetry-agent-001.exe\",\"panel-001.png\",\"document-15-001.docx\",\"evidence-note.txt\"]"
+  }
+}

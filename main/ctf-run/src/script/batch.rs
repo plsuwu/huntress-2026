@@ -382,7 +382,7 @@ pub fn classify_expansion_v3(raw: &str) -> Result<&'static str, String> {
 }
 
 /// Day 13 rule (graded on the time-trial and 5-set mastery oracles).
-pub fn classify_expansion_v13(raw: &str) -> Result<&'static str, String> {
+pub fn classify_expansion_v13(raw: &str, single: bool) -> Result<&'static str, String> {
     if re!(r"\s*if\s+defined\b", "i").match_(raw).is_some() {
         return Ok("percent");
     }
@@ -392,6 +392,13 @@ pub fn classify_expansion_v13(raw: &str) -> Result<&'static str, String> {
         && re!(r"%[^%\s]+%").is_match(raw)
     {
         return Ok("percent");
+    }
+    // TT/mastery: a FOR-indirect statement is `for_indirect` whatever the fragment prefix (the Day 3
+    // rule's `%%h%%G%%` -> call_double was graded wrong on the d15 mastery, set 5, yet the d14
+    // single-solve grader accepted call_double there).
+    if !single && re!(r"\bfor\b[^\n]*\bin\b[^\n]*\bdo\b", "i").is_match(raw) {
+        re!(r"%%([A-Za-z_]\w*?)%%[A-Za-z]%%").search(raw).ok_or_else(|| format!("for-indirect fragment prefix in {raw:?}"))?;
+        return Ok("for_indirect");
     }
     let r = classify_expansion_v3(raw)?;
     Ok(if r == "delayed" && re!(r"\bcall\s+set\b", "i").is_match(raw) { "percent" } else { r })
@@ -443,7 +450,11 @@ mod tests {
         assert_eq!(b.descriptor, "v=1|steps=acquire_remote,dispatch_memory|adapter=curl.exe|campaign_id=c");
         assert_eq!(b.control, "errorlevel_guard");
         assert_eq!(classify_expansion_v3(&b.rec_raw).unwrap(), "delayed");
-        assert_eq!(classify_expansion_v13("set \"x=%a0%%a1%\"").unwrap(), "percent");
+        assert_eq!(classify_expansion_v13("set \"x=%a0%%a1%\"", false).unwrap(), "percent");
+        // d15 mastery set 5 (graded for_indirect) vs d14 single-solve (graded call_double).
+        let for_h = "for %%G in (0 1 2 3) do call set \"cfg=%%cfg%%%%h%%G%%\"";
+        assert_eq!(classify_expansion_v13(for_h, false).unwrap(), "for_indirect");
+        assert_eq!(classify_expansion_v13(for_h, true).unwrap(), "call_double");
         assert_eq!(classify_expansion_v3("set \"x=%a0%%a1%\"").unwrap(), "delayed");
     }
 }

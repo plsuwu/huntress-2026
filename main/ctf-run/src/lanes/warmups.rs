@@ -24,6 +24,7 @@ const PREFIX: &str = "Nice work decoding this warmup! To solve, submit this exac
 pub enum T {
     Id,
     Rot(u8),
+    Rot47,
     Atbash,
     Rev,
     B64,
@@ -42,6 +43,7 @@ impl T {
         match self {
             T::Id => Some(s.to_string()),
             T::Rot(n) => Some(codec::rot(s, n)),
+            T::Rot47 => Some(codec::rot47(s)),
             T::Atbash => Some(codec::atbash(s)),
             T::Rev => Some(codec::reverse(s)),
             T::B64 => codec::printable(&codec::base64(t)?),
@@ -78,6 +80,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         12 => T::Rev,
         13 => T::Atbash,
         14 => T::Rot(19), // Caesar +7 ("Caesar took a week off"); graded on the day-14 single-solve
+        15 => T::Rot47, // "Room Forty-Seven": punctuation and digits rotate too
         _ => return None,
     })
 }
@@ -127,6 +130,7 @@ fn letter_candidates(frag: &str) -> Vec<(T, String)> {
     push(T::Id, frag.to_string());
     push(T::Rot(13), codec::rot(frag, 13));
     push(T::Atbash, codec::atbash(frag));
+    push(T::Rot47, codec::rot47(frag));
     for s in rev_variants(frag) {
         push(T::Rev, s);
     }
@@ -297,6 +301,12 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = match_template(&t) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
+        // A letter transform that yields the sentence wins over structural layers: ROT47 output can
+        // look like escapes (`-c` -> `\4`, which a backslash peel would eat as octal).
+        let letters = [T::Rot47, T::Atbash, T::Rev].into_iter().chain((1..26u8).map(T::Rot));
+        if let Some(slug) = letters.filter_map(|k| k.apply(&t)).find_map(|c| match_template(&c)) {
+            return Outcome::Solved { slug, learned: Vec::new() };
+        }
         let next = [T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
         if let Some(n) = next {
             t = n;
@@ -305,6 +315,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         // Letter transforms are self-inverse or cyclic: apply the best one only if it reads as more English.
         let now = codec::englishness(&t);
         let best = std::iter::once(codec::atbash(&t))
+            .chain(std::iter::once(codec::rot47(&t)))
             .chain(std::iter::once(codec::reverse(t.trim())))
             .chain((1..26u8).map(|n| codec::rot(&t, n)))
             .map(|c| (codec::englishness(&c), c))
@@ -474,19 +485,19 @@ mod tests {
 
     #[test]
     fn rows_with_unknown_caesar_row_learn_across_sets() {
-        // An unpinned row (15 here, caesar +7). Set A: inside the known prefix -> learnable. Set B: inside the slug.
-        let a = format!("01\t{}\n02\t{}\n15\t{}\n13\t{}\n", "TmljZSB3b3Jr", codec::rot(" decoding this warmup! To solve,", 13), codec::rot(" submit this exact answer", 7), codec::atbash(" to the Game Master: zesty-sunset-quartz-65"));
+        // An unpinned row (16 here, caesar +7). Set A: inside the known prefix -> learnable. Set B: inside the slug.
+        let a = format!("01\t{}\n02\t{}\n16\t{}\n13\t{}\n", "TmljZSB3b3Jr", codec::rot(" decoding this warmup! To solve,", 13), codec::rot(" submit this exact answer", 7), codec::atbash(" to the Game Master: zesty-sunset-quartz-65"));
         let none = BTreeMap::new();
         let Outcome::Solved { slug, learned } = solve_rows(&a, &none) else { panic!() };
         assert_eq!(slug, "zesty-sunset-quartz-65");
-        assert_eq!(learned, [(15, T::Rot(19))]);
-        let b = format!("01\t{}\n15\t{}\n", "TmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZSwgc3VibWl0IHRoaXMgZXhhY3QgYW5zd2VyIHRvIHRoZSBHYW1lIE1hc3RlcjogemVzdHkt", codec::rot("sunset-quartz-65", 7));
+        assert_eq!(learned, [(16, T::Rot(19))]);
+        let b = format!("01\t{}\n16\t{}\n", "TmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZSwgc3VibWl0IHRoaXMgZXhhY3QgYW5zd2VyIHRvIHRoZSBHYW1lIE1hc3RlcjogemVzdHkt", codec::rot("sunset-quartz-65", 7));
         assert!(matches!(solve_rows(&b, &none), Outcome::Ambiguous { .. }));
-        let hints = BTreeMap::from([(15, T::Rot(19))]);
+        let hints = BTreeMap::from([(16, T::Rot(19))]);
         let Outcome::Solved { slug, .. } = solve_rows(&b, &hints) else { panic!() };
         assert_eq!(slug, "zesty-sunset-quartz-65");
         // Row 14 is pinned (day 14 = caesar +7), so the same slug-only set solves without hints.
-        let b14 = b.replace("\n15\t", "\n14\t");
+        let b14 = b.replace("\n16\t", "\n14\t");
         let Outcome::Solved { slug, .. } = solve_rows(&b14, &none) else { panic!("{:?}", solve_rows(&b14, &none)) };
         assert_eq!(slug, "zesty-sunset-quartz-65");
     }

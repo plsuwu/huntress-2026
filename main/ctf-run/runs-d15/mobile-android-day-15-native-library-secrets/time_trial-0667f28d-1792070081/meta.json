@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-15-native-library-secrets/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0667f28d-7ce7-41c2-b760-7a2ab71cdf9e",
+  "started_at": "2026-10-15T13:14:43.957Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2728.450103,
+  "start_ttfb_ms": 2728.270406,
+  "clock": {
+    "start_sent": "2026-10-15T13:14:41.455Z",
+    "start_received": "2026-10-15T13:14:44.184Z",
+    "start_date_header": "2026-10-15T13:14:44.000Z",
+    "last_delivery": "2026-10-15T13:14:45.389Z",
+    "submit_sent": "2026-10-15T13:14:45.389Z",
+    "submit_received": "2026-10-15T13:14:47.376Z",
+    "submit_date_header": "2026-10-15T13:14:47.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "native_library_secrets_time_trial.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1204.204211,
+      "total_ms": 1204.283473,
+      "done_at_ms": 3933.136693,
+      "analyse_ms": 0.035781999999999994
+    }
+  ]
+}

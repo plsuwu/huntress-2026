@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-15-word-to-the-wise/time_trial",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "01a1bc1d-db56-4ba0-9a32-709c3464e6ba",
+  "started_at": "2026-10-15T14:04:52.717Z",
+  "deadline": "2026-10-15T14:05:42.717Z",
+  "shape": "download",
+  "start_ms": 1454.768877,
+  "start_ttfb_ms": 1454.5686899999998,
+  "clock": {
+    "start_sent": "2026-10-15T14:04:51.326Z",
+    "start_received": "2026-10-15T14:04:52.780Z",
+    "start_date_header": "2026-10-15T14:04:52.000Z",
+    "last_delivery": "2026-10-15T14:04:53.229Z",
+    "submit_sent": "2026-10-15T14:04:53.233Z",
+    "submit_received": "2026-10-15T14:04:54.855Z",
+    "submit_date_header": "2026-10-15T14:04:54.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 606100,
+      "wire": 606100,
+      "ttfb_ms": 379.711899,
+      "total_ms": 440.990507,
+      "done_at_ms": 1895.907465,
+      "analyse_ms": 7.816943
+    }
+  ]
+}

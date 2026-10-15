@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-15-credential-store-clues/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "02cf9b97-28e7-4b59-8de0-5c1030b0a4d9",
+  "started_at": "2026-10-15T13:14:45.259Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 3978.872768,
+  "start_ttfb_ms": 3957.4914510000003,
+  "clock": {
+    "start_sent": "2026-10-15T13:14:42.214Z",
+    "start_received": "2026-10-15T13:14:46.193Z",
+    "start_date_header": "2026-10-15T13:14:46.000Z",
+    "last_delivery": "2026-10-15T13:14:48.096Z",
+    "submit_sent": "2026-10-15T13:14:48.102Z",
+    "submit_received": "2026-10-15T13:14:52.831Z",
+    "submit_date_header": "2026-10-15T13:14:52.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 107471,
+      "wire": 107471,
+      "ttfb_ms": 1746.750418,
+      "total_ms": 1832.8185210000001,
+      "done_at_ms": 5812.062804,
+      "analyse_ms": 69.967921
+    }
+  ]
+}
