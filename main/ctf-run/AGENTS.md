@@ -75,7 +75,11 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 ## Testing and performance
 
 - `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 231 cases),
-  `cargo build --features tls` must stay green. Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
+  `cargo build --features tls` must stay green.
+  The jumpbox runs the static musl binary from `nix build .#ctf-run` (repo flake), shipped by `tools/deploy.sh`; never
+  compile on the burstable t3.small before ranked runs (`--remote-build` only if the flake is unavailable).
+- Hall of Fame: `/api/speed-scoreboard?mode=...&challenge=<base id>&sort=elapsed_ms` (team "help"); elapsed ~= submit
+  sent + server grading, so every ms before the submit counts. `tools/run_legs.py <run dirs>` splits a run into legs. Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
   with `--release --features tls`: a plain `cargo build --release` overwrites the binary with one that refuses https.
   Keep a day's live runs in `runs-dNN/` (`-o runs-dNN`); prune pure `--dry` duplicates once graded runs exist. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).
 - `CTF_PROFILE=1` prints per-specimen / per-file analysis timings and replay analyse/answer splits.

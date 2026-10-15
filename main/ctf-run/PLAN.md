@@ -296,3 +296,18 @@ replay -> timed), module map, testing rules.
   2106/2652/2995 ms vs 10 chunks 2402/3337 ms - the server appears to serialise one attempt's submits, and the ranked
   run's 4.7 s was server variance. Keep the single full submit; `--early-submit` only helps when per-set deliveries
   land at different times (multi-delivery masteries), never for bundles. Cost: 11 regular script-mastery variants.
+- 2026-10-16 - Hall of Fame mechanics + script mastery to #1. `GET /api/speed-scoreboard?mode=<time_trial|mastery>&
+  view=rankings&limit=N&offset=0&sort=elapsed_ms&direction=asc&challenge=<base id>` (bearer) lists `team_name`, `rank`,
+  `elapsed_ms` (we are team "help"). Calibrated against our clocks: **elapsed_ms ~= submit sent + server grading** (the
+  CourseStack scoring round trip after grading is not counted); grading scales with answer count (~0.35 ms/answer,
+  more under load). Script mastery was #9 (6705 ms): 1.05 s server lag + 1.5 s download + **1.14 s our analysis** +
+  2.9 s grading in a busy moment. Analysis was WinZip-AES key derivation (580 members x 1000-round PBKDF2) on a
+  t3.small whose 2 vCPUs are hyperthreads of ONE core (2 threads ~1.15x). Fixes: multi-buffer AVX2 PBKDF2
+  (`crypto/pbkdf2x8.rs`, 8 chains/stream) + password verified once per archive (later members derive only the AES key
+  blocks) + ring PBKDF2 elsewhere -> unpack 465 -> ~110 ms, script mastery analysis 1178 -> ~275 ms on the jumpbox.
+  Three ranked re-runs: 3860/5325/3398 ms client-side; scoreboard **#1 at 2028 ms** (prev #1 2137).
+  Ruled out: gzip request bodies (400), parallel partial submits (server serialises), VPS tuning (no root: sudo needs a
+  password; tcp_slow_start_after_idle=1, cubic; no cpufreq). The t3.small is burstable - stop compiling on it:
+  `flake.nix` packages.ctf-run is a static x86_64-musl build (+tls, mimalloc - musl malloc was 40-70 % slower; inflate
+  now copies matches inline - musl memcpy per match was ~25 % slower), and `tools/deploy.sh` ships that binary
+  (`--remote-build` keeps the old path). A Nix glibc binary cannot run there (glibc 2.44 vs Ubuntu 2.39).
