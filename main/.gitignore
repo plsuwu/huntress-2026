@@ -9,3 +9,4 @@ huntress-2026.ovpn
 huntress-id_ed25519
 **/artifacts/
 result
+__pycache__/
