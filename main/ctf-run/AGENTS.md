@@ -74,7 +74,7 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 
 ## Testing and performance
 
-- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 227 cases),
+- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 231 cases),
   `cargo build --features tls` must stay green. Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
   with `--release --features tls`: a plain `cargo build --release` overwrites the binary with one that refuses https.
   Keep a day's live runs in `runs-dNN/` (`-o runs-dNN`); prune pure `--dry` duplicates once graded runs exist. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).

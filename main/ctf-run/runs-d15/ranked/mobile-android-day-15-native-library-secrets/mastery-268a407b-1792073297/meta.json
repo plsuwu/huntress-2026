@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-15-native-library-secrets/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "268a407b-056b-4f0c-9c1d-a61119561d9f",
+  "started_at": "2026-10-15T14:08:19.125Z",
+  "deadline": "2026-10-15T14:11:09.125Z",
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 1595.025992,
+  "start_ttfb_ms": 1594.893181,
+  "clock": {
+    "start_sent": "2026-10-15T14:08:17.895Z",
+    "start_received": "2026-10-15T14:08:19.490Z",
+    "start_date_header": "2026-10-15T14:08:19.000Z",
+    "last_delivery": "2026-10-15T14:08:19.960Z",
+    "submit_sent": "2026-10-15T14:08:19.960Z",
+    "submit_received": "2026-10-15T14:08:20.607Z",
+    "submit_date_header": "2026-10-15T14:08:20.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "native_library_secrets_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 146.957959,
+      "total_ms": 147.283875,
+      "done_at_ms": 1742.53298,
+      "analyse_ms": 0.024477
+    },
+    {
+      "delivery": 4,
+      "name": "native_library_secrets_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 148.01256800000002,
+      "total_ms": 148.72258,
+      "done_at_ms": 1744.1211829999997,
+      "analyse_ms": 0.009874
+    },
+    {
+      "delivery": 5,
+      "name": "native_library_secrets_mastery_05.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 212.965394,
+      "total_ms": 216.816424,
+      "done_at_ms": 1812.279368,
+      "analyse_ms": 0.017711
+    },
+    {
+      "delivery": 3,
+      "name": "native_library_secrets_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 240.95307499999998,
+      "total_ms": 241.197905,
+      "done_at_ms": 1836.539067,
+      "analyse_ms": 0.012184
+    },
+    {
+      "delivery": 2,
+      "name": "native_library_secrets_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 465.803309,
+      "total_ms": 469.528,
+      "done_at_ms": 2064.786577,
+      "analyse_ms": 0.013751
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-15-word-to-the-wise/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "275024fd-8e80-4b59-96ef-e2f1bc7dfba6",
+  "started_at": "2026-10-15T14:08:46.647Z",
+  "deadline": "2026-10-15T14:11:36.647Z",
+  "shape": "download",
+  "start_ms": 2581.344858,
+  "start_ttfb_ms": 2579.484665,
+  "clock": {
+    "start_sent": "2026-10-15T14:08:44.138Z",
+    "start_received": "2026-10-15T14:08:46.719Z",
+    "start_date_header": "2026-10-15T14:08:46.000Z",
+    "last_delivery": "2026-10-15T14:08:47.209Z",
+    "submit_sent": "2026-10-15T14:08:47.229Z",
+    "submit_received": "2026-10-15T14:08:48.148Z",
+    "submit_date_header": "2026-10-15T14:08:48.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-15-word-to-the-wise-mastery.zip",
+      "bytes": 3031319,
+      "wire": 3031319,
+      "ttfb_ms": 373.92641799999996,
+      "total_ms": 447.867254,
+      "done_at_ms": 3029.345949,
+      "analyse_ms": 42.222930999999996
+    }
+  ]
+}

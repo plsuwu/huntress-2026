@@ -284,3 +284,8 @@ replay -> timed), module map, testing rules.
   --no-preflight`, 10 s gaps): all five d15 time trials CORRECT, Hall of Fame eligible; submit received vs started_at:
   mobile 1061, warmups 1619, metadata 2138, script 1806, binary-RE 2613 ms (download TTFB dominated). Ranked runs become
   `fixtures/<lane>/dNN-<mode>_ranked.json` (`fixtures_from_runs.py` tags `run_for_time` runs). 227/227 clean.
+- Day 15 ranked masteries (user-approved, same arm): all five CORRECT, Hall of Fame eligible; submit received vs
+  started_at: mobile 1482, metadata 1501, warmups 1836, binary-RE 5747 (last delivery +4.2 s, analysis ~0 after it),
+  script 8587 ms (2.9 MB start, delivery +3.7 s, then a 4.7 s server-side submit for 5130 answers - the next lever is
+  the submit leg: try `--early-submit` per-set partials overlapping the download, or check whether a gzip request body
+  is accepted). Fixtures: `dNN-mastery_ranked.json` for the four small lanes; 231/231 clean.
