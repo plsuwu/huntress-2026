@@ -4,7 +4,8 @@ good enough, judged by the live speed scoreboard.
 
   hof_campaign.py PLAN.json OUT.jsonl [DONE_ROUTE,...]   (the third argument resumes a stopped campaign)
 
-PLAN.json: [{"route": "<base>/<mode>", "rft": bool, "budget": N}, ...] (see hof_survey.py for the data).
+PLAN.json: [{"route": "<base>/<mode>", "rft": bool, "budget": N, "past_first": bool?}, ...]
+(`past_first`: keep improving an uncontested #1 - stop only on budget/patience) (see hof_survey.py for the data).
 Per route: up to `budget` runs; stop early when we are #1, after PATIENCE runs in a row that did not beat our best
 scoreboard time, when no attempts are left, or on any result other than CORRECT (look before spending more).
 Every run is a real ranked attempt: `--retry --timed` (dual-pool) or `--retry --one-shot-ok` (timed by default).
@@ -23,10 +24,23 @@ HEDGE_LANES = ("warmups-", "mobile-android-", "metadata-forensics-")
 TOKEN = os.environ.get("HUNTRESS_GM_TOKEN") or open(os.path.expanduser("~/.huntress_token")).read().strip()
 
 
-def get(url):
-    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {TOKEN}"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.loads(r.read())
+def get(url, tries=4):
+    """Our own bookkeeping queries ride out the server's 503s with backoff (it 503s under load)."""
+    for k in range(tries):
+        try:
+            req = urllib.request.Request(url, headers={"Authorization": f"Bearer {TOKEN}"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.loads(r.read())
+        except Exception:  # noqa: BLE001
+            if k == tries - 1:
+                raise
+            time.sleep(10 * (k + 1))
+
+
+def transient(rec):
+    """A server-side hiccup (503 / temporarily_unavailable), not a wrong answer: worth a later retry."""
+    tail = " ".join(rec.get("stderr_tail") or [])
+    return rec.get("result") is None and ("503" in tail or "temporarily_unavailable" in tail)
 
 
 def board(route):
@@ -78,13 +92,13 @@ def main():
         route, rft, budget = item["route"], item["rft"], item["budget"]
         rank, best, top = board(route)
         print(f"== {route}: rank {rank} best {best} top {top}, budget {budget}", flush=True)
-        stale = 0
+        stale, hiccups = 0, 0
         # One status check per route (multi-MB for masteries); afterwards each run reports attempts left itself.
         n, live, _ = left(route)
         if live:
             print("   live attempt in progress - skipping route", flush=True); continue
         for i in range(budget):
-            if rank == 1:
+            if rank == 1 and not item.get("past_first"):
                 print("   #1 - done", flush=True); break
             if n is not None and n <= 0:
                 print("   no attempts left", flush=True); break
@@ -95,6 +109,11 @@ def main():
             with open(out, "a") as f:
                 f.write(json.dumps(rec) + "\n")
             print(f"   run {i + 1}: {rec.get('result')} rank {rank}->{new_rank} best {best}->{new_best} top {top} left {rec.get('left')}", flush=True)
+            if transient(rec) and hiccups < 2:
+                hiccups += 1
+                print("   server 503 - backing off 30 s and retrying", flush=True)
+                time.sleep(30)
+                continue
             if rec.get("result") != "CORRECT":
                 print(f"   STOP: {rec.get('stderr_tail') or rec.get('result')}", flush=True); break
             improved = best is None or (new_best is not None and new_best < best)

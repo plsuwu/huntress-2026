@@ -322,3 +322,16 @@ replay -> timed), module map, testing rules.
   It cannot help when the server is slow for every request (warmups' single file stayed 469-610 ms hedged).
   Ranked re-rolls (6 each lane, all CORRECT): warmups TT #9 -> #3 (660 ms; #1 559), mobile mastery #13 -> #4
   (621 ms; #1 391). Remaining gap = server luck; more re-rolls are a lottery, not engineering.
+- 2026-10-16 - Hall of Fame campaign over every route with ranked attempts left (`tools/hof_survey.py` ->
+  `runs-hof/plan-*.json` -> `tools/hof_campaign.py` on the jumpbox; logs/surveys in `runs-hof/`). 435 ranked runs over
+  111 routes, **430 CORRECT, 0 wrong answers**; the 5 others were server-side (2x `409 legacy_attempt_pinned` on metadata
+  d01 TT/mastery - no new ranked variant there; 3x HTTP 503). Scoreboard: #1 on 13 -> 27 routes, top-3 39 -> 54, on a
+  board 95 -> 126. Day 14 routes were re-published as dual-pool after the day (one-shot attempts were never HoF-eligible,
+  so the boards were empty) - we took #1 on all 10, then tightened them (run_for_time:true + retry is required; plain
+  start/retry gives nothing ranked). Day 12 is still one-shot/exhausted (pool 1, no ranked pool published). Days 1-4
+  had no fixtures: hand-tested first with free `--dry` reconnects on solved routes (new check_route exception); binary
+  d01/d02 use a different question scheme (`slot0_*`, `c_sha256`) that the lane does not support. Old-day leaders
+  (~200-330 ms) were set when the server answered faster; today the same routes download in 300-600 ms, so our
+  day 1-4 entries sit mid-table despite ~0 ms client time. Lessons: the server 503s under load (the driver now backs
+  off and retries; keep its own queries resilient), and `pkill -f` on a pattern that appears in the ssh command
+  line kills the ssh session itself - use `ps -eo args | grep "^[p]attern"`.
