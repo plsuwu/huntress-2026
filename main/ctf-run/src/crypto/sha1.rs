@@ -114,6 +114,11 @@ impl HmacSha1 {
         HmacSha1 { inner, outer }
     }
 
+    /// The ipad/opad midstates (the 64-byte key blocks already absorbed).
+    pub(crate) fn midstates(&self) -> ([u32; 5], [u32; 5]) {
+        (self.inner.h, self.outer.h)
+    }
+
     pub fn mac(&self, msg: &[u8]) -> [u8; 20] {
         let mut i = self.inner.clone();
         i.update(msg);
@@ -126,7 +131,7 @@ impl HmacSha1 {
 /// One HMAC-SHA1 step over a 20-byte message, given the ipad/opad midstates: exactly two
 /// compressions over pre-padded blocks (the PBKDF2 inner loop runs this 1000s of times).
 #[inline]
-fn hmac20(inner: &[u32; 5], outer: &[u32; 5], msg: &[u32; 5]) -> [u32; 5] {
+pub(crate) fn hmac20(inner: &[u32; 5], outer: &[u32; 5], msg: &[u32; 5]) -> [u32; 5] {
     // 64-byte key block already absorbed; message (20 bytes) + 0x80 + zeros + bit length (84 * 8).
     let mut blk = [0u8; 64];
     let mut run = |state: &[u32; 5], words: &[u32; 5]| -> [u32; 5] {

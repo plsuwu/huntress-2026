@@ -2,7 +2,7 @@
 //! traditional PKWARE ("ZipCrypto") encryption. Members are decoded one at a time, on demand.
 
 use super::inflate;
-use crate::crypto::{aes::Aes, crc32, sha1};
+use crate::crypto::{aes::Aes, crc32, pbkdf2x8};
 
 #[derive(Clone, Debug)]
 pub struct Entry {
@@ -41,6 +41,18 @@ pub struct Zip<'a> {
     /// The EOCD's own "total entries" field (may disagree with the directory on purpose).
     pub eocd_total: u64,
     pub comment: Vec<u8>,
+    /// The password whose WinZip-AES verifier already matched on a member of this archive. Later
+    /// members with the same password then derive only the AES key (2 of 4 PBKDF2 blocks for
+    /// AES-256: the MAC key and verifier are skipped) - half the cost of the script-analysis
+    /// mastery's 580 key derivations.
+    verified: std::sync::Mutex<Option<Vec<u8>>>,
+    /// AES keys derived ahead of time by `prepare_aes`, by local-header offset.
+    keys: std::sync::Mutex<std::collections::HashMap<u64, Vec<u8>>>,
+}
+
+/// WinZip AES key material: PBKDF2-HMAC-SHA1, 1000 rounds (ring's assembly SHA-1: ~1.4x ours on the jumpbox).
+fn winzip_kdf(password: &[u8], salt: &[u8], out: &mut [u8]) {
+    ring::pbkdf2::derive(ring::pbkdf2::PBKDF2_HMAC_SHA1, std::num::NonZeroU32::new(1000).unwrap(), salt, password, out);
 }
 
 fn u16le(b: &[u8], at: usize) -> Option<u16> {
@@ -140,7 +152,7 @@ impl<'a> Zip<'a> {
             });
             p += 46 + nlen + xlen + klen;
         }
-        Ok(Zip { data, entries, eocd_total: total, comment })
+        Ok(Zip { data, entries, eocd_total: total, comment, verified: Default::default(), keys: Default::default() })
     }
 
     pub fn find(&self, name: &str) -> Option<&Entry> {
@@ -164,6 +176,54 @@ impl<'a> Zip<'a> {
         self.data.get(start..start + e.csize as usize).ok_or_else(|| format!("{}: data runs past the end", e.name))
     }
 
+    /// Derives every WinZip-AES member's key in one multi-buffer batch (8 SHA-1 chains per AVX2
+    /// stream) once the password's verifier has matched on the first such member; `read` then
+    /// skips its own derivation. A no-op for archives without AES members.
+    pub fn prepare_aes(&self, password: &[u8]) {
+        let aes: Vec<(&Entry, &[u8], usize)> = self
+            .entries
+            .iter()
+            .filter(|e| e.encrypted())
+            .filter_map(|e| {
+                let salt_len = match e.aes?.0 {
+                    1 => 8,
+                    2 => 12,
+                    3 => 16,
+                    _ => return None,
+                };
+                let raw = self.raw(e).ok().filter(|r| r.len() >= salt_len + 12)?;
+                Some((e, &raw[..salt_len], salt_len * 2))
+            })
+            .collect();
+        let Some(&(first, salt, key_len)) = aes.first() else { return };
+        // Verify the password once (full derivation incl. the 2-byte verifier).
+        let mut full = vec![0u8; key_len * 2 + 2];
+        winzip_kdf(password, salt, &mut full);
+        let raw = self.raw(first).unwrap();
+        if full[key_len * 2..] != raw[salt.len()..salt.len() + 2] {
+            return; // read() reports the wrong password
+        }
+        let mut jobs: Vec<(&[u8], u32)> = Vec::new();
+        for &(_, salt, key_len) in &aes[1..] {
+            for b in 1..=key_len.div_ceil(20) as u32 {
+                jobs.push((salt, b));
+            }
+        }
+        let blocks = pbkdf2x8::pbkdf2_blocks(password, 1000, &jobs);
+        let mut keys = self.keys.lock().unwrap();
+        keys.insert(first.lh_offset, full[..key_len].to_vec());
+        let mut it = blocks.iter();
+        for &(e, _, key_len) in &aes[1..] {
+            let mut k: Vec<u8> = Vec::with_capacity(key_len.div_ceil(20) * 20);
+            for _ in 0..key_len.div_ceil(20) {
+                k.extend_from_slice(it.next().unwrap());
+            }
+            k.truncate(key_len);
+            keys.insert(e.lh_offset, k);
+        }
+        *self.verified.lock().unwrap() = Some(password.to_vec());
+    }
+
     /// Decodes a member. `password` is used only for encrypted members.
     pub fn read(&self, e: &Entry, password: &[u8]) -> Result<Vec<u8>, String> {
         let raw = self.raw(e)?;
@@ -181,9 +241,18 @@ impl<'a> Zip<'a> {
                     return Err(format!("{}: AES member too short", e.name));
                 }
                 let salt = &raw[..salt_len];
-                let keys = sha1::pbkdf2_hmac_sha1(password, salt, 1000, key_len * 2 + 2);
-                if keys[key_len * 2..] != raw[salt_len..salt_len + 2] {
-                    return Err(format!("{}: wrong password", e.name));
+                let trusted = self.verified.lock().unwrap().as_deref() == Some(password);
+                let cached = if trusted { self.keys.lock().unwrap().get(&e.lh_offset).cloned() } else { None };
+                let keys = cached.unwrap_or_else(|| {
+                    let mut k = vec![0u8; if trusted { key_len } else { key_len * 2 + 2 }];
+                    winzip_kdf(password, salt, &mut k);
+                    k
+                });
+                if !trusted {
+                    if keys[key_len * 2..] != raw[salt_len..salt_len + 2] {
+                        return Err(format!("{}: wrong password", e.name));
+                    }
+                    *self.verified.lock().unwrap() = Some(password.to_vec());
                 }
                 let mut data = raw[salt_len + 2..raw.len() - 10].to_vec();
                 Aes::new(&keys[..key_len]).unwrap().ctr_le_xor(1, &mut data);

@@ -113,6 +113,7 @@ fn analyse_file(fam: Family, text: &str) -> Result<Spec, String> {
 /// Expands a download: an outer zip whose members are all zips is one set per inner archive.
 fn expand(name: &str, bytes: &[u8]) -> Result<Vec<Set>, String> {
     let z = Zip::parse(bytes)?;
+    z.prepare_aes(b"infected");
     let entries: Vec<&zip::Entry> = z.files().filter(|e| !std::path::Path::new(&e.name).is_absolute() && !e.name.split('/').any(|c| c == "..")).collect();
     // Each AES member costs a 1000-round PBKDF2: decrypt on two threads.
     let next = std::sync::atomic::AtomicUsize::new(0);
@@ -302,7 +303,11 @@ impl Lane for ScriptAnalysis {
     }
 
     fn analyse(&self, d: &Delivery, _: &RunCtx) -> Result<Analysis, String> {
+        let t0 = std::time::Instant::now();
         let sets = if zip::is_zip(&d.bytes) { expand(&d.name, &d.bytes)? } else { vec![Set { name: d.name.clone(), files: vec![(d.name.clone(), d.bytes.clone())] }] };
+        if std::env::var_os("CTF_PROFILE").is_some() {
+            eprintln!("  [profile] expand {} set(s) in {:.1} ms", sets.len(), t0.elapsed().as_secs_f64() * 1e3);
+        }
         // Analyse every file now (on the fetch worker, overlapping other downloads) under the family
         // its name/content suggests; answer() reuses these and only fills gaps.
         let jobs: Vec<(usize, &String, &Vec<u8>)> = sets.iter().enumerate().flat_map(|(i, s)| s.files.iter().map(move |(n, b)| (i, n, b))).collect();

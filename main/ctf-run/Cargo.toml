@@ -16,6 +16,11 @@ ring = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
 webpki-roots = { version = "1", optional = true }
 
+# The static musl build (flake `.#ctf-run`, deployed to the jumpbox) needs a real allocator: musl's malloc made
+# script/binary-RE analysis 40-70 % slower there.
+[target.'cfg(target_env = "musl")'.dependencies]
+mimalloc = { version = "0.1", default-features = false }
+
 [profile.release]
 opt-level = 3
 lto = true

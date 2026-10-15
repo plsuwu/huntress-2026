@@ -329,8 +329,24 @@ fn block(bits: &mut Bits, out: &mut Vec<u8>, lt: &Table, dt: &Table) -> Result<(
             return Err(InflateError("distance too far back"));
         }
         let start = out.len() - dist;
-        if dist >= len {
-            out.extend_from_within(start..start + len);
+        if dist >= 16 || dist >= len {
+            // Inline 16-byte chunk copy instead of a memcpy call per match (musl's memcpy made the
+            // static build's inflate ~25 % slower). Chunks may overshoot `len` into spare capacity;
+            // with dist >= 16 every source byte a chunk reads is already final.
+            let n = out.len();
+            out.reserve(len + 16);
+            // SAFETY: capacity covers n + len + 16; reads/writes are MaybeUninit (no typed reads of
+            // spare capacity); set_len only covers the `len` bytes just written from initialised data.
+            unsafe {
+                let p = out.as_mut_ptr();
+                let mut k = 0;
+                while k < len {
+                    let v = std::ptr::read_unaligned(p.add(start + k) as *const std::mem::MaybeUninit<[u8; 16]>);
+                    std::ptr::write_unaligned(p.add(n + k) as *mut std::mem::MaybeUninit<[u8; 16]>, v);
+                    k += 16;
+                }
+                out.set_len(n + len);
+            }
         } else {
             out.reserve(len);
             for k in 0..len {

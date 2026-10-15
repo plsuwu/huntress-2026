@@ -4,6 +4,10 @@
 //! timings go to stderr.
 
 #[allow(dead_code)] // shared library surface: fields/helpers future question kinds use
+#[cfg(target_env = "musl")]
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 mod codec;
 #[allow(dead_code)] // shared library surface: fields/helpers future question kinds use
 mod crypto;
@@ -158,6 +162,22 @@ fn real_main() -> Res<bool> {
             say!("bench", "{} B in {:.1} ms = {:.0} MB/s (output, decrypt+inflate)", total, secs * 1e3, total as f64 / secs / 1e6);
             let hs = hash_time.as_secs_f64();
             say!("bench", "sha256 {:.1} ms = {:.0} MB/s", hs * 1e3, total as f64 / hs / 1e6);
+            // WinZip AES key derivation (PBKDF2-HMAC-SHA1, 1000 rounds, 2 blocks = the AES-256 key).
+            let (salt, n) = ([7u8; 16], 200);
+            let t = std::time::Instant::now();
+            for _ in 0..n {
+                std::hint::black_box(crypto::sha1::pbkdf2_hmac_sha1(b"infected", &salt, 1000, 40));
+            }
+            let ours = t.elapsed().as_secs_f64() * 1e3 / n as f64;
+            let t = std::time::Instant::now();
+            let mut out = [0u8; 40];
+            for _ in 0..n {
+                ring::pbkdf2::derive(ring::pbkdf2::PBKDF2_HMAC_SHA1, std::num::NonZeroU32::new(1000).unwrap(), &salt, b"infected", &mut out);
+                std::hint::black_box(&out);
+            }
+            let ringt = t.elapsed().as_secs_f64() * 1e3 / n as f64;
+            assert_eq!(out.to_vec(), crypto::sha1::pbkdf2_hmac_sha1(b"infected", &salt, 1000, 40));
+            say!("bench", "pbkdf2 (40 B): ours {ours:.3} ms, ring {ringt:.3} ms per key");
             Ok(true)
         }
         "lanes" => {
