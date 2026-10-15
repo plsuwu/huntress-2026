@@ -126,7 +126,9 @@ def launch(day):
                     # main checkout's ctf-run/ and utils/; without it every read there stops at a permission dialog.
                     # Deliberately not the repo root: that holds the jumpbox SSH key, and CTF_NO_RANKED only guards
                     # this machine - workers must not be able to reach a ranked run on the jumpbox.
-                    f'exec claude --permission-mode auto --add-dir "{CTF}" "{os.path.join(REPO, "utils")}" '
+                    # Model/effort pinned here: worktrees carry no settings file, so they would otherwise inherit
+                    # whatever ~/.claude/settings.json says (including per-model effort overrides).
+                    f'exec claude --model claude-opus-5-5 --effort high --permission-mode auto --add-dir "{CTF}" "{os.path.join(REPO, "utils")}" '
                     f'-n "d{day:02d}-{lane}" "$(cat {prompt_file})"\n')
         os.chmod(launcher, 0o755)
         sh(TMUX + ["new-window", "-t", SESSION, "-n", lane, "-c", os.path.join(WT_ROOT, lane)] + envflags + [launcher])
