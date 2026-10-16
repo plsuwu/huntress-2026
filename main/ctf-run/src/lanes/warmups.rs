@@ -239,18 +239,22 @@ pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
     let mut cands: Vec<Vec<(T, String)>> = Vec::with_capacity(rows.len());
     let mut free: Vec<bool> = Vec::with_capacity(rows.len());
     for r in &rows {
-        let pinned = fixed_codec(r.num).or_else(|| hints.get(&r.num).copied());
-        if let Some(t) = pinned {
-            let outs: Vec<String> = match t {
-                T::Rev => rev_variants(&r.frag),
-                T::Morse => morse_variants(&r.frag),
-                _ => t.apply(&r.frag).into_iter().collect(),
-            };
-            if !outs.is_empty() {
-                cands.push(outs.into_iter().map(|s| (t, s)).collect());
-                free.push(false);
-                continue;
-            }
+        // The day's codec first; a transform learned from other sets if that codec cannot read the row.
+        let pinned = fixed_codec(r.num).into_iter().chain(hints.get(&r.num).copied());
+        let decoded = pinned
+            .map(|t| {
+                let outs: Vec<String> = match t {
+                    T::Rev => rev_variants(&r.frag),
+                    T::Morse => morse_variants(&r.frag),
+                    _ => t.apply(&r.frag).into_iter().collect(),
+                };
+                outs.into_iter().map(|s| (t, s)).collect::<Vec<_>>()
+            })
+            .find(|c| !c.is_empty());
+        if let Some(c) = decoded {
+            cands.push(c);
+            free.push(false);
+            continue;
         }
         if let Some((t, s)) = structured(&r.frag) {
             cands.push(vec![(t, s)]);
