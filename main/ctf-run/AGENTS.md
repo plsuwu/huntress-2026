@@ -94,9 +94,10 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 - `install-timer.sh` installs a systemd user timer (12:45 UTC = 22:45 AEST, event days) running `rush.py all`:
   **prep** (persistent lane worktrees `../../wt/<lane>` reset to `master` on branch `dayNN/<lane>`, symlinked
   `ctf-run/fixtures` + `.env`, every target pre-built) -> **launch** (tmux `-L huntress`, session `rush`, one Claude per
-  lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`) -> **watch** (polls `op=list&day=N` from
+  lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`, `--allowedTools` for the lane's own `ctf-run` binary - the auto-mode classifier blocked untimed starts on Day 16) -> **watch** (polls `op=list&day=N` from
   22:58:30, merges the day into the route cache, then per lane in parallel the **first pass**: single-solve, untimed
-  regular time trial + mastery, grouped oracle on `incorrect`; writes `runs-dNN/rush/brief-<lane>.md` and sends that
+  regular time trial + mastery **all started at once** (no wait on single-solve's verdict; a wrong solver only costs
+  untimed regular variants), grouped oracle on `incorrect`; writes `runs-dNN/rush/brief-<lane>.md` and sends that
   lane's agent "read the brief" the moment its own pass ends).
 - Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
   timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
