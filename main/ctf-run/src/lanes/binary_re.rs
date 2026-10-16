@@ -9,7 +9,7 @@
 
 use super::{Analysed, Analysis, Lane};
 use crate::crypto::sha256::{hex, sha256};
-use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, pe, x86, zip};
+use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, pe, wasm, x86, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 use std::collections::BTreeMap;
@@ -22,6 +22,7 @@ pub enum Container {
     Pe,
     Jar,
     MachO,
+    Wasm,
     Other,
 }
 
@@ -158,6 +159,11 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.machine_num = Some(m.cputype as u32);
         s.section_names = m.sections.iter().map(|(_, sect)| sect.clone()).collect();
         s.has_hcfg_section = m.sections.iter().any(|(_, sect)| sect.trim_start_matches('_') == "hcfg");
+    } else if let Some(w) = wasm::parse(d) {
+        s.container = Some(Container::Wasm);
+        s.machine = Some(w.arch());
+        s.section_names = w.custom_names.clone();
+        s.has_hcfg_section = w.custom_names.iter().any(|n| n.trim_start_matches('.') == "hcfg");
     } else if zip::is_zip(d) {
         s.container = Some(Container::Jar);
         if let Ok(z) = zip::Zip::parse(d) {
@@ -270,6 +276,7 @@ fn container_label(s: &Spec, q: &Question) -> Result<String, String> {
         Some(Container::Pe) => (if exact { "pe" } else { "PE" }).into(),
         Some(Container::Jar) => (if exact { "jar" } else { "JAR" }).into(),
         Some(Container::MachO) if !exact => "Mach-O".into(),
+        Some(Container::Wasm) => (if exact { "wasm" } else { "WASM" }).into(),
         other => return Err(format!("no graded label known for container {other:?} (format {:?}: {syntax:?})", q.format_kind)),
     })
 }
