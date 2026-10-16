@@ -94,11 +94,21 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 - `install-timer.sh` installs a systemd user timer (12:45 UTC = 22:45 AEST, event days) running `rush.py all`:
   **prep** (persistent lane worktrees `../../wt/<lane>` reset to `master` on branch `dayNN/<lane>`, symlinked
   `ctf-run/fixtures` + `.env`, every target pre-built) -> **launch** (tmux `-L huntress`, session `rush`, one Claude per
-  lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`, `--allowedTools` for the lane's own `ctf-run` binary - the auto-mode classifier blocked untimed starts on Day 16) -> **watch** (polls `op=list&day=N` from
-  22:58:30, merges the day into the route cache, then per lane in parallel the **first pass**: single-solve, untimed
+  lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`, `--allowedTools` for the lane's own `ctf-run` binary - the auto-mode classifier blocked untimed starts on Day 16) -> **watch** (release = `op=status&challenge=warmups-day-NN` going 404 -> 200, polled every 1 s from 22:59:50, with
+  the old 3 s `op=list` poll as fallback; a released day's global list takes 4-10 s, so each lane then fetches its own
+  routes with `op=list&day=N&search=<prefix>NN` (~1.5-3.5 s; the `lane=` filter rejects binary-RE), merges them into
+  the route cache under a lock, and starts its **first pass** at once: single-solve, untimed
   regular time trial + mastery **all started at once** (no wait on single-solve's verdict; a wrong solver only costs
   untimed regular variants), grouped oracle on `incorrect`; writes `runs-dNN/rush/brief-<lane>.md` and sends that
-  lane's agent "read the brief" the moment its own pass ends).
+  lane's agent "read the brief" the moment its own pass ends; `send()` first dismisses an open Claude Code picker such
+  as "Teach auto mode...", which would otherwise eat the message). `all` kills the previous day's tmux session first.
+- **Stalled agents:** each agent's `--settings` file (`runs-dNN/rush/settings-<lane>.json`) has a `Stop` hook
+  (`stopped-<lane>`) and a heartbeat (`active-<lane>` on every tool call/prompt). After the briefs, the watcher flags
+  a lane whose agent stopped after its brief, with no activity since and no `done-<lane>`, for 180 s: it writes
+  `stalled-<lane>.md` (pane tail) and never touches the worktree. The coordinator's watcher should wake on `stalled-*`
+  as well as `done-*`, then run `rush.py takeover --day N --lanes <lane>`, or message the agent. Takeover builds the
+  lane worktree, runs untimed attempts for modes not yet CORRECT, adds missing fixtures, replays, and writes
+  `takeover-<lane>.md`. The coordinator then reviews, commits on the lane branch and touches done.
 - Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
   timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
   merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.
