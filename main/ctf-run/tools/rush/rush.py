@@ -202,14 +202,20 @@ def sleep_until(t):
 
 
 def warmups_released(day):
-    """op=status on the one predictable route: 404 challenge_unavailable before the release (~0.5 s), 200 after."""
+    """op=status on the one predictable route: 404 {"error":"challenge_unavailable"} before the release (~0.5 s),
+    200 after (seen only on routes we had started). Only challenge_unavailable means "not yet": any other 404 body
+    (e.g. a never-started route answering "no attempt") counts as released; 401/403/429/5xx raise (keep polling)."""
     try:
         get(f"{API}/?op=status&challenge=warmups-day-{day:02d}", timeout=5)
         return True
     except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return False
-        raise
+        if e.code != 404:
+            raise
+        try:
+            err = json.loads(e.read() or b"{}").get("error")
+        except ValueError:
+            err = None
+        return err != "challenge_unavailable"
 
 
 class Release:
