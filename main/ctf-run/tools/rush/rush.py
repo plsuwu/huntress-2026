@@ -106,6 +106,29 @@ def prime_prompt(day, lane):
                       wt=os.path.join(WT_ROOT, lane), repo=REPO, state=state_dir(day))
 
 
+def allowed_tools(lane):
+    """Allow rules for a lane agent: its own worktree's ctf-run, relative and absolute. The auto-mode classifier
+    denied the brief's plain untimed `-t` start on Day 16 ("Auto-Mode Bypass") and the binary agent stalled; an
+    explicit rule skips the classifier for that binary only. Safe because the pane exports CTF_NO_RANKED=1, which
+    ctf-run checks for presence - and an `env -u ...` / `VAR=... ` prefix no longer matches the rule."""
+    return ["Bash(./target/release/ctf-run *)",
+            f"Bash({os.path.join(WT_ROOT, lane, 'ctf-run', 'target', 'release', 'ctf-run')} *)"]
+
+
+def launcher_script(day, lane, prompt_file):
+    allow = " ".join(f'"{r}"' for r in allowed_tools(lane))
+    return ("#!/bin/sh\n"
+            # --add-dir: briefs, first-pass runs, done markers and the real fixtures/artifacts live in the
+            # main checkout's ctf-run/ and utils/; without it every read there stops at a permission dialog.
+            # Deliberately not the repo root: that holds the jumpbox SSH key, and CTF_NO_RANKED only guards
+            # this machine - workers must not be able to reach a ranked run on the jumpbox.
+            # Model/effort pinned here: worktrees carry no settings file, so they would otherwise inherit
+            # whatever ~/.claude/settings.json says (including per-model effort overrides).
+            # --add-dir and --allowedTools are variadic: -n must follow them so the prompt stays positional.
+            f'exec claude --model claude-opus-5-5 --effort high --permission-mode auto --add-dir "{CTF}" "{os.path.join(REPO, "utils")}" '
+            f'--allowedTools {allow} -n "d{day:02d}-{lane}" "$(cat {prompt_file})"\n')
+
+
 def launch(day):
     have = sh(TMUX + ["has-session", "-t", SESSION], check=False).returncode == 0
     if have:
@@ -121,15 +144,7 @@ def launch(day):
             f.write(prime_prompt(day, lane))
         launcher = os.path.join(sd, f"launch-{lane}.sh")
         with open(launcher, "w") as f:
-            f.write("#!/bin/sh\n"
-                    # --add-dir: briefs, first-pass runs, done markers and the real fixtures/artifacts live in the
-                    # main checkout's ctf-run/ and utils/; without it every read there stops at a permission dialog.
-                    # Deliberately not the repo root: that holds the jumpbox SSH key, and CTF_NO_RANKED only guards
-                    # this machine - workers must not be able to reach a ranked run on the jumpbox.
-                    # Model/effort pinned here: worktrees carry no settings file, so they would otherwise inherit
-                    # whatever ~/.claude/settings.json says (including per-model effort overrides).
-                    f'exec claude --model claude-opus-5-5 --effort high --permission-mode auto --add-dir "{CTF}" "{os.path.join(REPO, "utils")}" '
-                    f'-n "d{day:02d}-{lane}" "$(cat {prompt_file})"\n')
+            f.write(launcher_script(day, lane, prompt_file))
         os.chmod(launcher, 0o755)
         sh(TMUX + ["new-window", "-t", SESSION, "-n", lane, "-c", os.path.join(WT_ROOT, lane)] + envflags + [launcher])
         log(f"{lane}: agent launched (window rush:{lane})")
