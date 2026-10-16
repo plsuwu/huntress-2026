@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-16-return-to-sender",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "66aaf4c7-c509-4375-bc04-ccd90a2156fe",
+  "started_at": "2026-10-16T13:00:14.496Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1438.61889,
+  "start_ttfb_ms": 1437.9569020000001,
+  "clock": {
+    "start_sent": "2026-10-16T13:03:01.714Z",
+    "start_received": "2026-10-16T13:03:03.153Z",
+    "start_date_header": "2026-10-16T13:03:03.000Z",
+    "last_delivery": "2026-10-16T13:03:04.452Z",
+    "submit_sent": "2026-10-16T13:03:04.452Z",
+    "submit_received": "2026-10-16T13:03:06.458Z",
+    "submit_date_header": "2026-10-16T13:03:06.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-16-evidence.zip",
+      "bytes": 602,
+      "wire": 602,
+      "ttfb_ms": 1297.410004,
+      "total_ms": 1298.2264599999999,
+      "done_at_ms": 2737.164328,
+      "analyse_ms": 0.047435000000000005
+    }
+  ]
+}

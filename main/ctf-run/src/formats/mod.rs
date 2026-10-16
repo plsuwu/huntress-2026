@@ -4,6 +4,7 @@ pub mod bytes;
 pub mod cfb;
 pub mod dotnet;
 pub mod elf;
+pub mod email;
 pub mod hcfg;
 pub mod inflate;
 pub mod jvm;
