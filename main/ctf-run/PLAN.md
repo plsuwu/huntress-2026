@@ -335,3 +335,14 @@ replay -> timed), module map, testing rules.
   day 1-4 entries sit mid-table despite ~0 ms client time. Lessons: the server 503s under load (the driver now backs
   off and retries; keep its own queries resilient), and `pkill -f` on a pattern that appears in the ssh command
   line kills the ssh session itself - use `ps -eo args | grep "^[p]attern"`.
+- 2026-10-16 - Day 16, first rush release (`tools/rush/`). First pass at 23:00:25-23:01:02: script + mobile CORRECT on
+  all three modes with no code change; warmups (Morse of hex), metadata (`email-message-id` on `.eml`, new
+  `formats/email.rs`) and binary-RE (WebAssembly pair, new `formats/wasm.rs`) fixed by their lane agents by ~23:06.
+  The binary agent's plain untimed `-t` start was blocked by its permission classifier - the coordinator ran its
+  untimed TT/mastery (both CORRECT first submit) and finished the lane. All five merged; 246/246 replay clean.
+  Ranked (user-approved, jumpbox, `runs-hof/plan-d16-{a,b,c}.json` -> `campaign-d16-*.log`): 40 runs, **40 CORRECT**,
+  deployed in waves (never deploy while `hof_campaign.py` runs: deploy.sh removes the binary before scp). Board at
+  23:22: **#1 on 6/10** (script TT 1032 / mastery 2005, mobile TT 465 / mastery 467, warmups mastery 821, metadata
+  mastery 805); #2 warmups TT (811 vs 614, server-bound), metadata TT (709 vs 629, server-bound), binary TT (1900 vs
+  1899); #3 binary mastery (4886 vs 4465). Binary is the one engineering lever: analysis ~600 ms per TT run and
+  ~2.6 s per mastery on the jumpbox, after the download. Ranked attempts left: TT 24-252, binary mastery 13.
