@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-16-return-to-sender/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "1df86f92-d7ab-41e8-84c7-1ff9615adfea",
+  "started_at": "2026-10-16T13:20:18.393Z",
+  "deadline": "2026-10-16T13:23:08.393Z",
+  "shape": "download",
+  "start_ms": 1350.019206,
+  "start_ttfb_ms": 1348.6608119999999,
+  "clock": {
+    "start_sent": "2026-10-16T13:20:17.113Z",
+    "start_received": "2026-10-16T13:20:18.463Z",
+    "start_date_header": "2026-10-16T13:20:18.000Z",
+    "last_delivery": "2026-10-16T13:20:18.910Z",
+    "submit_sent": "2026-10-16T13:20:18.912Z",
+    "submit_received": "2026-10-16T13:20:20.169Z",
+    "submit_date_header": "2026-10-16T13:20:20.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-16-return-to-sender-mastery.zip",
+      "bytes": 3034274,
+      "wire": 3034274,
+      "ttfb_ms": 317.612095,
+      "total_ms": 410.55866499999996,
+      "done_at_ms": 1761.058194,
+      "analyse_ms": 36.40207899999999
+    }
+  ]
+}

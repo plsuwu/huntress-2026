@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-16-jni-boundary/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "8f0ff18e-ccc4-458f-b6bc-8a23337494f5",
+  "started_at": "2026-10-16T13:17:02.816Z",
+  "deadline": "2026-10-16T13:19:52.816Z",
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 1825.9368259999999,
+  "start_ttfb_ms": 1825.074737,
+  "clock": {
+    "start_sent": "2026-10-16T13:17:01.052Z",
+    "start_received": "2026-10-16T13:17:02.878Z",
+    "start_date_header": "2026-10-16T13:17:02.000Z",
+    "last_delivery": "2026-10-16T13:17:03.132Z",
+    "submit_sent": "2026-10-16T13:17:03.132Z",
+    "submit_received": "2026-10-16T13:17:03.893Z",
+    "submit_date_header": "2026-10-16T13:17:03.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "jni_boundary_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 174.72516,
+      "total_ms": 174.983559,
+      "done_at_ms": 2003.187964,
+      "analyse_ms": 0.036895
+    },
+    {
+      "delivery": 1,
+      "name": "jni_boundary_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 187.53871,
+      "total_ms": 187.728334,
+      "done_at_ms": 2015.8369180000002,
+      "analyse_ms": 0.018992000000000002
+    },
+    {
+      "delivery": 4,
+      "name": "jni_boundary_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 170.31127099999998,
+      "total_ms": 170.4022,
+      "done_at_ms": 2039.757339,
+      "analyse_ms": 0.022617
+    },
+    {
+      "delivery": 3,
+      "name": "jni_boundary_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 228.645319,
+      "total_ms": 228.937965,
+      "done_at_ms": 2057.1567919999998,
+      "analyse_ms": 0.026381
+    },
+    {
+      "delivery": 5,
+      "name": "jni_boundary_mastery_05.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 228.590064,
+      "total_ms": 228.62009799999998,
+      "done_at_ms": 2079.846282,
+      "analyse_ms": 0.022261
+    }
+  ]
+}
