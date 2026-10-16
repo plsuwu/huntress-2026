@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{cfb, dotnet, elf, lnk, media, ooxml, pe, zip};
+use crate::formats::{cfb, dotnet, elf, email, lnk, media, ooxml, pe, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -135,6 +135,49 @@ fn ooxml_facts(p: &ooxml::Package) -> String {
     format!("ooxml parts {:?} rels {rels:?} core {:?} app {:?}", p.parts.iter().map(|x| &x.0).collect::<Vec<_>>(), p.core_properties(), p.app_properties())
 }
 
+/// `...-email-<field>` -> a message field. Headers are answered by name (`email-message-id` ->
+/// `Message-ID`, unfolded, RFC 2047 decoded for free text); msg-id lists are space-joined tokens.
+/// Attachment/part fields are derived from the decoded MIME leaves.
+fn email_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("email-")?;
+    let want = &key[i + 6..];
+    let Some(m) = email::Message::parse(b) else { return Some(Err(format!("not an email message; {}", facts("eml", b)))) };
+    let atts = m.attachments();
+    let ids = |h: &str| m.header(h).map(|v| email::msg_ids(v).join(" "));
+    let r = match want {
+        "message-id" | "in-reply-to" => ids(want).filter(|s| !s.is_empty()).or_else(|| m.header(want).map(str::to_string)).unwrap_or_else(none),
+        "references" => ids(want).filter(|s| !s.is_empty()).unwrap_or_else(none),
+        "attachment-count" => atts.len().to_string(),
+        "part-count" | "mime-part-count" => m.parts().len().to_string(),
+        "attachment-filename" | "attachment-name" => match atts.as_slice() {
+            [] => none(),
+            [a] => a.filename().unwrap_or_else(none),
+            _ => return Some(Err(format!("several attachments; {}", email_facts(&m)))),
+        },
+        "attachment-filenames" | "attachment-names" => compact_json(&atts.iter().filter_map(|a| a.filename()).collect::<Vec<_>>()),
+        "attachment-sha256" | "attachment-md5" | "attachment-sha1" | "attachment-size-bytes" => match atts.as_slice() {
+            [] => none(),
+            [a] => match want.rsplit('-').next().unwrap() {
+                "sha256" => hex(&sha256(&a.data)),
+                "md5" => hex(&md5(&a.data)),
+                "sha1" => hex(&sha1(&a.data)),
+                _ => a.data.len().to_string(),
+            },
+            _ => return Some(Err(format!("several attachments; {}", email_facts(&m)))),
+        },
+        other => match m.header(other) {
+            Some(v) => email::decode_words(v),
+            None => return Some(Err(format!("unknown email field {other:?}; {}", email_facts(&m)))),
+        },
+    };
+    Some(Ok(r))
+}
+
+fn email_facts(m: &email::Message) -> String {
+    let parts: Vec<String> = m.parts().iter().map(|p| format!("{} {:?} {} B sha256 {}", p.content_type(), p.filename(), p.data.len(), hex(&sha256(&p.data)))).collect();
+    format!("email headers {:?} parts {parts:?}", m.headers)
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -218,6 +261,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(props) = cfb::msi_properties(b) {
         f.push(format!("msi {props:?} revision {:?}", cfb::summary_string(b, 9)));
     }
+    if let Some(m) = email::Message::parse(b) {
+        f.push(email_facts(&m));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -287,6 +333,11 @@ impl Lane for Metadata {
             keyed.sort();
             return Ok(compact_json(&keyed.into_iter().map(|(_, n)| n).collect::<Vec<_>>()));
         }
+        // Email fields go first: `-email-attachment-sha256` / `-filename` must not hit the whole-file handlers.
+        if key.contains("-email-") {
+            let data = data.ok_or_else(|| format!("no file {member:?} for {label:?}"))?;
+            return email_answer(&key, data).unwrap_or_else(|| Err(format!("unknown kind {key:?}; {}", facts(member, data))));
+        }
         if key.ends_with("-filename") && !key.ends_with("original-filename") {
             if !member.is_empty() {
                 return Ok(member.to_string());
@@ -306,5 +357,22 @@ impl Lane for Metadata {
             return r;
         }
         Err(format!("unknown kind {key:?}; {}", facts(member, data)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EML: &[u8] = b"From: a <a@x>\r\nMessage-ID: <id@x>\r\nContent-Type: multipart/mixed; boundary=\"b\"\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nhello\r\n--b\r\nContent-Disposition: attachment; filename=\"n.txt\"\r\nContent-Transfer-Encoding: base64\r\n\r\naGk=\r\n--b--\r\n";
+
+    #[test]
+    fn email_fields() {
+        let a = |k: &str| email_answer(k, EML).unwrap();
+        assert_eq!(a("d16-email-001-email-message-id").unwrap(), "<id@x>");
+        assert_eq!(a("d17-email-001-email-attachment-filename").unwrap(), "n.txt");
+        assert_eq!(a("d17-email-001-email-attachment-sha256").unwrap(), hex(&sha256(b"hi")));
+        assert_eq!(a("d17-email-001-email-in-reply-to").unwrap(), "none");
+        assert!(a("d17-email-001-email-thread-root").is_err());
     }
 }

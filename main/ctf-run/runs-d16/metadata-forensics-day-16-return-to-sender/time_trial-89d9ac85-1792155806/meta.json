@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-16-return-to-sender/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "89d9ac85-e150-4c2f-8fb3-d1011c2236d4",
+  "started_at": "2026-10-16T13:03:14.870Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2590.133166,
+  "start_ttfb_ms": 2589.698308,
+  "clock": {
+    "start_sent": "2026-10-16T13:03:26.459Z",
+    "start_received": "2026-10-16T13:03:29.049Z",
+    "start_date_header": "2026-10-16T13:03:29.000Z",
+    "last_delivery": "2026-10-16T13:03:30.538Z",
+    "submit_sent": "2026-10-16T13:03:30.538Z",
+    "submit_received": "2026-10-16T13:03:33.593Z",
+    "submit_date_header": "2026-10-16T13:03:33.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 606873,
+      "wire": 606873,
+      "ttfb_ms": 1412.5244160000002,
+      "total_ms": 1474.5624340000002,
+      "done_at_ms": 4065.018202,
+      "analyse_ms": 14.022813000000001
+    }
+  ]
+}
