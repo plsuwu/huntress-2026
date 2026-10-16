@@ -16,6 +16,8 @@ Change: new `ctf-run/src/formats/wasm.rs` (section walk: custom names, imports, 
 `Container::Wasm` in `lanes/binary_re.rs`. The prompt ("imports, memory, indirect calls") suggests later days may ask
 about wasm imports/exports/tables - the parser already collects imports/exports; add `answer_spec` rows when asked.
 
-Time trial / mastery: not yet run by the lane agent (the regular untimed `-t` start was blocked by the session's
-permission classifier) - coordinator to run.
-Fixture: `ctf-run/fixtures/binary_re/d16-single_solve.json`.
+Time trial / mastery: untimed regular attempts run by the coordinator with the lane build (unchanged code):
+time trial CORRECT first submit (160 answers), mastery CORRECT first submit (800 answers, 5 sets). Ranked pools:
+TT 64, mastery 16 (both dual-pool, rft=true). The lane agent's plain `-t` start was blocked by its permission
+classifier - lane agents may need the coordinator for untimed TT/mastery starts.
+Fixtures: `ctf-run/fixtures/binary_re/d16-{single_solve,time_trial,mastery}.json`.
