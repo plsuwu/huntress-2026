@@ -351,6 +351,45 @@ pub fn reverse(t: &str) -> String {
     t.chars().rev().collect()
 }
 
+const MORSE: &[(&str, char)] = &[
+    (".-", 'A'), ("-...", 'B'), ("-.-.", 'C'), ("-..", 'D'), (".", 'E'), ("..-.", 'F'), ("--.", 'G'), ("....", 'H'),
+    ("..", 'I'), (".---", 'J'), ("-.-", 'K'), (".-..", 'L'), ("--", 'M'), ("-.", 'N'), ("---", 'O'), (".--.", 'P'),
+    ("--.-", 'Q'), (".-.", 'R'), ("...", 'S'), ("-", 'T'), ("..-", 'U'), ("...-", 'V'), (".--", 'W'), ("-..-", 'X'),
+    ("-.--", 'Y'), ("--..", 'Z'), ("-----", '0'), (".----", '1'), ("..---", '2'), ("...--", '3'), ("....-", '4'),
+    (".....", '5'), ("-....", '6'), ("--...", '7'), ("---..", '8'), ("----.", '9'), (".-.-.-", '.'), ("--..--", ','),
+    ("..--..", '?'), (".----.", '\''), ("-.-.--", '!'), ("-..-.", '/'), ("-.--.", '('), ("-.--.-", ')'), (".-...", '&'),
+    ("---...", ':'), ("-.-.-.", ';'), ("-...-", '='), (".-.-.", '+'), ("-....-", '-'), ("..--.-", '_'), (".-..-.", '"'),
+    ("...-..-", '$'), (".--.-.", '@'),
+];
+
+pub fn is_morse(t: &str) -> bool {
+    let t = t.trim();
+    !t.is_empty() && t.bytes().any(|b| b == b'.' || b == b'-') && t.bytes().all(|b| matches!(b, b'.' | b'-' | b'/' | b'|') || b.is_ascii_whitespace())
+}
+
+/// International Morse (uppercase letters, digits, punctuation): codes separated by whitespace,
+/// words by `/`, `|` or a run of 3+ spaces. `None` on any unknown code.
+pub fn morse(t: &str) -> Option<String> {
+    if !is_morse(t) {
+        return None;
+    }
+    let mut out = String::new();
+    let t = t.trim();
+    let mut words: Vec<String> = Vec::new();
+    for w in t.split(['/', '|']) {
+        words.extend(w.split("   ").map(str::to_string));
+    }
+    for (i, w) in words.iter().enumerate() {
+        if i > 0 {
+            out.push(' ');
+        }
+        for code in w.split_whitespace() {
+            out.push(MORSE.iter().find(|(m, _)| *m == code)?.1);
+        }
+    }
+    Some(out)
+}
+
 const WORDS: &[&str] = &[
     "the", "this", "to", "and", "answer", "submit", "exact", "game", "master", "warmup", "solve", "work", "nice", "of", "is",
 ];

@@ -35,6 +35,7 @@ pub enum T {
     Ent,
     Bs,
     Bin,
+    Morse,
 }
 
 impl T {
@@ -53,6 +54,7 @@ impl T {
             T::Pct => codec::has_percent(t).then(|| codec::percent_decode_all(t)),
             T::Ent => codec::has_entity(t).then(|| codec::html_unescape_all(t)),
             T::Bs => codec::has_backslash_escape(t).then(|| codec::backslash_unescape_all(t)),
+            T::Morse => morse_variants(t).into_iter().next(),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -81,6 +83,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         13 => T::Atbash,
         14 => T::Rot(19), // Caesar +7 ("Caesar took a week off"); graded on the day-14 single-solve
         15 => T::Rot47, // "Room Forty-Seven": punctuation and digits rotate too
+        16 => T::Morse, // "Dot Com": Morse of the hex digits ("sixteen little symbols")
         _ => return None,
     })
 }
@@ -89,6 +92,9 @@ fn fixed_codec(row: u32) -> Option<T> {
 fn structured(frag: &str) -> Option<(T, String)> {
     let v = frag.trim();
     let try_ = |t: T| t.apply(v).map(|s| (t, s));
+    if codec::is_morse(v) {
+        return try_(T::Morse);
+    }
     if codec::has_backslash_escape(v) {
         return try_(T::Bs);
     }
@@ -149,6 +155,21 @@ fn rev_variants(frag: &str) -> Vec<String> {
     if pad >= 2 {
         v = vec![codec::reverse(trimmed), format!("-{}", codec::reverse(trimmed))];
     }
+    v
+}
+
+/// Morse decodes to uppercase text; day 16 sent Morse of the hex digits, so a hex reading wins,
+/// then the text as decoded and lowercased.
+fn morse_variants(frag: &str) -> Vec<String> {
+    let Some(m) = codec::morse(frag) else { return Vec::new() };
+    let mut v = Vec::new();
+    let compact: String = m.chars().filter(|c| !c.is_whitespace()).collect();
+    if compact.len() % 2 == 0 && compact.bytes().all(|b| b.is_ascii_hexdigit()) {
+        v.extend(codec::hex(&compact).and_then(|b| codec::printable(&b)));
+    }
+    let lower = m.to_lowercase();
+    v.push(m);
+    v.push(lower);
     v
 }
 
@@ -218,14 +239,22 @@ pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
     let mut cands: Vec<Vec<(T, String)>> = Vec::with_capacity(rows.len());
     let mut free: Vec<bool> = Vec::with_capacity(rows.len());
     for r in &rows {
-        let pinned = fixed_codec(r.num).or_else(|| hints.get(&r.num).copied());
-        if let Some(t) = pinned {
-            let outs: Vec<String> = if t == T::Rev { rev_variants(&r.frag) } else { t.apply(&r.frag).into_iter().collect() };
-            if !outs.is_empty() {
-                cands.push(outs.into_iter().map(|s| (t, s)).collect());
-                free.push(false);
-                continue;
-            }
+        // The day's codec first; a transform learned from other sets if that codec cannot read the row.
+        let pinned = fixed_codec(r.num).into_iter().chain(hints.get(&r.num).copied());
+        let decoded = pinned
+            .map(|t| {
+                let outs: Vec<String> = match t {
+                    T::Rev => rev_variants(&r.frag),
+                    T::Morse => morse_variants(&r.frag),
+                    _ => t.apply(&r.frag).into_iter().collect(),
+                };
+                outs.into_iter().map(|s| (t, s)).collect::<Vec<_>>()
+            })
+            .find(|c| !c.is_empty());
+        if let Some(c) = decoded {
+            cands.push(c);
+            free.push(false);
+            continue;
         }
         if let Some((t, s)) = structured(&r.frag) {
             cands.push(vec![(t, s)]);
@@ -307,7 +336,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = letters.filter_map(|k| k.apply(&t)).find_map(|c| match_template(&c)) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
-        let next = [T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
+        let next = [T::Morse, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
         if let Some(n) = next {
             t = n;
             continue;
@@ -472,6 +501,10 @@ mod tests {
         // A Caesar shift of 7 ("Seven Steps"), not hard-coded.
         assert_eq!(slug(solve_blob(&codec::rot(SENT, 7))), "zesty-sunset-quartz-65");
         assert!(matches!(solve_blob("nothing to see"), Outcome::Failed(_)));
+        // Day 16 "Dot Com": Morse of the hex digits.
+        let hex: String = SENT.bytes().map(|b| format!("{b:02X}")).collect();
+        let to_morse = |s: &str| s.chars().map(|c| match c { 'A' => ".-", 'B' => "-...", 'C' => "-.-.", 'D' => "-..", 'E' => ".", 'F' => "..-.", '0' => "-----", '1' => ".----", '2' => "..---", '3' => "...--", '4' => "....-", '5' => ".....", '6' => "-....", '7' => "--...", '8' => "---..", _ => "----." }).collect::<Vec<_>>().join(" ");
+        assert_eq!(slug(solve_blob(&to_morse(&hex))), "zesty-sunset-quartz-65");
     }
 
     /// 2026-10-15 timed variant: the final (atbash) row is padded with `-<digits>`.
@@ -485,19 +518,19 @@ mod tests {
 
     #[test]
     fn rows_with_unknown_caesar_row_learn_across_sets() {
-        // An unpinned row (16 here, caesar +7). Set A: inside the known prefix -> learnable. Set B: inside the slug.
-        let a = format!("01\t{}\n02\t{}\n16\t{}\n13\t{}\n", "TmljZSB3b3Jr", codec::rot(" decoding this warmup! To solve,", 13), codec::rot(" submit this exact answer", 7), codec::atbash(" to the Game Master: zesty-sunset-quartz-65"));
+        // An unpinned row (99 here, caesar +7). Set A: inside the known prefix -> learnable. Set B: inside the slug.
+        let a = format!("01\t{}\n02\t{}\n99\t{}\n13\t{}\n", "TmljZSB3b3Jr", codec::rot(" decoding this warmup! To solve,", 13), codec::rot(" submit this exact answer", 7), codec::atbash(" to the Game Master: zesty-sunset-quartz-65"));
         let none = BTreeMap::new();
         let Outcome::Solved { slug, learned } = solve_rows(&a, &none) else { panic!() };
         assert_eq!(slug, "zesty-sunset-quartz-65");
-        assert_eq!(learned, [(16, T::Rot(19))]);
-        let b = format!("01\t{}\n16\t{}\n", "TmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZSwgc3VibWl0IHRoaXMgZXhhY3QgYW5zd2VyIHRvIHRoZSBHYW1lIE1hc3RlcjogemVzdHkt", codec::rot("sunset-quartz-65", 7));
+        assert_eq!(learned, [(99, T::Rot(19))]);
+        let b = format!("01\t{}\n99\t{}\n", "TmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZSwgc3VibWl0IHRoaXMgZXhhY3QgYW5zd2VyIHRvIHRoZSBHYW1lIE1hc3RlcjogemVzdHkt", codec::rot("sunset-quartz-65", 7));
         assert!(matches!(solve_rows(&b, &none), Outcome::Ambiguous { .. }));
-        let hints = BTreeMap::from([(16, T::Rot(19))]);
+        let hints = BTreeMap::from([(99, T::Rot(19))]);
         let Outcome::Solved { slug, .. } = solve_rows(&b, &hints) else { panic!() };
         assert_eq!(slug, "zesty-sunset-quartz-65");
         // Row 14 is pinned (day 14 = caesar +7), so the same slug-only set solves without hints.
-        let b14 = b.replace("\n16\t", "\n14\t");
+        let b14 = b.replace("\n99\t", "\n14\t");
         let Outcome::Solved { slug, .. } = solve_rows(&b14, &none) else { panic!("{:?}", solve_rows(&b14, &none)) };
         assert_eq!(slug, "zesty-sunset-quartz-65");
     }
