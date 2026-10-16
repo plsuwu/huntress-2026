@@ -18,6 +18,7 @@ Every ctf-run here and in the agents' panes runs with CTF_NO_RANKED=1: ranked at
 Attach: tmux -L huntress attach -t rush
 """
 import json, os, re, subprocess, sys, threading, time, urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -220,28 +221,40 @@ def first_pass(day, lane, rows, routes_cfg):
     if not single:
         report["note"] = "no single-solve route for this lane"
         return report
-    step = ctf_run([single], out)
-    step["mode"] = "single_solve"
-    report["steps"].append(step)
-    if step["result"] == "CORRECT":
-        for mode, flag in (("time_trial", "-t"), ("mastery", "-m")):
-            rid = f"{single}/{mode}"
-            cfg = routes_cfg.get(rid)
-            if not cfg:
-                continue
-            if not cfg.get("run_for_time_supported"):
-                report["steps"].append({"mode": mode, "result": "SKIPPED (timed by default - coordinator only)"})
-                continue
-            s = ctf_run([single, flag], out)
-            s["mode"] = mode
-            report["steps"].append(s)
-            if s["result"] != "CORRECT":
-                break
-    for s in report["steps"]:
-        if s.get("result") == "incorrect" and s.get("dir"):
-            r = subprocess.run(["python3", "-I", os.path.join(CTF, "tools", "oracle_groups.py"), s["dir"]],
-                               cwd=CTF, text=True, capture_output=True, env=env(), timeout=1800)
-            s["oracle"] = r.stdout.strip().splitlines()[-40:]
+    # All modes at once: none waits for single-solve's verdict (each submit's grading + response is 2-8 s at
+    # release load, and the server records each route's solve when it grades, not when we hear back). A wrong
+    # solver then also fails TT/mastery - harmless: those are untimed regular variants (pools 16-128), REFUSED
+    # submits spend nothing, and every failure still lands in the brief + grouped oracle for the lane agent.
+    jobs = [("single_solve", [single])]
+    for mode, flag in (("time_trial", "-t"), ("mastery", "-m")):
+        cfg = routes_cfg.get(f"{single}/{mode}")
+        if not cfg:
+            continue
+        if not cfg.get("run_for_time_supported"):
+            report["steps"].append({"mode": mode, "result": "SKIPPED (timed by default - coordinator only)"})
+            continue
+        jobs.append((mode, [single, flag]))
+    def run(args):  # one mode's crash (e.g. a 900 s timeout) must not discard the others' results
+        try:
+            return ctf_run(args, out)
+        except Exception as e:  # noqa: BLE001
+            return {"result": f"CRASHED {e!r}", "dir": None, "errors": [], "tail": []}
+
+    with ThreadPoolExecutor(len(jobs)) as pool:
+        futs = [(mode, pool.submit(run, args)) for mode, args in jobs]
+        ran = [dict(f.result(), mode=mode) for mode, f in futs]
+    order = {"single_solve": 0, "time_trial": 1, "mastery": 2}
+    report["steps"] = sorted(ran + report["steps"], key=lambda s: order.get(s["mode"], 9))
+
+    def oracle(s):
+        r = subprocess.run(["python3", "-I", os.path.join(CTF, "tools", "oracle_groups.py"), s["dir"]],
+                           cwd=CTF, text=True, capture_output=True, env=env(), timeout=1800)
+        s["oracle"] = r.stdout.strip().splitlines()[-40:]
+
+    wrong = [s for s in report["steps"] if s.get("result") == "incorrect" and s.get("dir")]
+    if wrong:
+        with ThreadPoolExecutor(len(wrong)) as pool:
+            list(pool.map(oracle, wrong))
     return report
 
 
