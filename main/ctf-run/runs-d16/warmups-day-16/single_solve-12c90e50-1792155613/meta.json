@@ -1,0 +1,32 @@
+{
+  "challenge": "warmups-day-16",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "12c90e50-f3f1-4acd-b075-41623d2200d1",
+  "started_at": "2026-10-16T13:00:15.610Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2678.252739,
+  "start_ttfb_ms": 2678.077176,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:13.173Z",
+    "start_received": "2026-10-16T13:00:15.851Z",
+    "start_date_header": "2026-10-16T13:00:15.000Z",
+    "last_delivery": "2026-10-16T13:00:17.968Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "blob.txt",
+      "bytes": 1257,
+      "wire": 1257,
+      "ttfb_ms": 2114.231159,
+      "total_ms": 2114.251748,
+      "done_at_ms": 4792.818857,
+      "analyse_ms": 2.561978
+    }
+  ]
+}

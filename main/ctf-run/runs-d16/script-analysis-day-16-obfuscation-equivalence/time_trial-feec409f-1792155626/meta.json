@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-16-obfuscation-equivalence/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "feec409f-d5af-4466-a633-8b3f3058065e",
+  "started_at": "2026-10-16T13:00:29.687Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 3995.235345,
+  "start_ttfb_ms": 3983.094678,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:26.553Z",
+    "start_received": "2026-10-16T13:00:30.548Z",
+    "start_date_header": "2026-10-16T13:00:30.000Z",
+    "last_delivery": "2026-10-16T13:00:32.373Z",
+    "submit_sent": "2026-10-16T13:00:32.380Z",
+    "submit_received": "2026-10-16T13:00:37.565Z",
+    "submit_date_header": "2026-10-16T13:00:37.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 111495,
+      "wire": 111495,
+      "ttfb_ms": 1674.226727,
+      "total_ms": 1793.556172,
+      "done_at_ms": 5789.072664,
+      "analyse_ms": 31.415669
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "d16_analysis_compact_architecture": "d16--variant-000-compact.wasm: no machine",
+  "d16_analysis_compact_format": "no graded label known for container Some(Other) (format Some(\"exact_text\"): \"exact artifact-derived value only, without quotes or explanatory text unless quotes are part of the value; use the literal none only when the requested field is absent\")",
+  "d16_analysis_direct_architecture": "d16--variant-000-direct.wasm: no machine",
+  "d16_analysis_direct_format": "no graded label known for container Some(Other) (format Some(\"exact_text\"): \"exact artifact-derived value only, without quotes or explanatory text unless quotes are part of the value; use the literal none only when the requested field is absent\")"
+}

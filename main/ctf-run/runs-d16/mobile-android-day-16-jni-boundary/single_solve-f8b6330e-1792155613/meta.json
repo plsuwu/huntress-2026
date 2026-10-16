@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-16-jni-boundary",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f8b6330e-6765-4943-abb3-f4a4dba0b2b9",
+  "started_at": "2026-10-16T13:00:15.436Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2500.996858,
+  "start_ttfb_ms": 2500.558044,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:13.164Z",
+    "start_received": "2026-10-16T13:00:15.665Z",
+    "start_date_header": "2026-10-16T13:00:15.000Z",
+    "last_delivery": "2026-10-16T13:00:17.955Z",
+    "submit_sent": "2026-10-16T13:00:17.955Z",
+    "submit_received": "2026-10-16T13:00:20.159Z",
+    "submit_date_header": "2026-10-16T13:00:20.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "jni_boundary.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 2285.3945919999996,
+      "total_ms": 2287.6767830000003,
+      "done_at_ms": 4788.995045,
+      "analyse_ms": 1.332191
+    }
+  ]
+}

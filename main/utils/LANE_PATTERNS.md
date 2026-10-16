@@ -102,6 +102,20 @@ ctf-run (no Python step). Details in `solver_py_scripts/day-15-*/*/NOTES.md`.
 | binary-RE | d15 = `-symbolized` + `-stripped` ELF pair | `artifact_sha256_N` in zip CD order; `analysis_<tag>_<field>` per specimen; integer `machine` = e_machine |
 | mobile | `codec:"native"` (answer in `data`, also in `libarena.so`) | nothing; mastery now samples earlier days' codecs (`day` field per APK) |
 
+## Day 16 outcome (2026-10-16)
+
+Dual-pool again (ranked pools 16-256, `rft=true`). First rush release: script + mobile CORRECT on the automated first pass
+(no code change); warmups/metadata/binary-RE fixed by their lane agents within ~6 min of release, all 15 routes CORRECT
+untimed. Details in `solver_py_scripts/day-16-*/*/NOTES.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | Morse code of the sentence's **hex** digits ("Dot Com") | Morse -> hex -> text; mastery row 16 = Morse (of hex) |
+| metadata | `email-message-id` on a `.eml` | graded **with angle brackets** as in the header; new `formats/email.rs` (other email fields are ungraded guesses) |
+| script | `polyglot-ruby-*` + `host-ruby-rack-ruby` | uppercase `DESCRIPTOR_<HEX>` constant - found only via the `HUNTRESS_ANALYSIS_V1` marker fallback |
+| binary-RE | `-compact` + `-direct` WebAssembly pair | `format`=`wasm`, `architecture`=`wasm32`; HCFG raw in a data segment; new `formats/wasm.rs` |
+| mobile | `codec:"native"` again | nothing |
+
 ## Day 16 predictions
 
 - Warmups: another whole-string transform (Vigenere/keyed, rail fence, base85/ascii85/uuencode, XOR-hex?) - row 16 joins

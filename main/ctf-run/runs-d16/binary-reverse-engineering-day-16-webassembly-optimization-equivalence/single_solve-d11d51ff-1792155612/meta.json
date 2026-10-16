@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-16-webassembly-optimization-equivalence",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d11d51ff-f362-4ac5-9f16-d97fbf6af149",
+  "started_at": "2026-10-16T13:00:15.148Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2513.031901,
+  "start_ttfb_ms": 2511.449601,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:12.937Z",
+    "start_received": "2026-10-16T13:00:15.450Z",
+    "start_date_header": "2026-10-16T13:00:15.000Z",
+    "last_delivery": "2026-10-16T13:00:19.380Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32253202,
+      "wire": 32253202,
+      "ttfb_ms": 1673.6226709999999,
+      "total_ms": 3747.861248,
+      "done_at_ms": 6261.163402,
+      "analyse_ms": 182.102297
+    }
+  ]
+}

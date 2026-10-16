@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-16-obfuscation-equivalence/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d3f6f049-4980-4ab7-8d60-d6671c719b61",
+  "started_at": "2026-10-16T13:00:44.877Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 6348.244896,
+  "start_ttfb_ms": 6308.992774,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:40.121Z",
+    "start_received": "2026-10-16T13:00:46.469Z",
+    "start_date_header": "2026-10-16T13:00:46.000Z",
+    "last_delivery": "2026-10-16T13:00:48.546Z",
+    "submit_sent": "2026-10-16T13:00:48.591Z",
+    "submit_received": "2026-10-16T13:00:56.877Z",
+    "submit_date_header": "2026-10-16T13:00:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-16-obfuscation-equivalence-mastery.zip",
+      "bytes": 559004,
+      "wire": 559004,
+      "ttfb_ms": 1952.333369,
+      "total_ms": 1990.8553310000002,
+      "done_at_ms": 8339.297831,
+      "analyse_ms": 86.10935
+    }
+  ]
+}

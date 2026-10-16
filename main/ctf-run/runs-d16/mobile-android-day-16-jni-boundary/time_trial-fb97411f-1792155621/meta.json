@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-16-jni-boundary/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "fb97411f-bd10-40d4-88bd-32fc4143761f",
+  "started_at": "2026-10-16T13:00:23.351Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2144.233874,
+  "start_ttfb_ms": 2143.979975,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:21.455Z",
+    "start_received": "2026-10-16T13:00:23.599Z",
+    "start_date_header": "2026-10-16T13:00:23.000Z",
+    "last_delivery": "2026-10-16T13:00:24.814Z",
+    "submit_sent": "2026-10-16T13:00:24.814Z",
+    "submit_received": "2026-10-16T13:00:26.642Z",
+    "submit_date_header": "2026-10-16T13:00:26.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "jni_boundary_time_trial.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1213.85664,
+      "total_ms": 1213.986555,
+      "done_at_ms": 3358.560529,
+      "analyse_ms": 0.057367
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-16-jni-boundary/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d664a4b7-1575-4bbf-835a-bb8d9cdf5c81",
+  "started_at": "2026-10-16T13:00:29.908Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 2282.3924230000002,
+  "start_ttfb_ms": 2282.223112,
+  "clock": {
+    "start_sent": "2026-10-16T13:00:27.858Z",
+    "start_received": "2026-10-16T13:00:30.141Z",
+    "start_date_header": "2026-10-16T13:00:30.000Z",
+    "last_delivery": "2026-10-16T13:00:31.391Z",
+    "submit_sent": "2026-10-16T13:00:31.392Z",
+    "submit_received": "2026-10-16T13:00:33.332Z",
+    "submit_date_header": "2026-10-16T13:00:33.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 5,
+      "name": "jni_boundary_mastery_05.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1218.36555,
+      "total_ms": 1218.40826,
+      "done_at_ms": 3501.098873,
+      "analyse_ms": 0.027929
+    },
+    {
+      "delivery": 2,
+      "name": "jni_boundary_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1237.182011,
+      "total_ms": 1239.5865749999998,
+      "done_at_ms": 3522.1893259999997,
+      "analyse_ms": 0.033127000000000004
+    },
+    {
+      "delivery": 3,
+      "name": "jni_boundary_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1241.773459,
+      "total_ms": 1242.6327159999998,
+      "done_at_ms": 3525.2865939999997,
+      "analyse_ms": 0.050087
+    },
+    {
+      "delivery": 4,
+      "name": "jni_boundary_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1247.700617,
+      "total_ms": 1247.7674160000001,
+      "done_at_ms": 3530.430671,
+      "analyse_ms": 0.021136
+    },
+    {
+      "delivery": 1,
+      "name": "jni_boundary_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1249.569728,
+      "total_ms": 1250.407523,
+      "done_at_ms": 3532.995277,
+      "analyse_ms": 0.018258999999999997
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-16-webassembly-optimization-equivalence/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "4081a58a-4891-4284-9645-acd89dc2fd15",
+  "started_at": "2026-10-16T13:05:20.987Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 3864.983041,
+  "start_ttfb_ms": 3863.495625,
+  "clock": {
+    "start_sent": "2026-10-16T13:05:18.002Z",
+    "start_received": "2026-10-16T13:05:21.867Z",
+    "start_date_header": "2026-10-16T13:05:21.000Z",
+    "last_delivery": "2026-10-16T13:05:34.543Z",
+    "submit_sent": "2026-10-16T13:05:34.544Z",
+    "submit_received": "2026-10-16T13:05:39.069Z",
+    "submit_date_header": "2026-10-16T13:05:39.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32359538,
+      "wire": 32359538,
+      "ttfb_ms": 1514.886193,
+      "total_ms": 10546.890128,
+      "done_at_ms": 14411.954706999999,
+      "analyse_ms": 193.49423900000002
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 32359558,
+      "wire": 32359558,
+      "ttfb_ms": 1517.242199,
+      "total_ms": 10770.67484,
+      "done_at_ms": 14635.76421,
+      "analyse_ms": 181.573624
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 32359541,
+      "wire": 32359541,
+      "ttfb_ms": 1525.070302,
+      "total_ms": 10907.840844999999,
+      "done_at_ms": 14772.994734999998,
+      "analyse_ms": 170.863796
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 32252683,
+      "wire": 32252683,
+      "ttfb_ms": 1734.9481469999998,
+      "total_ms": 11316.831392,
+      "done_at_ms": 15181.89753,
+      "analyse_ms": 197.625116
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 32252694,
+      "wire": 32252694,
+      "ttfb_ms": 1512.649812,
+      "total_ms": 12508.462551999999,
+      "done_at_ms": 16373.606928000001,
+      "analyse_ms": 167.965859
+    }
+  ]
+}
