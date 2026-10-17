@@ -54,6 +54,31 @@ fn keys(p: &Value) -> Vec<i64> {
     k
 }
 
+/// The integer `order` array, if any.
+fn order(p: &Value) -> Option<Vec<usize>> {
+    p.get("order")?.as_array()?.iter().map(|v| v.as_i64().and_then(|x| usize::try_from(x).ok())).collect()
+}
+
+/// `out[order[i]] = b[i]` (scatter, as `split` uses) - `None` unless `order` is a permutation of `b`'s indices.
+fn scatter(b: &[u8], order: &[usize]) -> Option<Vec<u8>> {
+    let mut out: Vec<Option<u8>> = vec![None; b.len()];
+    if order.len() != b.len() {
+        return None;
+    }
+    for (&c, &pos) in b.iter().zip(order) {
+        let slot = out.get_mut(pos)?;
+        if slot.replace(c).is_some() {
+            return None;
+        }
+    }
+    out.into_iter().collect()
+}
+
+/// `out[i] = b[order[i]]` (gather).
+fn gather(b: &[u8], order: &[usize]) -> Option<Vec<u8>> {
+    (order.len() == b.len()).then(|| order.iter().map(|&i| b.get(i).copied()).collect()).flatten()
+}
+
 fn xor_with(b: &[u8], key: &[u8]) -> Vec<u8> {
     b.iter().enumerate().map(|(i, x)| x ^ key[i % key.len()]).collect()
 }
@@ -105,6 +130,7 @@ fn seeded_streams(p: &Value, n: usize) -> Vec<Vec<u8>> {
 /// Bounded breadth-first search over byte transforms of `data` / joined `parts`.
 fn generic(p: &Value) -> Result<String, String> {
     let ks = keys(p);
+    let ord = order(p);
     let mut frontier: Vec<Vec<u8>> = Vec::new();
     if let Some(d) = p.str_of("data") {
         frontier.push(d.as_bytes().to_vec());
@@ -126,6 +152,10 @@ fn generic(p: &Value) -> Result<String, String> {
         for v in &frontier {
             let s = String::from_utf8_lossy(v).into_owned();
             let mut outs: Vec<Vec<u8>> = vec![v.iter().rev().copied().collect()];
+            if let Some(o) = &ord {
+                outs.extend(scatter(v, o));
+                outs.extend(gather(v, o));
+            }
             outs.extend(codec::hex(&s));
             outs.extend(codec::base64(&s));
             outs.extend(codec::base32(&s));
@@ -186,6 +216,8 @@ pub fn decode(p: &Value) -> Result<String, String> {
             (Some(raw), _) => key.map(|k| xor_with(&raw, &[k as u8])),
             _ => None,
         },
+        // Characters of `data` permuted: data[i] belongs at position order[i].
+        "indexed" => order(p).and_then(|o| scatter(data.as_bytes(), &o)),
         "hex" => codec::hex(data),
         "reverse" => Some(codec::reverse(data).into_bytes()),
         "base64" => codec::base64(data),
@@ -284,6 +316,10 @@ mod tests {
     #[test]
     fn codecs() {
         assert_eq!(d(r#"{"codec":"split","parts":["0A353BE7B","ANS-5","709E18"],"order":[2,0,1]}"#).unwrap(), "ANS-5709E180A353BE7B");
+        let indexed = r#"{"codec":"indexed","data":"-2FE1A2D163AA1N51SC0","order":[3,10,17,4,11,18,5,12,19,6,13,0,7,14,1,8,15,2,9,16]}"#;
+        assert_eq!(d(indexed).unwrap(), "ANS-E26A5C21D3110FA1");
+        // Unknown name, same permutation: found by the search.
+        assert_eq!(d(&indexed.replace("indexed", "shuffle")).unwrap(), "ANS-E26A5C21D3110FA1");
         assert_eq!(d(r#"{"codec":"reverse","data":"6667D24E8BC6DE39-SNA"}"#).unwrap(), "ANS-93ED6CB8E42D7666");
         assert_eq!(d(r#"{"codec":"caesar","data":"KX]7BKPOK?>:CCP=;:@O","key":10}"#).unwrap(), "ANS-8AFEA54099F3106E");
         assert_eq!(d(r#"{"codec":"hex","data":"414e532d31323334353637383941424344454630"}"#).unwrap(), "ANS-123456789ABCDEF0");
