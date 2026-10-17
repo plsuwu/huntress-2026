@@ -1,0 +1,8 @@
+{
+  "set1.d02_analysis_mangled_score_symbol": "d02--variant-000.exe: no mangled symbol for \"score\"",
+  "set1.d02_analysis_typeinfo_symbol": "d02--variant-000.exe: no unambiguous _ZTI typeinfo symbol",
+  "set3.d02_analysis_mangled_score_symbol": "d02--variant-001.exe: no mangled symbol for \"score\"",
+  "set3.d02_analysis_typeinfo_symbol": "d02--variant-001.exe: no unambiguous _ZTI typeinfo symbol",
+  "set5.d02_analysis_mangled_score_symbol": "d02--variant-002.exe: no mangled symbol for \"score\"",
+  "set5.d02_analysis_typeinfo_symbol": "d02--variant-002.exe: no unambiguous _ZTI typeinfo symbol"
+}

@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-17-encoded-configuration-recovery/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "27f4118b-8514-4019-a060-bb0a8c14f16a",
+  "started_at": "2026-10-17T13:28:09.028Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 4467.808868,
+  "start_ttfb_ms": 4457.523186,
+  "clock": {
+    "start_sent": "2026-10-17T13:28:05.428Z",
+    "start_received": "2026-10-17T13:28:09.896Z",
+    "start_date_header": "2026-10-17T13:28:09.000Z",
+    "last_delivery": "2026-10-17T13:28:26.009Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 32937823,
+      "wire": 32937823,
+      "ttfb_ms": 1918.527114,
+      "total_ms": 11834.981163,
+      "done_at_ms": 16303.250173999999,
+      "analyse_ms": 203.859947
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32937803,
+      "wire": 32937803,
+      "ttfb_ms": 2039.99307,
+      "total_ms": 12597.870619,
+      "done_at_ms": 17066.055704,
+      "analyse_ms": 195.259784
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 32830961,
+      "wire": 32830961,
+      "ttfb_ms": 1924.775166,
+      "total_ms": 15368.991956,
+      "done_at_ms": 19837.276566,
+      "analyse_ms": 198.135884
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 32830939,
+      "wire": 32830939,
+      "ttfb_ms": 1931.0838800000001,
+      "total_ms": 15767.217618,
+      "done_at_ms": 20235.448352,
+      "analyse_ms": 195.99763000000002
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 32937804,
+      "wire": 32937804,
+      "ttfb_ms": 1927.969713,
+      "total_ms": 15901.938371,
+      "done_at_ms": 20370.265901,
+      "analyse_ms": 210.721986
+    }
+  ]
+}

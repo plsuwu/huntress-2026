@@ -52,6 +52,19 @@ pub struct Spec {
     pub cpp_typeinfo: bool,
     pub cpp_vtable: bool,
     pub zip_methods: Vec<u16>,
+    /// NUL-terminated strings behind ELF OBJECT symbols (`marker` -> `BR01-CATALOG-000`).
+    pub objects: BTreeMap<String, String>,
+    /// `eax` at the `ret` of `recover_code` (`mov eax,0x1fa4; ret` -> 8100).
+    pub recover_code: Option<u64>,
+    pub go_runtime: bool,
+    pub rust_mangled: bool,
+    /// Jar: the manifest's `Main-Class` declaration.
+    pub main_class: Option<jvm::ClassInfo>,
+    pub coroutine_runtime: bool,
+    /// Name of the section holding the validated HCFG blob (or its base64 text).
+    pub hcfg_section: Option<String>,
+    /// Itanium-mangled names found outside an ELF symtab (MinGW PE: COFF string table).
+    pub mangled_names: Vec<String>,
 }
 
 /// One delivery: specimens grouped by day (`d01` -> primary specimen + sidecar files).
@@ -138,6 +151,22 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.has_symtab = e.sections.iter().any(|x| x.kind == 2);
         let syms = e.symbols(d, 2).unwrap_or_default();
         s.symbols = syms.iter().filter(|x| !x.name.is_empty()).map(|x| x.name.clone()).collect();
+        for x in syms.iter().filter(|x| x.info & 0xf == 1 && !x.name.is_empty() && x.size > 0 && x.size <= 4096) {
+            let text = e.vaddr_to_offset(x.value).and_then(|o| bytes::cstr(d, o)).filter(|b| !b.is_empty() && b.len() as u64 <= x.size);
+            if let Some(t) = text.filter(|b| b.iter().all(|c| (0x20..0x7f).contains(c))) {
+                s.objects.insert(x.name.clone(), String::from_utf8_lossy(t).into_owned());
+            }
+        }
+        // Stripped d01 builds keep the marker string only in its `.huntress` section.
+        if !s.objects.contains_key("marker") {
+            let text = e.section(".huntress").and_then(|x| e.data(d, x)).and_then(|b| bytes::cstr(b, 0)).filter(|b| !b.is_empty() && b.iter().all(|c| (0x20..0x7f).contains(c)));
+            if let Some(t) = text {
+                s.objects.insert("marker".into(), String::from_utf8_lossy(t).into_owned());
+            }
+        }
+        let dynsyms = e.symbols(d, 11).unwrap_or_default();
+        s.rust_mangled = syms.iter().chain(&dynsyms).any(|x| is_rust_mangled(&x.name));
+        s.go_runtime = e.sections.iter().any(|x| x.name == ".gopclntab" || x.name == ".go.buildinfo");
         s.disassembly = Some(match syms.iter().find(|x| x.name == "recover_code") {
             None => Ok(Vec::new()),
             Some(sym) => match e.vaddr_to_offset(sym.value) {
@@ -153,6 +182,7 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.section_names = p.sections.iter().map(|x| x.name.clone()).collect();
         s.has_hcfg_section = p.sections.iter().any(|x| x.name == ".hcfg");
         s.is_dotnet = p.is_dotnet();
+        s.go_runtime = p.sections.iter().any(|x| x.name == ".gopclntab" || x.name == ".go.buildinfo");
     } else if let Some(m) = macho::parse(d) {
         s.container = Some(Container::MachO);
         s.machine = Some(macho::cpu_name(m.cputype));
@@ -171,10 +201,18 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
             m.sort();
             m.dedup();
             s.zip_methods = m;
+            s.coroutine_runtime = z.files().any(|e| e.name.starts_with("kotlin/coroutines/") || e.name.starts_with("kotlinx/coroutines/"));
+            s.main_class = jar_main_class(&z);
         }
     } else {
         s.container = Some(Container::Other);
     }
+    // Go embeds its build-info magic in every binary (PE/Mach-O builds have no `.gopclntab` section).
+    s.go_runtime |= bytes::find(d, b"\xff Go buildinf:").is_some();
+    s.recover_code = match &s.disassembly {
+        Some(Ok(ins)) if !ins.is_empty() => eval_eax(ins),
+        _ => None,
+    };
     lap("headers");
     // CLI metadata only lives in PE images; scanning a 67 MB ELF for `BSJB` cost ~0.1 s per set.
     if let Some(m) = matches!(s.container, Some(Container::Pe | Container::Other)).then(|| dotnet::Metadata::find(d)).flatten() {
@@ -184,13 +222,105 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
     lap("dotnet");
     s.cpp_typeinfo = has_mangled(d, b"_ZTI");
     s.cpp_vtable = has_mangled(d, b"_ZTV");
+    if s.symbols.is_empty() && s.cpp_typeinfo {
+        s.mangled_names = scan_mangled(d);
+    }
     lap("cpp");
     s.hcfg = if s.container == Some(Container::Jar) { jar_hcfg(d) } else { hcfg::raw(d).or_else(|| hcfg::base64_constant(d)) };
     if s.hcfg.is_none() || s.is_dotnet {
         s.xor_config = hcfg::xor_json(d).map(|(v, _, _)| v);
     }
+    if let (Some(h), Some(e)) = (&s.hcfg, (s.container == Some(Container::Elf)).then(|| elf::Elf::parse(d)).flatten()) {
+        s.hcfg_section = e.sections.iter().find(|x| x.kind != 8 && x.size > 0 && (x.offset..x.offset + x.size).contains(&(h.offset as u64))).map(|x| x.name.clone());
+    }
     lap("hcfg");
     s
+}
+
+/// NUL-terminated `_Z...` strings, kept whole when a COFF grouped-section prefix precedes the name
+/// (`.text$_ZNK15DiscoveryEngine5scoreEPKc`: graded verbatim on the d17 mastery MinGW PE), deduplicated in file order.
+fn scan_mangled(d: &[u8]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for at in bytes::find_all(d, b"_Z") {
+        let mut start = at;
+        if at > 0 && d[at - 1] == b'$' {
+            start = d[..at - 1].iter().rposition(|&c| c == 0).map_or(0, |p| p + 1);
+        } else if at > 0 && d[at - 1] != 0 {
+            continue;
+        }
+        let Some(name) = bytes::cstr(d, start) else { continue };
+        if name.len() < 5 || !name.iter().all(|c| c.is_ascii_alphanumeric() || b"_.$@".contains(c)) {
+            continue;
+        }
+        let n = String::from_utf8_lossy(name).into_owned();
+        if !out.contains(&n) {
+            out.push(n);
+        }
+    }
+    out
+}
+
+/// Legacy (`_ZN...17h<16 hex>E`) or v0 (`_R...`) Rust symbol mangling.
+fn is_rust_mangled(n: &str) -> bool {
+    let n = n.split('@').next().unwrap_or(n);
+    if let Some(r) = n.strip_prefix("_R") {
+        return r.starts_with(|c: char| c.is_ascii_uppercase());
+    }
+    n.starts_with("_ZN")
+        && n.len() > 21
+        && n.ends_with('E')
+        && n[n.len() - 20..n.len() - 17] == *"17h"
+        && n[n.len() - 17..n.len() - 1].bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+/// `eax` at the first `ret` of a straight-line disassembly (`mov eax,imm` / `xor eax,eax`).
+fn eval_eax(ins: &[String]) -> Option<u64> {
+    let mut eax = None;
+    for i in ins {
+        match i.as_str() {
+            "ret" => return eax,
+            "xor eax,eax" => eax = Some(0),
+            m if m.starts_with("mov eax,0x") => eax = Some(u64::from_str_radix(&m["mov eax,0x".len()..], 16).ok()?),
+            m if m.contains("eax") || m.contains("rax") => return None,
+            _ => {}
+        }
+    }
+    None
+}
+
+/// The manifest's `Main-Class`, parsed.
+fn jar_main_class(z: &zip::Zip) -> Option<jvm::ClassInfo> {
+    let mf = z.read_name("META-INF/MANIFEST.MF", b"").ok()?;
+    let mf = String::from_utf8_lossy(&mf);
+    let main = mf.lines().find_map(|l| l.strip_prefix("Main-Class:"))?.trim().replace('.', "/");
+    jvm::class_info(&z.read_name(&format!("{main}.class"), b"").ok()?)
+}
+
+/// `_ZTI<class>` of the polymorphic class owning `method` (`_ZNK15DiscoveryEngine5scoreEPKc` -> `_ZTI15DiscoveryEngine`),
+/// else the only class with a vtable.
+/// The first name (in table/file order) for the chosen class's typeinfo; COFF `.rdata$` prefixes are kept.
+fn typeinfo_symbol(syms: &[String]) -> Option<String> {
+    let core = |n: &str| n.rsplit('$').next().unwrap_or(n).to_string();
+    let mut classes: Vec<String> = Vec::new();
+    for n in syms {
+        let c = core(n);
+        if c.starts_with("_ZTI") && c[4..].starts_with(|ch: char| ch.is_ascii_digit()) && !classes.contains(&c[4..].to_string()) {
+            classes.push(c[4..].to_string());
+        }
+    }
+    let with_vtable: Vec<&String> = classes.iter().filter(|c| syms.iter().any(|v| core(v).strip_prefix("_ZTV") == Some(c.as_str()))).collect();
+    let class = match (classes.as_slice(), with_vtable.as_slice()) {
+        ([one], _) => one,
+        (_, [one]) => *one,
+        _ => return None,
+    };
+    syms.iter().find(|n| core(n).strip_prefix("_ZTI") == Some(class.as_str())).cloned()
+}
+
+/// The first Itanium-mangled symbol whose name contains the identifier `ident` (`<len><ident>`).
+fn mangled_symbol(syms: &[String], ident: &str) -> Option<String> {
+    let tok = format!("{}{ident}", ident.len());
+    syms.iter().find(|n| n.rsplit('$').next().unwrap_or(n).starts_with("_Z") && n.contains(&tok)).map(|n| n.split('@').next().unwrap_or(n).to_string())
 }
 
 /// `d08--variant-000.elf` -> `d08`.
@@ -281,8 +411,23 @@ fn container_label(s: &Spec, q: &Question) -> Result<String, String> {
     })
 }
 
+/// How the HCFG blob is stored (graded d17 single-solve: d08/d09/d11/d13 `base64`, d14 `raw_hcfg_section`,
+/// d12 `raw_const_array` = a raw blob in an ordinary data section).
+fn hcfg_storage(s: &Spec, h: &hcfg::Hcfg) -> Result<String, String> {
+    Ok(match h.source {
+        "raw" if s.has_hcfg_section && s.hcfg_section.as_deref().is_some_and(|n| n.trim_start_matches(['.', '_']) == "hcfg") => "raw_hcfg_section".into(),
+        "raw" => "raw_const_array".into(),
+        "base64" | "jar-constant" => "base64".into(),
+        other => return Err(format!("{}: no storage label for HCFG source {other:?} (section {:?})", s.name, s.hcfg_section)),
+    })
+}
+
 fn config_value(v: &Value) -> String {
     v.as_str().map(str::to_string).unwrap_or_else(|| v.to_json())
+}
+
+fn cxx_names(s: &Spec) -> &[String] {
+    if s.symbols.is_empty() { &s.mangled_names } else { &s.symbols }
 }
 
 fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -> Result<String, String> {
@@ -340,6 +485,25 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
                 .or_else(|| from(s.xor_config.as_ref()))
                 .ok_or_else(|| format!("{}: config has no {key:?}", s.name))?
         }
+        // A stripped build has no recover_code symbol: the question then turns exact_text ("none" when absent).
+        "analysis_recover_code" if matches!(s.disassembly, Some(Ok(ref v)) if v.is_empty()) && q.format_kind.as_deref() == Some("exact_text") => "none".into(),
+        "analysis_recover_code" => need(s.recover_code.map(|v| v.to_string()), "recover_code return value")?,
+        "analysis_typeinfo_symbol" => need(typeinfo_symbol(cxx_names(s)), "unambiguous _ZTI typeinfo symbol")?,
+        f if f.starts_with("analysis_mangled_") && f.ends_with("_symbol") => {
+            let ident = &f["analysis_mangled_".len()..f.len() - "_symbol".len()];
+            need(mangled_symbol(cxx_names(s), ident), &format!("mangled symbol for {ident:?}"))?
+        }
+        "analysis_has_go_runtime" => s.go_runtime.to_string(),
+        "analysis_has_rust_mangled_symbol" => s.rust_mangled.to_string(),
+        "analysis_has_coroutine_runtime" if s.container == Some(Container::Jar) => s.coroutine_runtime.to_string(),
+        "analysis_methods" => {
+            let c = s.main_class.as_ref().ok_or_else(|| format!("{}: no Main-Class", s.name))?;
+            json(&c.methods.iter().map(|m| m.0.clone()).collect::<Vec<_>>())
+        }
+        "analysis_method_count" => need(s.main_class.as_ref().map(|c| c.methods.len().to_string()), "Main-Class")?,
+        "analysis_access_flags" => need(s.main_class.as_ref().map(|c| c.access.to_string()), "Main-Class")?,
+        "analysis_hcfg_storage" => hcfg_storage(s, h()?)?,
+        f if s.objects.contains_key(&f["analysis_".len().min(f.len())..]) => s.objects[&f["analysis_".len()..]].clone(),
         other => return Err(format!("unknown field {other:?} for {} ({:?})", s.name, s.container)),
     })
 }

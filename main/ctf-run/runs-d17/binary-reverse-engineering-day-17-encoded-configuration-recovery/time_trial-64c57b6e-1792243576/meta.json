@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-17-encoded-configuration-recovery/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "64c57b6e-d8a0-48fa-9b8b-0db48474c826",
+  "started_at": "2026-10-17T13:26:18.738Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2532.744607,
+  "start_ttfb_ms": 2529.764169,
+  "clock": {
+    "start_sent": "2026-10-17T13:26:16.452Z",
+    "start_received": "2026-10-17T13:26:18.985Z",
+    "start_date_header": "2026-10-17T13:26:18.000Z",
+    "last_delivery": "2026-10-17T13:26:23.902Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32830949,
+      "wire": 32830949,
+      "ttfb_ms": 1620.934266,
+      "total_ms": 4711.902026,
+      "done_at_ms": 7245.008048,
+      "analyse_ms": 203.99444599999998
+    }
+  ]
+}
