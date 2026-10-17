@@ -1,0 +1,4 @@
+{
+  "d01_analysis_marker": "unknown field \"analysis_marker\" for d01--variant-014.elf (Some(Elf))",
+  "d01_analysis_recover_code": "d01--variant-014.elf: no recover_code return value"
+}

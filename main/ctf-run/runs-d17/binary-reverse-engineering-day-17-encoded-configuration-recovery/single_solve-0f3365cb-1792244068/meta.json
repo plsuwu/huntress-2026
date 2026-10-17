@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-17-encoded-configuration-recovery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0f3365cb-bbf6-45f2-b3b1-5776e2ed0c8b",
+  "started_at": "2026-10-17T13:00:14.752Z",
+  "deadline": null,
+  "shape": "artifacts[1] (from status)",
+  "start_ms": 1701.074348,
+  "start_ttfb_ms": 1699.587221,
+  "clock": {
+    "start_sent": "2026-10-17T13:34:28.597Z",
+    "start_received": "2026-10-17T13:34:30.298Z",
+    "start_date_header": "2026-10-17T13:34:30.000Z",
+    "last_delivery": "2026-10-17T13:34:35.580Z",
+    "submit_sent": "2026-10-17T13:34:35.581Z",
+    "submit_received": "2026-10-17T13:34:37.230Z",
+    "submit_date_header": "2026-10-17T13:34:37.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32831470,
+      "wire": 32831470,
+      "ttfb_ms": 1253.841492,
+      "total_ms": 3470.59075,
+      "done_at_ms": 6771.476114,
+      "analyse_ms": 211.818921
+    }
+  ]
+}

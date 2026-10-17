@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-17-encoded-configuration-recovery/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "27f4118b-8514-4019-a060-bb0a8c14f16a",
+  "started_at": "2026-10-17T13:28:09.028Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 4483.987713,
+  "start_ttfb_ms": 4473.067462999999,
+  "clock": {
+    "start_sent": "2026-10-17T13:29:22.451Z",
+    "start_received": "2026-10-17T13:29:26.935Z",
+    "start_date_header": "2026-10-17T13:29:26.000Z",
+    "last_delivery": "2026-10-17T13:29:43.762Z",
+    "submit_sent": "2026-10-17T13:29:43.762Z",
+    "submit_received": "2026-10-17T13:29:47.378Z",
+    "submit_date_header": "2026-10-17T13:29:47.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 32830939,
+      "wire": 32830939,
+      "ttfb_ms": 1676.467452,
+      "total_ms": 11783.914458,
+      "done_at_ms": 16268.318299,
+      "analyse_ms": 221.093075
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 32937823,
+      "wire": 32937823,
+      "ttfb_ms": 1397.287211,
+      "total_ms": 14913.071958999999,
+      "done_at_ms": 19397.524696,
+      "analyse_ms": 190.856919
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32937803,
+      "wire": 32937803,
+      "ttfb_ms": 1383.336586,
+      "total_ms": 15484.571552,
+      "done_at_ms": 19968.929546,
+      "analyse_ms": 210.080193
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 32830961,
+      "wire": 32830961,
+      "ttfb_ms": 1376.380482,
+      "total_ms": 15587.362451,
+      "done_at_ms": 20071.879113000003,
+      "analyse_ms": 200.517689
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 32937804,
+      "wire": 32937804,
+      "ttfb_ms": 1378.5027460000001,
+      "total_ms": 16627.341323,
+      "done_at_ms": 21111.858378,
+      "analyse_ms": 198.322693
+    }
+  ]
+}
