@@ -28,6 +28,18 @@ def strip_set(k):
     return re.sub(r"^set\d+\.", "", k)
 
 
+def family(k):
+    """`d17-audio-001-media-...` -> `d17-audio`; underscore ids (binary-RE roll-ups: `d01_analysis_marker`) -> `d01`,
+    so a 204-question roll-up costs ~17 group submits instead of 204 singletons."""
+    k = strip_set(k)
+    return "-".join(k.split("-")[:2]) if "-" in k else k.split("_")[0]
+
+
+def field(k):
+    k = strip_set(k)
+    return k.split("-")[-1] if "-" in k else k.split("_", 1)[-1]
+
+
 def main():
     run = sys.argv[1]
     meta = json.load(open(os.path.join(run, "meta.json")))
@@ -35,7 +47,7 @@ def main():
     answers = json.load(open(os.path.join(run, "answers.json")))["answers"]
     fam = defaultdict(dict)
     for k, v in answers.items():
-        fam["-".join(strip_set(k).split("-")[:2])][k] = v
+        fam[family(k)][k] = v
     bad = []
     for name, group in sorted(fam.items(), key=lambda x: -len(x[1])):
         ok = True
@@ -51,11 +63,11 @@ def main():
     for name in bad:
         by_field = defaultdict(dict)
         for k, v in fam[name].items():
-            by_field[strip_set(k).split("-")[-1]][k] = v
-        for field, group in sorted(by_field.items()):
+            by_field[field(k)][k] = v
+        for fld, group in sorted(by_field.items()):
             for c in chunks(group.items()):
                 r = submit(challenge, c)
-                print(f"  {name}/{field:20} {len(c):4} -> {r.get('result')} remaining={r.get('remaining')}", flush=True)
+                print(f"  {name}/{fld:20} {len(c):4} -> {r.get('result')} remaining={r.get('remaining')}", flush=True)
                 if r.get("result") == "CORRECT":
                     print(json.dumps(r)); return
 
