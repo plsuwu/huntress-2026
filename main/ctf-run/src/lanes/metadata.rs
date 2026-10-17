@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{cfb, dotnet, elf, email, lnk, media, ooxml, pe, zip};
+use crate::formats::{audio, cfb, dotnet, elf, email, lnk, media, ooxml, pe, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -178,6 +178,53 @@ fn email_facts(m: &email::Message) -> String {
     format!("email headers {:?} parts {parts:?}", m.headers)
 }
 
+/// `...-media-<field>` -> an audio stream field, sniffed from the bytes (the extension may lie). Codec
+/// names are ffprobe `codec_name`s (d17 graded `pcm_s16le`); "primary" = the first audio stream. A
+/// mail message stands for its single audio attachment. Fields other than the codec are unverified.
+fn media_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("media-")?;
+    let want = key[i + 6..].strip_prefix("primary-").unwrap_or(&key[i + 6..]);
+    let want = want.strip_prefix("audio-").unwrap_or(want);
+    let owned;
+    let data = match (audio::sniff(b), email::Message::parse(b)) {
+        (Some(_), _) => b,
+        (None, Some(m)) => {
+            let mut found: Vec<Vec<u8>> = m.parts().into_iter().map(|p| p.data).filter(|d| audio::sniff(d).is_some()).collect();
+            if found.len() != 1 {
+                return Some(Err(format!("{} audio parts in the message; {}", found.len(), email_facts(&m))));
+            }
+            owned = found.pop().unwrap();
+            &owned
+        }
+        // An unrecognised container is not "absent": refuse rather than answer `none`.
+        (None, None) => return Some(Err(format!("no audio stream recognised; {}", facts("media", b)))),
+    };
+    let a = audio::sniff(data).unwrap();
+    let opt = |v: Option<String>| v.unwrap_or_else(none);
+    Some(Ok(match want {
+        "codec-name" | "codec" | "stream-codec-name" => a.codec.clone(),
+        "sample-rate" | "sample-rate-hz" => opt(a.sample_rate.map(|v| v.to_string())),
+        "channels" | "channel-count" => opt(a.channels.map(|v| v.to_string())),
+        "bits-per-sample" | "bit-depth" => opt(a.bits.map(|v| v.to_string())),
+        "container" | "format-name" | "container-format" => a.container.to_string(),
+        _ => return Some(Err(format!("unknown media field {want:?}; {}", audio_facts(&a, data)))),
+    }))
+}
+
+fn audio_facts(a: &audio::Audio, d: &[u8]) -> String {
+    let payload = a.payload.and_then(|(s, n)| d.get(s..s + n)).map(|p| hex(&sha256(p)));
+    format!(
+        "audio container {} codec {} rate {:?} ch {:?} bits {:?} duration {:?} payload sha256 {payload:?} tags {:?}",
+        a.container,
+        a.codec,
+        a.sample_rate,
+        a.channels,
+        a.bits,
+        a.duration_seconds(),
+        a.tags
+    )
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -261,6 +308,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(props) = cfb::msi_properties(b) {
         f.push(format!("msi {props:?} revision {:?}", cfb::summary_string(b, 9)));
     }
+    if let Some(a) = audio::sniff(b) {
+        f.push(audio_facts(&a, b));
+    }
     if let Some(m) = email::Message::parse(b) {
         f.push(email_facts(&m));
     }
@@ -333,6 +383,10 @@ impl Lane for Metadata {
             keyed.sort();
             return Ok(compact_json(&keyed.into_iter().map(|(_, n)| n).collect::<Vec<_>>()));
         }
+        if key.contains("-media-") {
+            let data = data.ok_or_else(|| format!("no file {member:?} for {label:?}"))?;
+            return media_answer(&key, data).unwrap_or_else(|| Err(format!("unknown kind {key:?}; {}", facts(member, data))));
+        }
         // Email fields go first: `-email-attachment-sha256` / `-filename` must not hit the whole-file handlers.
         if key.contains("-email-") {
             let data = data.ok_or_else(|| format!("no file {member:?} for {label:?}"))?;
@@ -365,6 +419,16 @@ mod tests {
     use super::*;
 
     const EML: &[u8] = b"From: a <a@x>\r\nMessage-ID: <id@x>\r\nContent-Type: multipart/mixed; boundary=\"b\"\r\n\r\n--b\r\nContent-Type: text/plain\r\n\r\nhello\r\n--b\r\nContent-Disposition: attachment; filename=\"n.txt\"\r\nContent-Transfer-Encoding: base64\r\n\r\naGk=\r\n--b--\r\n";
+
+    #[test]
+    fn media_fields() {
+        let mut w = b"RIFF\0\0\0\0WAVEfmt \x10\0\0\0\x01\0\x01\0\x80\x3e\0\0\0\x7d\0\0\x02\0\x10\0data\x02\0\0\0\x01\x02".to_vec();
+        assert_eq!(media_answer("d17-audio-001-media-primary-audio-codec-name", &w).unwrap().unwrap(), "pcm_s16le");
+        assert_eq!(media_answer("d17-audio-001-media-primary-audio-sample-rate", &w).unwrap().unwrap(), "16000");
+        w[20] = 7;
+        assert_eq!(media_answer("d17-audio-001-media-primary-audio-codec-name", &w).unwrap().unwrap(), "pcm_mulaw");
+        assert!(media_answer("d17-audio-001-media-primary-audio-codec-name", b"plain text").unwrap().is_err());
+    }
 
     #[test]
     fn email_fields() {
