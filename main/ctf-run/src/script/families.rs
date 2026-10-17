@@ -245,7 +245,7 @@ pub const ML_PREFIXES: &[&str] = &["polyglot-", "host-hta-", "host-wsf-", "host-
 /// `HUNTRESS_ANALYSIS_V1:<KIND>-<payload>` marker or any string that decodes to a descriptor.
 pub fn analyse_literal(text: &str) -> Result<BTreeMap<String, String>, String> {
     let ok = |f: &BTreeMap<String, String>| f.contains_key("role") || f.contains_key("steps");
-    for m in [re!(r#"descriptor_\w+\s*(?::\s*\w+\s*)?[=:]\s*"([^"]+)""#).search(text), re!(r#"\bDescriptor\s*=\s*"([^"]+)"\s*;"#).search(text)].into_iter().flatten() {
+    for m in [re!(r#"(?i)descriptor_\w+\s*(?::\s*\w+\s*)?(?::=|[=:])\s*"([^"]+)""#).search(text), re!(r#"\bDescriptor\s*=\s*"([^"]+)"\s*;"#).search(text)].into_iter().flatten() {
         if let Ok(f) = decode_literal(m.g(1)) {
             if ok(&f) {
                 return Ok(f);
@@ -308,4 +308,24 @@ pub fn answer_literal(key: &str, d: &BTreeMap<String, String>) -> Result<String,
         }
     }
     Err(format!("unrouted {key}"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Day 17 AutoHotkey `descriptor_x := "..."` must match the assignment pattern itself (the
+    /// first pass only found it via the `HUNTRESS_ANALYSIS_V1` marker), as must Ruby's uppercase constant.
+    #[test]
+    fn literal_without_marker() {
+        let text = std::fs::read_to_string("testdata/d17-polyglot-ahk-downloader.ahk").unwrap();
+        let want = analyse_literal(&text).unwrap();
+        // A second (unassigned) literal makes the quoted-token fallback ambiguous.
+        let decoy = std::fs::read_to_string("testdata/d17-polyglot-ahk-decoy.txt").unwrap();
+        let stripped: String = text.lines().filter(|l| !l.contains("HUNTRESS_ANALYSIS_V1")).map(|l| format!("{l}\n")).collect::<String>() + &decoy;
+        assert!(analyse_literal(&decoy).unwrap() != want);
+        assert_eq!(analyse_literal(&stripped).unwrap(), want);
+        let ruby = stripped.replace("descriptor_9d0cb65a :=", "DESCRIPTOR_9D0CB65A =");
+        assert_eq!(analyse_literal(&ruby).unwrap(), want);
+    }
 }
