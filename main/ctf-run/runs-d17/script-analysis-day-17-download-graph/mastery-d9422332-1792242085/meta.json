@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-17-download-graph/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d9422332-a181-437a-b8e5-01260444eee5",
+  "started_at": "2026-10-17T13:01:30.040Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 6185.21041,
+  "start_ttfb_ms": 6161.2222440000005,
+  "clock": {
+    "start_sent": "2026-10-17T13:01:25.408Z",
+    "start_received": "2026-10-17T13:01:31.593Z",
+    "start_date_header": "2026-10-17T13:01:31.000Z",
+    "last_delivery": "2026-10-17T13:01:33.178Z",
+    "submit_sent": "2026-10-17T13:01:33.224Z",
+    "submit_received": "2026-10-17T13:01:39.365Z",
+    "submit_date_header": "2026-10-17T13:01:39.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-17-download-graph-mastery.zip",
+      "bytes": 572491,
+      "wire": 572491,
+      "ttfb_ms": 1436.163503,
+      "total_ms": 1509.133971,
+      "done_at_ms": 7694.424163,
+      "analyse_ms": 75.831171
+    }
+  ]
+}
