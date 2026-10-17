@@ -36,6 +36,7 @@ pub enum T {
     Bs,
     Bin,
     Morse,
+    Bacon,
 }
 
 impl T {
@@ -55,6 +56,7 @@ impl T {
             T::Ent => codec::has_entity(t).then(|| codec::html_unescape_all(t)),
             T::Bs => codec::has_backslash_escape(t).then(|| codec::backslash_unescape_all(t)),
             T::Morse => morse_variants(t).into_iter().next(),
+            T::Bacon => bacon_variants(t).into_iter().next(),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -84,6 +86,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         14 => T::Rot(19), // Caesar +7 ("Caesar took a week off"); graded on the day-14 single-solve
         15 => T::Rot47, // "Room Forty-Seven": punctuation and digits rotate too
         16 => T::Morse, // "Dot Com": Morse of the hex digits ("sixteen little symbols")
+        17 => T::Bacon, // "Bacon Bits": 5-bit a/b groups of the hex digits ("sixteen guests")
         _ => return None,
     })
 }
@@ -94,6 +97,9 @@ fn structured(frag: &str) -> Option<(T, String)> {
     let try_ = |t: T| t.apply(v).map(|s| (t, s));
     if codec::is_morse(v) {
         return try_(T::Morse);
+    }
+    if codec::is_bacon(v) {
+        return try_(T::Bacon);
     }
     if codec::has_backslash_escape(v) {
         return try_(T::Bs);
@@ -173,6 +179,27 @@ fn morse_variants(frag: &str) -> Vec<String> {
     v
 }
 
+/// Bacon groups: day 17 sent each hex digit of the sentence as 5 bits (`a` = 0), so a hex reading
+/// wins (either polarity), then classic 26- and 24-letter Bacon text, uppercase and lowercased.
+fn bacon_variants(frag: &str) -> Vec<String> {
+    let Some(vals) = codec::bacon_values(frag) else { return Vec::new() };
+    let mut v = Vec::new();
+    for inv in [false, true] {
+        let vs: Vec<u8> = vals.iter().map(|&x| if inv { 31 - x } else { x }).collect();
+        if vs.len() % 2 == 0 && vs.iter().all(|&x| x < 16) {
+            let bytes: Vec<u8> = vs.chunks(2).map(|p| p[0] << 4 | p[1]).collect();
+            v.extend(codec::printable(&bytes));
+        }
+    }
+    for a26 in [true, false] {
+        if let Some(t) = codec::bacon_letters(&vals, a26) {
+            v.push(t.to_lowercase());
+            v.push(t);
+        }
+    }
+    v
+}
+
 /// The slug, if `text` is exactly the sentence (trailing whitespace allowed). The last row may be
 /// padded to the common row width with `-<digits>` (seen 2026-10-15: `v-35-3783` -> `...whale-35-3783`);
 /// the slug format is exact (three words, two digits), so such a tail is unambiguous.
@@ -246,6 +273,7 @@ pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
                 let outs: Vec<String> = match t {
                     T::Rev => rev_variants(&r.frag),
                     T::Morse => morse_variants(&r.frag),
+                    T::Bacon => bacon_variants(&r.frag),
                     _ => t.apply(&r.frag).into_iter().collect(),
                 };
                 outs.into_iter().map(|s| (t, s)).collect::<Vec<_>>()
@@ -336,7 +364,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = letters.filter_map(|k| k.apply(&t)).find_map(|c| match_template(&c)) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
-        let next = [T::Morse, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
+        let next = [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
         if let Some(n) = next {
             t = n;
             continue;
@@ -505,6 +533,11 @@ mod tests {
         let hex: String = SENT.bytes().map(|b| format!("{b:02X}")).collect();
         let to_morse = |s: &str| s.chars().map(|c| match c { 'A' => ".-", 'B' => "-...", 'C' => "-.-.", 'D' => "-..", 'E' => ".", 'F' => "..-.", '0' => "-----", '1' => ".----", '2' => "..---", '3' => "...--", '4' => "....-", '5' => ".....", '6' => "-....", '7' => "--...", '8' => "---..", _ => "----." }).collect::<Vec<_>>().join(" ");
         assert_eq!(slug(solve_blob(&to_morse(&hex))), "zesty-sunset-quartz-65");
+        // Day 17 "Bacon Bits": 5-bit a/b groups of the hex digits.
+        let bacon: Vec<String> = hex.chars().map(|c| format!("{:05b}", c.to_digit(16).unwrap()).replace('0', "a").replace('1', "b")).collect();
+        assert_eq!(slug(solve_blob(&bacon.join(" "))), "zesty-sunset-quartz-65");
+        let row = format!("01\tTmljZSB3b3Jr\n17\t{}\n", bacon[18..].join(" "));
+        assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65");
     }
 
     /// 2026-10-15 timed variant: the final (atbash) row is padded with `-<digits>`.
