@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-17-name-collapse/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "c22a8889-7ce6-4009-ab05-80e87ae8f34a",
+  "started_at": "2026-10-17T13:06:42.914Z",
+  "deadline": "2026-10-17T13:09:32.914Z",
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 982.770659,
+  "start_ttfb_ms": 982.132777,
+  "clock": {
+    "start_sent": "2026-10-17T13:06:41.987Z",
+    "start_received": "2026-10-17T13:06:42.970Z",
+    "start_date_header": "2026-10-17T13:06:42.000Z",
+    "last_delivery": "2026-10-17T13:06:43.080Z",
+    "submit_sent": "2026-10-17T13:06:43.080Z",
+    "submit_received": "2026-10-17T13:06:43.847Z",
+    "submit_date_header": "2026-10-17T13:06:43.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 3,
+      "name": "name_collapse_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 92.000868,
+      "total_ms": 92.048931,
+      "done_at_ms": 1075.561137,
+      "analyse_ms": 0.029496
+    },
+    {
+      "delivery": 4,
+      "name": "name_collapse_mastery_04.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 95.75265900000001,
+      "total_ms": 95.868833,
+      "done_at_ms": 1079.612263,
+      "analyse_ms": 0.024351
+    },
+    {
+      "delivery": 1,
+      "name": "name_collapse_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 107.989125,
+      "total_ms": 108.057126,
+      "done_at_ms": 1091.40862,
+      "analyse_ms": 0.021123
+    },
+    {
+      "delivery": 2,
+      "name": "name_collapse_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 91.382006,
+      "total_ms": 91.552665,
+      "done_at_ms": 1091.59865,
+      "analyse_ms": 0.027292
+    },
+    {
+      "delivery": 5,
+      "name": "name_collapse_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 96.212329,
+      "total_ms": 96.553392,
+      "done_at_ms": 1092.506722,
+      "analyse_ms": 0.039341
+    }
+  ]
+}

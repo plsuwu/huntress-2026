@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-17-download-graph/time_trial",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "02ff9b5e-f818-45c6-87e6-067731e70574",
+  "started_at": "2026-10-17T13:39:17.713Z",
+  "deadline": "2026-10-17T13:40:07.713Z",
+  "shape": "download",
+  "start_ms": 1183.477921,
+  "start_ttfb_ms": 1176.1585160000002,
+  "clock": {
+    "start_sent": "2026-10-17T13:39:16.661Z",
+    "start_received": "2026-10-17T13:39:17.844Z",
+    "start_date_header": "2026-10-17T13:39:17.000Z",
+    "last_delivery": "2026-10-17T13:39:18.184Z",
+    "submit_sent": "2026-10-17T13:39:18.206Z",
+    "submit_received": "2026-10-17T13:39:19.034Z",
+    "submit_date_header": "2026-10-17T13:39:19.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 115878,
+      "wire": 115878,
+      "ttfb_ms": 273.407809,
+      "total_ms": 278.08758,
+      "done_at_ms": 1461.767555,
+      "analyse_ms": 61.752199
+    }
+  ]
+}

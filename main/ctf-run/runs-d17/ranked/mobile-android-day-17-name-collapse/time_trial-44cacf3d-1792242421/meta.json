@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-17-name-collapse/time_trial",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "44cacf3d-d4d0-4b0b-8105-42d65eddd761",
+  "started_at": "2026-10-17T13:07:01.943Z",
+  "deadline": "2026-10-17T13:07:51.943Z",
+  "shape": "download",
+  "start_ms": 432.07662600000003,
+  "start_ttfb_ms": 431.927571,
+  "clock": {
+    "start_sent": "2026-10-17T13:07:01.573Z",
+    "start_received": "2026-10-17T13:07:02.005Z",
+    "start_date_header": "2026-10-17T13:07:02.000Z",
+    "last_delivery": "2026-10-17T13:07:02.122Z",
+    "submit_sent": "2026-10-17T13:07:02.122Z",
+    "submit_received": "2026-10-17T13:07:03.052Z",
+    "submit_date_header": "2026-10-17T13:07:03.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "name_collapse_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 115.985839,
+      "total_ms": 116.20820499999999,
+      "done_at_ms": 548.837886,
+      "analyse_ms": 0.043068999999999996
+    }
+  ]
+}

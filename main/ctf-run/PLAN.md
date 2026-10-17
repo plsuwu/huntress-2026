@@ -346,3 +346,16 @@ replay -> timed), module map, testing rules.
   mastery 805); #2 warmups TT (811 vs 614, server-bound), metadata TT (709 vs 629, server-bound), binary TT (1900 vs
   1899); #3 binary mastery (4886 vs 4465). Binary is the one engineering lever: analysis ~600 ms per TT run and
   ~2.6 s per mastery on the jumpbox, after the download. Ranked attempts left: TT 24-252, binary mastery 13.
+- 2026-10-17 - Day 17 rush. Release seen at 23:00:09: the status probe treated 409 `start_required` as not released,
+  costing 9 s (fixed). New gate: TT/mastery `start` -> 409 `prerequisite_required` until single-solve is CORRECT
+  (binary mastery also waits for TT), so the concurrent first pass only scored script's single-solve. Lane fixes:
+  mobile `indexed` permutation codec (+2 min), warmups Bacon-of-hex (+4), metadata WAV `pcm_s16le` via new
+  `formats/audio.rs` (+7), script AHK `:=` literal hardening (+13), binary-RE 12-fields-per-day roll-up incl.
+  `hcfg_storage` labels and MinGW-PE `.text$`/`.rdata$` symbol answers (+36, ~200 free partial submits). All 15 routes
+  CORRECT untimed; 269/269 replay clean. `oracle_groups.py` now groups `dNN_` ids by day.
+  Ranked (user held ranked runs until every lane was merged, except an early mobile/warmups wave; jumpbox,
+  `runs-hof/plan-d17-{a,b,c,d}.json` -> `campaign-d17-*.log`, `d` = one full `past_first` re-run): 29 runs,
+  **29 CORRECT**. Board 23:45: **#1 on 9/10** - warmups TT 534 / mastery 566, mobile TT 247 / mastery 248, metadata
+  TT 638 / mastery 638, script TT 728, binary TT 1980 (next 3696) / mastery 4750 (next 93 s). #2 script mastery
+  1667 vs 1645 (5695 answers; 6 re-rolls stuck at 1667 - client-side parse/solve time is the lever, not luck).
+  Ranked run dirs (small lanes) in `runs-d17/ranked/`.

@@ -1,4 +1,4 @@
-# Lane patterns & per-day "gimmick" predictions (as of Day 15, 2026-10-15)
+# Lane patterns & per-day "gimmick" predictions (as of Day 17, 2026-10-17)
 
 Derived from every `utils/solver_py_scripts/day-*/**/NOTES.md` (days 2-13) plus the GM `op=list` route metadata.
 Read this before starting a new day: most of the day's "gimmick" is predictable, and the real risk is usually the
@@ -13,6 +13,9 @@ route configuration (one-shot timed attempts), not the analysis.
   become a question. The work each day is "where does the same payload sit now?".
 - **"Cumulative" does not mean "frozen"**: binary-RE day 8 added new questions to the old d01-d07 specimens, and the
   script-analysis batch-expansion labels were graded differently in single-solve vs time-trial/mastery on day 13.
+- **Since Day 17, modes are gated**: TT/mastery `start` answers 409 `prerequisite_required` until single-solve is
+  CORRECT (binary-RE: mastery also waits for TT). Solve single first; a concurrent start of all three wastes nothing
+  but must be retried.
 - **Check the route config first** (`op=list&all=true`): `run_for_time_supported`, `ranked_pool_size`,
   `regular_pool_size`, `ranked_deadline_ms`, `ranked_set_count`. It decides whether you get a free untimed attempt.
 
@@ -115,6 +118,38 @@ untimed. Details in `solver_py_scripts/day-16-*/*/NOTES.md`.
 | script | `polyglot-ruby-*` + `host-ruby-rack-ruby` | uppercase `DESCRIPTOR_<HEX>` constant - found only via the `HUNTRESS_ANALYSIS_V1` marker fallback |
 | binary-RE | `-compact` + `-direct` WebAssembly pair | `format`=`wasm`, `architecture`=`wasm32`; HCFG raw in a data segment; new `formats/wasm.rs` |
 | mobile | `codec:"native"` again | nothing |
+
+## Day 17 outcome (2026-10-17)
+
+Dual-pool (ranked 16-256). Script passed the first pass with no code change. Mobile was done at +2 min, warmups at +4,
+metadata at +7 and script at +13 (hardening only). Binary-RE took until +36 min: new fields on old specimens, and graded
+labels that cost ~200 free partial submits. All 15 routes CORRECT untimed. Details in
+`solver_py_scripts/day-17-*/*/NOTES.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **Bacon** a/b 5-bit groups of the sentence's **hex** digits ("Bacon Bits") | Bacon -> hex -> text (3rd day running of "<cipher> of hex"); mastery row 17 = Bacon |
+| metadata | `media-primary-audio-codec-name` on a `.wav` | graded with the **ffprobe `codec_name`** spelling (`pcm_s16le`); new `formats/audio.rs` |
+| script | `polyglot-auto_hotkey-*` (no `host-` file) | AHK v2 `descriptor_x := "..."` - `:=` was not in the literal regex (marker fallback saved it) |
+| binary-RE | d17 = Ada/GNAT ELF, raw HCFG in `.rodata` | d17 itself fine; **every day now has 12 questions** - new fields on d01-d14 (marker, recover_code, C++ symbols, go/rust/coroutine runtime flags, JVM methods/access flags, `hcfg_storage`) |
+| mobile | `codec:"indexed"` (`data` + `order` permutation, scatter) | one decode branch |
+
+Graded labels that no synonym search finds: `hcfg_storage` = `base64` / `raw_hcfg_section` / `raw_const_array`; on a
+MinGW PE the symbol answers keep the COFF section prefix (`.text$_ZNK...`, `.rdata$_ZTI...`); stripped d01's
+`recover_code` = `none`.
+Ranked (one campaign after the last merge): see `ctf-run/PLAN.md`.
+
+## Day 18 predictions
+
+- Warmups: a fourth "<cipher> of hex" (Polybius/tap code, binary, Braille, semaphore, NATO alphabet?). Add the decoder
+  to `T` + `fixed_codec` and try the hex reading first.
+- Metadata: more `media-*` kinds on the same audio path (sample rate, channels, duration, container, an audio
+  attachment inside an `.eml`, codec behind a lying extension) - `formats/audio.rs` already prints these; only
+  `codec-name` is graded so far.
+- Script: one more `polyglot-<lang>` family; check the language's assignment operator against `analyse_literal`.
+- Binary-RE: expect more fields added to old specimens. Run the grouped oracle (it groups `dNN_` ids by day) at once,
+  then probe one field per submit.
+- Mobile: a new `codec` name; the generic search tries permutations whenever an `order` array is present.
 
 ## Day 16 predictions
 

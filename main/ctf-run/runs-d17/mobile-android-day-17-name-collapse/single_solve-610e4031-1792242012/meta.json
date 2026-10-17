@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-17-name-collapse",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "610e4031-058c-44b1-bd66-4b2a40c88a43",
+  "started_at": "2026-10-17T13:00:14.251Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1674.339899,
+  "start_ttfb_ms": 1672.887495,
+  "clock": {
+    "start_sent": "2026-10-17T13:00:12.750Z",
+    "start_received": "2026-10-17T13:00:14.424Z",
+    "start_date_header": "2026-10-17T13:00:14.000Z",
+    "last_delivery": "2026-10-17T13:00:15.616Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "name_collapse.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1189.2828579999998,
+      "total_ms": 1189.356398,
+      "done_at_ms": 2864.0195870000002,
+      "analyse_ms": 1.6600059999999999
+    }
+  ]
+}

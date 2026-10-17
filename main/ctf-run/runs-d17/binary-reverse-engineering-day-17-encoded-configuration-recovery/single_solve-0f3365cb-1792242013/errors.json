@@ -1,0 +1,18 @@
+{
+  "d01_analysis_marker": "unknown field \"analysis_marker\" for d01--variant-000.elf (Some(Elf))",
+  "d01_analysis_recover_code": "unknown field \"analysis_recover_code\" for d01--variant-000.elf (Some(Elf))",
+  "d02_analysis_mangled_score_symbol": "unknown field \"analysis_mangled_score_symbol\" for d02--variant-000.elf (Some(Elf))",
+  "d02_analysis_typeinfo_symbol": "unknown field \"analysis_typeinfo_symbol\" for d02--variant-000.elf (Some(Elf))",
+  "d04_analysis_has_go_runtime": "unknown field \"analysis_has_go_runtime\" for d04--variant-000.elf (Some(Elf))",
+  "d05_analysis_has_rust_mangled_symbol": "unknown field \"analysis_has_rust_mangled_symbol\" for d05--variant-000.elf (Some(Elf))",
+  "d06_analysis_methods": "unknown field \"analysis_methods\" for d06--variant-000.jar (Some(Jar))",
+  "d06_analysis_access_flags": "unknown field \"analysis_access_flags\" for d06--variant-000.jar (Some(Jar))",
+  "d07_analysis_has_coroutine_runtime": "unknown field \"analysis_has_coroutine_runtime\" for d07--variant-000.jar (Some(Jar))",
+  "d07_analysis_method_count": "unknown field \"analysis_method_count\" for d07--variant-000.jar (Some(Jar))",
+  "d08_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d08--variant-000.elf (Some(Elf))",
+  "d09_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d09--variant-000.elf (Some(Elf))",
+  "d11_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d11--variant-000.elf (Some(Elf))",
+  "d12_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d12--variant-000.elf (Some(Elf))",
+  "d13_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d13--variant-000.elf (Some(Elf))",
+  "d14_analysis_hcfg_storage": "unknown field \"analysis_hcfg_storage\" for d14--variant-000.elf (Some(Elf))"
+}

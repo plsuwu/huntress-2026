@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-17-name-collapse/mastery",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "d2028796-6c19-46e7-ac7e-04532595e8f5",
+  "started_at": "2026-10-17T13:41:18.290Z",
+  "deadline": "2026-10-17T13:44:08.290Z",
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 618.591416,
+  "start_ttfb_ms": 618.285404,
+  "clock": {
+    "start_sent": "2026-10-17T13:41:17.736Z",
+    "start_received": "2026-10-17T13:41:18.354Z",
+    "start_date_header": "2026-10-17T13:41:18.000Z",
+    "last_delivery": "2026-10-17T13:41:18.536Z",
+    "submit_sent": "2026-10-17T13:41:18.536Z",
+    "submit_received": "2026-10-17T13:41:19.288Z",
+    "submit_date_header": "2026-10-17T13:41:19.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "name_collapse_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 108.55798999999999,
+      "total_ms": 108.592882,
+      "done_at_ms": 727.948453,
+      "analyse_ms": 0.051572
+    },
+    {
+      "delivery": 1,
+      "name": "name_collapse_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 130.976741,
+      "total_ms": 131.016166,
+      "done_at_ms": 750.207527,
+      "analyse_ms": 0.022359999999999998
+    },
+    {
+      "delivery": 3,
+      "name": "name_collapse_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 137.21949999999998,
+      "total_ms": 137.253449,
+      "done_at_ms": 756.885396,
+      "analyse_ms": 0.024409999999999998
+    },
+    {
+      "delivery": 5,
+      "name": "name_collapse_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 110.568658,
+      "total_ms": 111.116631,
+      "done_at_ms": 757.187399,
+      "analyse_ms": 0.035641
+    },
+    {
+      "delivery": 4,
+      "name": "name_collapse_mastery_04.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 180.94428200000002,
+      "total_ms": 180.978666,
+      "done_at_ms": 800.414127,
+      "analyse_ms": 0.025543
+    }
+  ]
+}

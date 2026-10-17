@@ -109,6 +109,15 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   as well as `done-*`, then run `rush.py takeover --day N --lanes <lane>`, or message the agent. Takeover builds the
   lane worktree, runs untimed attempts for modes not yet CORRECT, adds missing fixtures, replays, and writes
   `takeover-<lane>.md`. The coordinator then reviews, commits on the lane branch and touches done.
+- **Day 17 lessons:** TT/mastery now answer 409 `prerequisite_required` until single-solve is CORRECT (binary-RE
+  mastery also waits for TT), so the first pass's TT/mastery starts fail on any lane whose single-solve fails, and
+  the agent re-runs them after its fix (follow-up: chain TT/mastery on a CORRECT single in `first_pass`). The
+  release probe treats 409 `start_required` as released. Binary roll-up ids use `_`; `tools/oracle_groups.py`
+  groups them by day (`d01`..`dNN`, ~17 submits), then splits failing days by field. A wrong field masks the others in
+  a partial submit, so probe label vocabularies one field per submit. Watch agents for hung shell calls: their `grep` is
+  ugrep, which recurses from cwd when `$(find ...)` expands to nothing. Kill that process; do not press Escape while
+  the agent runs a long oracle. The coordinator shell is zsh: `for v in $L` does not word-split (`${=L}`).
+  The user held ranked runs until every lane was merged, then ran one campaign over all routes.
 - Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
   timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
   merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.

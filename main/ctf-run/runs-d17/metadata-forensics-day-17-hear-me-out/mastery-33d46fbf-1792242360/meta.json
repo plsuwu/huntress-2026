@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-17-hear-me-out/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "33d46fbf-b931-4f60-b140-a7f8aafdfa32",
+  "started_at": "2026-10-17T13:06:02.396Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2385.4921249999998,
+  "start_ttfb_ms": 2384.358176,
+  "clock": {
+    "start_sent": "2026-10-17T13:06:00.314Z",
+    "start_received": "2026-10-17T13:06:02.699Z",
+    "start_date_header": "2026-10-17T13:06:02.000Z",
+    "last_delivery": "2026-10-17T13:06:04.573Z",
+    "submit_sent": "2026-10-17T13:06:04.575Z",
+    "submit_received": "2026-10-17T13:06:06.865Z",
+    "submit_date_header": "2026-10-17T13:06:06.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-17-hear-me-out-mastery.zip",
+      "bytes": 3041301,
+      "wire": 3041301,
+      "ttfb_ms": 1363.4468370000002,
+      "total_ms": 1831.68403,
+      "done_at_ms": 4217.48529,
+      "analyse_ms": 41.85348
+    }
+  ]
+}

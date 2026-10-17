@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-17-hear-me-out/time_trial",
+  "op": "retry",
+  "run_for_time": true,
+  "attempt_id": "7154dbdb-7d7e-4c32-a854-9087ff2f5bea",
+  "started_at": "2026-10-17T13:41:28.636Z",
+  "deadline": "2026-10-17T13:42:18.636Z",
+  "shape": "download",
+  "start_ms": 961.4651709999999,
+  "start_ttfb_ms": 961.0484289999999,
+  "clock": {
+    "start_sent": "2026-10-17T13:41:27.735Z",
+    "start_received": "2026-10-17T13:41:28.697Z",
+    "start_date_header": "2026-10-17T13:41:28.000Z",
+    "last_delivery": "2026-10-17T13:41:28.971Z",
+    "submit_sent": "2026-10-17T13:41:28.972Z",
+    "submit_received": "2026-10-17T13:41:29.769Z",
+    "submit_date_header": "2026-10-17T13:41:29.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 608038,
+      "wire": 608038,
+      "ttfb_ms": 252.72662699999998,
+      "total_ms": 264.76698,
+      "done_at_ms": 1226.5685500000002,
+      "analyse_ms": 8.829222
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-17-name-collapse/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "3d193829-14e1-40d6-b02d-3078f26f0fd1",
+  "started_at": "2026-10-17T13:01:51.185Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 2086.3553580000003,
+  "start_ttfb_ms": 2085.191497,
+  "clock": {
+    "start_sent": "2026-10-17T13:01:49.266Z",
+    "start_received": "2026-10-17T13:01:51.352Z",
+    "start_date_header": "2026-10-17T13:01:51.000Z",
+    "last_delivery": "2026-10-17T13:01:52.764Z",
+    "submit_sent": "2026-10-17T13:01:52.764Z",
+    "submit_received": "2026-10-17T13:01:54.521Z",
+    "submit_date_header": "2026-10-17T13:01:54.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "name_collapse_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1376.3030899999999,
+      "total_ms": 1377.85243,
+      "done_at_ms": 3464.45808,
+      "analyse_ms": 0.033479
+    },
+    {
+      "delivery": 2,
+      "name": "name_collapse_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1398.636344,
+      "total_ms": 1398.6922929999998,
+      "done_at_ms": 3485.380752,
+      "analyse_ms": 0.029897
+    },
+    {
+      "delivery": 4,
+      "name": "name_collapse_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1402.477166,
+      "total_ms": 1402.565387,
+      "done_at_ms": 3489.348413,
+      "analyse_ms": 0.051689
+    },
+    {
+      "delivery": 5,
+      "name": "name_collapse_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1398.553379,
+      "total_ms": 1406.636164,
+      "done_at_ms": 3493.433066,
+      "analyse_ms": 0.06112
+    },
+    {
+      "delivery": 3,
+      "name": "name_collapse_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1409.533479,
+      "total_ms": 1411.534169,
+      "done_at_ms": 3498.242409,
+      "analyse_ms": 0.037624
+    }
+  ]
+}
