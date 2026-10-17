@@ -390,6 +390,30 @@ pub fn morse(t: &str) -> Option<String> {
     Some(out)
 }
 
+/// Bacon-style 5-bit groups of `a`/`b` (either case), whitespace-separated or run together.
+pub fn is_bacon(t: &str) -> bool {
+    let n = t.bytes().filter(|b| !b.is_ascii_whitespace()).count();
+    n > 0 && n % 5 == 0 && t.bytes().all(|b| matches!(b, b'a' | b'b' | b'A' | b'B') || b.is_ascii_whitespace())
+        && t.split_whitespace().all(|g| g.len() % 5 == 0)
+}
+
+/// The 5-bit values (`a` = 0, `b` = 1, MSB first) of a Bacon string; `None` unless `is_bacon`.
+pub fn bacon_values(t: &str) -> Option<Vec<u8>> {
+    if !is_bacon(t) {
+        return None;
+    }
+    let bits: Vec<u8> = t.bytes().filter(|b| !b.is_ascii_whitespace()).map(|b| (b | 0x20 == b'b') as u8).collect();
+    Some(bits.chunks(5).map(|c| c.iter().fold(0, |v, b| v << 1 | b)).collect())
+}
+
+/// Classic Bacon letters: the 26-letter alphabet, or the 24-letter one (I=J, U=V).
+pub fn bacon_letters(vals: &[u8], alphabet26: bool) -> Option<String> {
+    const A24: &[u8] = b"ABCDEFGHIKLMNOPQRSTUWXYZ";
+    vals.iter()
+        .map(|&v| if alphabet26 { (v < 26).then(|| (b'A' + v) as char) } else { A24.get(v as usize).map(|&c| c as char) })
+        .collect()
+}
+
 const WORDS: &[&str] = &[
     "the", "this", "to", "and", "answer", "submit", "exact", "game", "master", "warmup", "solve", "work", "nice", "of", "is",
 ];
