@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-18-encrypted-strings/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f6391b62-747b-4e6f-89b3-a55ecf5ab4f2",
+  "started_at": "2026-10-18T13:07:59.256Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2011.061422,
+  "start_ttfb_ms": 2010.8699840000002,
+  "clock": {
+    "start_sent": "2026-10-18T13:07:57.407Z",
+    "start_received": "2026-10-18T13:07:59.418Z",
+    "start_date_header": "2026-10-18T13:07:59.000Z",
+    "last_delivery": "2026-10-18T13:08:00.597Z",
+    "submit_sent": "2026-10-18T13:08:00.597Z",
+    "submit_received": "2026-10-18T13:08:02.460Z",
+    "submit_date_header": "2026-10-18T13:08:02.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "encrypted_strings_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1176.013248,
+      "total_ms": 1177.98022,
+      "done_at_ms": 3189.375923,
+      "analyse_ms": 0.068607
+    }
+  ]
+}
