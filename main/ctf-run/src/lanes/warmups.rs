@@ -37,6 +37,7 @@ pub enum T {
     Bin,
     Morse,
     Bacon,
+    Rail(u8),
 }
 
 impl T {
@@ -57,6 +58,7 @@ impl T {
             T::Bs => codec::has_backslash_escape(t).then(|| codec::backslash_unescape_all(t)),
             T::Morse => morse_variants(t).into_iter().next(),
             T::Bacon => bacon_variants(t).into_iter().next(),
+            T::Rail(n) => Some(codec::rail_fence_decode(s, n as usize)),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -87,6 +89,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         15 => T::Rot47, // "Room Forty-Seven": punctuation and digits rotate too
         16 => T::Morse, // "Dot Com": Morse of the hex digits ("sixteen little symbols")
         17 => T::Bacon, // "Bacon Bits": 5-bit a/b groups of the hex digits ("sixteen guests")
+        18 => T::Rail(3), // "Off the Rails": 3-rail fence ("three rails, one very zigzag commute")
         _ => return None,
     })
 }
@@ -132,7 +135,7 @@ fn structured(frag: &str) -> Option<(T, String)> {
     None
 }
 
-fn letter_candidates(frag: &str) -> Vec<(T, String)> {
+fn letter_candidates(frag: &str, wide: bool) -> Vec<(T, String)> {
     let mut out: Vec<(T, String)> = Vec::new();
     let mut push = |t: T, s: String| {
         if !out.iter().any(|(_, x)| *x == s) {
@@ -149,7 +152,38 @@ fn letter_candidates(frag: &str) -> Vec<(T, String)> {
     for n in 1..26u8 {
         push(T::Rot(n), codec::rot(frag, n));
     }
+    if wide {
+        for n in RAILS {
+            push(T::Rail(n), codec::rail_fence_decode(frag, n as usize));
+        }
+    }
     out
+}
+
+/// Rail counts tried when the pinned one fails (wide search) or on a whole blob.
+const RAILS: std::ops::RangeInclusive<u8> = 2..=12;
+
+/// A pinned rail count first; the wide search falls back to every other count.
+fn rail_variants(frag: &str, n: u8, wide: bool) -> Vec<String> {
+    let mut v = vec![codec::rail_fence_decode(frag, n as usize)];
+    if wide {
+        v.extend(RAILS.filter(|&k| k != n).map(|k| codec::rail_fence_decode(frag, k as usize)));
+        // Padding added after encoding (a dash run, as on row 12, or a `-<digits>` tail): decode
+        // the rest only.
+        let dashes = frag.trim_end_matches('-');
+        let digits = frag.trim_end_matches(|c: char| c.is_ascii_digit());
+        let mut cores = Vec::new();
+        if frag.len() - dashes.len() >= 2 {
+            cores.push(dashes);
+        }
+        if digits.len() < frag.len() && digits.ends_with('-') {
+            cores.push(&digits[..digits.len() - 1]);
+        }
+        for core in cores {
+            v.extend(std::iter::once(n).chain(RAILS.filter(|&k| k != n)).map(|k| codec::rail_fence_decode(core, k as usize)));
+        }
+    }
+    v
 }
 
 /// A reversed row may be right-padded with dashes (`89-enud-t----`): the padding becomes a leading
@@ -259,8 +293,19 @@ fn is_rows(text: &str) -> bool {
     digits > 0 && first.as_bytes().get(digits) == Some(&b'\t')
 }
 
-/// Solves a mastery row blob. `hints` pins transforms for rows learned from other sets.
+/// Solves a mastery row blob. `hints` pins transforms for rows learned from other sets. If the
+/// pinned codecs find nothing, a wide search retries rail fences with other rail counts.
 pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
+    match solve_rows_with(text, hints, false) {
+        Outcome::Failed(e) => match solve_rows_with(text, hints, true) {
+            o @ Outcome::Solved { .. } => o,
+            _ => Outcome::Failed(e),
+        },
+        o => o,
+    }
+}
+
+fn solve_rows_with(text: &str, hints: &BTreeMap<u32, T>, wide: bool) -> Outcome {
     let Some(rows) = parse_rows(text) else { return Outcome::Failed("unparsable rows".into()) };
     // Candidates per row: (transform, decoded text, is_free_letter_row).
     let mut cands: Vec<Vec<(T, String)>> = Vec::with_capacity(rows.len());
@@ -272,8 +317,11 @@ pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
             .map(|t| {
                 let outs: Vec<String> = match t {
                     T::Rev => rev_variants(&r.frag),
-                    T::Morse => morse_variants(&r.frag),
-                    T::Bacon => bacon_variants(&r.frag),
+                    // Only the primary (hex) reading: plain-letter readings of a row inside the
+                    // slug fit any slug word.
+                    T::Morse => morse_variants(&r.frag).into_iter().take(1).collect(),
+                    T::Bacon => bacon_variants(&r.frag).into_iter().take(1).collect(),
+                    T::Rail(n) => rail_variants(&r.frag, n, wide),
                     _ => t.apply(&r.frag).into_iter().collect(),
                 };
                 outs.into_iter().map(|s| (t, s)).collect::<Vec<_>>()
@@ -288,7 +336,7 @@ pub fn solve_rows(text: &str, hints: &BTreeMap<u32, T>) -> Outcome {
             cands.push(vec![(t, s)]);
             free.push(false);
         } else {
-            cands.push(letter_candidates(&r.frag));
+            cands.push(letter_candidates(&r.frag, wide));
             free.push(true);
         }
     }
@@ -362,6 +410,12 @@ pub fn solve_blob(text: &str) -> Outcome {
         // look like escapes (`-c` -> `\4`, which a backslash peel would eat as octal).
         let letters = [T::Rot47, T::Atbash, T::Rev].into_iter().chain((1..26u8).map(T::Rot));
         if let Some(slug) = letters.filter_map(|k| k.apply(&t)).find_map(|c| match_template(&c)) {
+            return Outcome::Solved { slug, learned: Vec::new() };
+        }
+        // Day 18 "Off the Rails": a rail fence permutes every character, so a trailing newline
+        // must come off first.
+        let rails = [t.as_str(), t.trim_end_matches(['\r', '\n']), t.trim()].into_iter().flat_map(|v| RAILS.map(move |n| codec::rail_fence_decode(v, n as usize)));
+        if let Some(slug) = rails.into_iter().find_map(|c| match_template(&c)) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
         let next = [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
@@ -538,6 +592,36 @@ mod tests {
         assert_eq!(slug(solve_blob(&bacon.join(" "))), "zesty-sunset-quartz-65");
         let row = format!("01\tTmljZSB3b3Jr\n17\t{}\n", bacon[18..].join(" "));
         assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65");
+        // Day 18 "Off the Rails": a 3-rail fence (any count on a blob; trailing newline tolerated).
+        let rail = |s: &str, n: usize| {
+            let mut rs = vec![String::new(); n];
+            for (i, c) in s.chars().enumerate() {
+                let m = i % (2 * (n - 1));
+                rs[if m < n { m } else { 2 * (n - 1) - m }].push(c);
+            }
+            rs.concat()
+        };
+        assert_eq!(codec::rail_fence_decode(&rail(SENT, 3), 3), SENT);
+        assert_eq!(slug(solve_blob(&rail(SENT, 3))), "zesty-sunset-quartz-65");
+        assert_eq!(slug(solve_blob(&format!("{}\n", rail(SENT, 5)))), "zesty-sunset-quartz-65");
+        let (head, tail) = SENT.split_at(30);
+        let b64 = |s: &str| {
+            const A: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+            s.as_bytes().chunks(3).map(|c| {
+                let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+                (0..4).map(|k| if k <= c.len() { A[(n >> (18 - 6 * k) & 63) as usize] as char } else { '=' }).collect::<String>()
+            }).collect::<String>()
+        };
+        let row = format!("01\t{}\n18\t{}\n", b64(head), rail(tail, 3));
+        assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65");
+        // A different rail count on row 18 is found by the wide fallback.
+        let row = format!("01\t{}\n18\t{}\n", b64(head), rail(tail, 4));
+        assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65");
+        // ... and so is padding appended after encoding.
+        for pad in ["----", "-3783"] {
+            let row = format!("01\t{}\n18\t{}{pad}\n", b64(head), rail(tail, 3));
+            assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65", "{pad}");
+        }
     }
 
     /// 2026-10-15 timed variant: the final (atbash) row is padded with `-<digits>`.
