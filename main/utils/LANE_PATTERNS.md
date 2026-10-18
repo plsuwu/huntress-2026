@@ -139,6 +139,13 @@ MinGW PE the symbol answers keep the COFF section prefix (`.text$_ZNK...`, `.rda
 `recover_code` = `none`.
 Ranked (one campaign after the last merge): see `ctf-run/PLAN.md`.
 
+## Day 18 script (lane agent, 2026-10-18)
+
+- Script: `polyglot-google_apps_script-*` + `host-google-docs-sidebar-google-apps-script`. The literal is **split into
+  a `[..].join("")` fragment array** (marker copy prefixed `FRAG-`/`B64-`). A lone fragment can decode to a
+  truncated descriptor. Batch FOR-over-`h<N>` expansion is now `for_indirect` on single-solve too.
+  Details: `solver_py_scripts/day-18-script-analysis/process-story/NOTES.md`.
+
 ## Day 18 predictions
 
 - Warmups: a fourth "<cipher> of hex" (Polybius/tap code, binary, Braille, semaphore, NATO alphabet?). Add the decoder

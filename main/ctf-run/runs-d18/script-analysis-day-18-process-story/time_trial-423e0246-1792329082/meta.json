@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-18-process-story/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "423e0246-0033-4d10-8799-dbf16a21c525",
+  "started_at": "2026-10-18T13:11:24.888Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2942.3548520000004,
+  "start_ttfb_ms": 2931.250332,
+  "clock": {
+    "start_sent": "2026-10-18T13:11:22.280Z",
+    "start_received": "2026-10-18T13:11:25.222Z",
+    "start_date_header": "2026-10-18T13:11:25.000Z",
+    "last_delivery": "2026-10-18T13:11:26.647Z",
+    "submit_sent": "2026-10-18T13:11:26.656Z",
+    "submit_received": "2026-10-18T13:11:30.713Z",
+    "submit_date_header": "2026-10-18T13:11:30.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 120127,
+      "wire": 120127,
+      "ttfb_ms": 1385.404296,
+      "total_ms": 1390.539118,
+      "done_at_ms": 4333.125793,
+      "analyse_ms": 34.043803
+    }
+  ]
+}
