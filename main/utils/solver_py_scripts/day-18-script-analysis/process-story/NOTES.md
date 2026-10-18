@@ -1,9 +1,9 @@
 # Day 18 script analysis - Process Story ("Orphan Process")
 
-Single-solve CORRECT untimed after two lane fixes (1194 answers, +55 vs day 17). Time trial / mastery were **not run
-by the lane agent**: the first pass got 409 `prerequisite_required` (started before single-solve was graded), and the
-agent's untimed `-t`/`-m` starts were blocked by the Claude Code auto-mode classifier. They need running by the
-coordinator. Fixture: `ctf-run/fixtures/script/d18-single_solve.json`.
+All three modes CORRECT untimed after two lane fixes. Cumulative set: 1194 answers (single/TT, +55 vs day 17), 5970
+(mastery, 5 sets). The first pass got 409 `prerequisite_required` on TT/mastery (started before single-solve was graded).
+Both passed on the first untimed regular attempt after single-solve was CORRECT. Route: dual-pool, ranked 32 / regular 32.
+Fixtures: `ctf-run/fixtures/script/d18-{single_solve,time_trial,mastery}.json`.
 
 New this day (55 answers): `polyglot-google_apps_script-{benign-utility,downloader,launcher,staged-chain}` (`.gs`, 4 x 11)
 and `host-google-docs-sidebar-google-apps-script` (11, `host_profile=google_docs_sidebar`).
