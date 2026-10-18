@@ -260,6 +260,21 @@ pub fn analyse_literal(text: &str) -> Result<BTreeMap<String, String>, String> {
         }
     }
     let mut found: Vec<BTreeMap<String, String>> = Vec::new();
+    // Day 18 (Apps Script): the literal is split over a list of quoted fragments (`[ "..", ".." ].join("")`,
+    // or `+` concatenation), the marker copy's first fragment carrying a `KIND-` prefix. Join each run.
+    for m in re!(r#"(?:"[A-Za-z0-9+/=._-]*"\s*[,+]\s*)+"[A-Za-z0-9+/=._-]*""#).find_iter(text) {
+        let joined: String = re!(r#""([^"]*)""#).findall(m.g(0)).concat();
+        let body = re!(r"^[A-Za-z0-9_]+-").sub(&joined, "");
+        if let Ok(f) = decode_literal(&body) {
+            if ok(&f) && f.contains_key("steps") && !found.contains(&f) {
+                found.push(f);
+            }
+        }
+    }
+    if found.len() == 1 {
+        return Ok(found.pop().unwrap());
+    }
+    found.clear();
     for m in re!(r#"["'>]([A-Za-z0-9+/=.]{16,})["'<]"#).find_iter(text) {
         if let Ok(f) = decode_literal(m.g(1)) {
             if ok(&f) && !found.contains(&f) {
@@ -327,5 +342,17 @@ mod tests {
         assert_eq!(analyse_literal(&stripped).unwrap(), want);
         let ruby = stripped.replace("descriptor_9d0cb65a :=", "DESCRIPTOR_9D0CB65A =");
         assert_eq!(analyse_literal(&ruby).unwrap(), want);
+    }
+
+    /// Day 18 Apps Script splits the literal over `[ "..", ".." ].join("")` (marker copy prefixed `B64-`);
+    /// a lone fragment decodes to a truncated descriptor that the token fallback used to accept.
+    #[test]
+    fn split_fragment_literal() {
+        let text = std::fs::read_to_string("testdata/d18-polyglot-gas-staged-chain.gs").unwrap();
+        let f = analyse_literal(&text).unwrap();
+        assert_eq!(f.get("steps").map(String::as_str), Some("acquire_remote,dispatch_process"));
+        assert_eq!(f.get("file_path").map(String::as_str), Some("/tmp/huntress-google_apps_script/.58db6ebfbb172c43.stage"));
+        let no_marker: String = text.lines().skip_while(|l| !l.starts_with("function")).map(|l| format!("{l}\n")).collect();
+        assert_eq!(analyse_literal(&no_marker).unwrap(), f);
     }
 }

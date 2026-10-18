@@ -184,13 +184,15 @@ fn pick_set<'a>(label: &str, sets: &[&'a Set]) -> Result<(usize, &'a Set), Strin
 /// days 3-11 (every mode) accepted the Day 3 labels (percent-assembled -> `delayed`); from day 12 the
 /// time-trial/mastery oracles and the day-12 single solve wanted the newer rule (`percent`, inline
 /// `if defined` -> `percent`). The day-13 single solve alone was graded on the old labels. Future days
-/// use the newer rule. Evidence: utils/solver_py_scripts/day-13-script-analysis/NOTES.md and the fixtures.
+/// use the newer rule. From day 18 the single-solve grader also wants `for_indirect` for a FOR-over-`h<N>`
+/// statement (days 14-17 single accepted `call_double`). Evidence: utils/solver_py_scripts/day-13-script-analysis/NOTES.md,
+/// day-18-script-analysis/NOTES.md and the fixtures.
 fn classify_expansion(raw: &str, ctx: &RunCtx) -> Result<&'static str, String> {
     let day = ctx.day.unwrap_or(u8::MAX);
     if day <= 11 || (day == 13 && ctx.mode == Mode::Single) {
         batch::classify_expansion_v3(raw)
     } else {
-        batch::classify_expansion_v13(raw, ctx.mode == Mode::Single)
+        batch::classify_expansion_v13(raw, ctx.mode == Mode::Single && day < 18)
     }
 }
 
