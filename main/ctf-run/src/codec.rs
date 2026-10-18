@@ -337,6 +337,26 @@ pub fn rot47(t: &str) -> String {
     t.chars().map(|c| if ('!'..='~').contains(&c) { (b'!' + (c as u8 - b'!' + 47) % 94) as char } else { c }).collect()
 }
 
+/// Rail fence (zigzag) decryption with `rails` rails, starting on the top rail going down.
+pub fn rail_fence_decode(t: &str, rails: usize) -> String {
+    let cs: Vec<char> = t.chars().collect();
+    if rails < 2 || cs.len() <= 1 {
+        return t.to_string();
+    }
+    let cycle = 2 * (rails - 1);
+    let rail = |i: usize| {
+        let m = i % cycle;
+        if m < rails { m } else { cycle - m }
+    };
+    let mut order: Vec<usize> = (0..cs.len()).collect();
+    order.sort_by_key(|&i| (rail(i), i));
+    let mut out = vec![' '; cs.len()];
+    for (k, &i) in order.iter().enumerate() {
+        out[i] = cs[k];
+    }
+    out.into_iter().collect()
+}
+
 pub fn atbash(t: &str) -> String {
     t.chars()
         .map(|c| match c {
