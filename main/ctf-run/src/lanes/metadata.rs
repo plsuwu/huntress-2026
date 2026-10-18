@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{audio, cfb, dotnet, elf, email, lnk, media, ooxml, pe, zip};
+use crate::formats::{audio, cfb, dotnet, elf, email, lnk, media, ooxml, pe, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -184,6 +184,9 @@ fn email_facts(m: &email::Message) -> String {
 fn media_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("media-")?;
     let want = key[i + 6..].strip_prefix("primary-").unwrap_or(&key[i + 6..]);
+    if let Some(field) = want.strip_prefix("video-") {
+        return Some(video_answer(field, b));
+    }
     let want = want.strip_prefix("audio-").unwrap_or(want);
     let owned;
     let data = match (audio::sniff(b), email::Message::parse(b)) {
@@ -209,6 +212,61 @@ fn media_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
         "container" | "format-name" | "container-format" => a.container.to_string(),
         _ => return Some(Err(format!("unknown media field {want:?}; {}", audio_facts(&a, data)))),
     }))
+}
+
+/// `...-media-primary-video-<field>` -> the first video stream's field, sniffed from the bytes. Geometry
+/// is ffprobe's decoded picture (d18 graded `dimensions` as `WxH`, = SPS cropped size = `stsd` = `tkhd`
+/// there); container claims (`display-*`, rotation) are separate fields. Fields other than
+/// `dimensions` are unverified. A mail message stands for its single video attachment.
+fn video_answer(want: &str, b: &[u8]) -> Result<String, String> {
+    let v = match (video::sniff(b), email::Message::parse(b)) {
+        (Some(v), _) => v,
+        (None, Some(m)) => {
+            let mut found: Vec<video::Video> = m.parts().into_iter().filter_map(|p| video::sniff(&p.data)).collect();
+            if found.len() != 1 {
+                return Err(format!("{} video parts in the message; {}", found.len(), email_facts(&m)));
+            }
+            found.pop().unwrap()
+        }
+        (None, None) => return Err(format!("no video stream recognised; {}", facts("media", b))),
+    };
+    let pair = |p: Option<(u32, u32)>| p.map(|(w, h)| format!("{w}x{h}")).unwrap_or_else(none);
+    Ok(match want {
+        "dimensions" | "dimensions-pixels" | "resolution" | "frame-size" | "size" | "geometry" => v.dimensions(),
+        "width" | "width-pixels" => v.width.to_string(),
+        "height" | "height-pixels" => v.height.to_string(),
+        "codec-name" | "codec" => v.codec.clone(),
+        "coded-dimensions" => pair(v.sps_coded.or(v.entry)),
+        "display-dimensions" | "track-dimensions" | "presentation-dimensions" => pair(v.display),
+        "rotation" | "rotation-degrees" => v.rotation.map(|r| r.to_string()).unwrap_or_else(none),
+        "sample-aspect-ratio" | "sar" => v.sar.map(|(a, b)| format!("{a}:{b}")).unwrap_or_else(|| "1:1".into()),
+        "display-aspect-ratio" | "dar" | "aspect-ratio" => v.dar().map(|(a, b)| format!("{a}:{b}")).unwrap_or_else(none),
+        "frame-rate" | "fps" => v.frame_rate.map(|(a, b)| if b == 1 { a.to_string() } else { format!("{a}/{b}") }).unwrap_or_else(none),
+        "frame-count" | "frames" => v.frames.map(|n| n.to_string()).unwrap_or_else(none),
+        "container" | "format-name" | "container-format" => v.container.to_string(),
+        _ => return Err(format!("unknown video field {want:?}; {}", video_facts(&v))),
+    })
+}
+
+fn video_facts(v: &video::Video) -> String {
+    format!(
+        "video container {} codec {} {} entry {:?} sps coded {:?} crop {:?} display {:?} pixel_crop {:?} matrix {:?} rotation {:?} sar {:?} fps {:?} frames {:?} duration {:?} tags {:?}",
+        v.container,
+        v.codec,
+        v.dimensions(),
+        v.entry,
+        v.sps_coded,
+        v.sps_crop,
+        v.display,
+        v.pixel_crop,
+        v.matrix,
+        v.rotation,
+        v.sar,
+        v.frame_rate,
+        v.frames,
+        v.duration_seconds,
+        v.tags
+    )
 }
 
 fn audio_facts(a: &audio::Audio, d: &[u8]) -> String {
@@ -310,6 +368,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     }
     if let Some(a) = audio::sniff(b) {
         f.push(audio_facts(&a, b));
+    }
+    if let Some(v) = video::sniff(b) {
+        f.push(video_facts(&v));
     }
     if let Some(m) = email::Message::parse(b) {
         f.push(email_facts(&m));
