@@ -14,6 +14,7 @@ pub mod macho;
 pub mod media;
 pub mod ooxml;
 pub mod pe;
+pub mod video;
 pub mod wasm;
 pub mod x86;
 pub mod zip;
