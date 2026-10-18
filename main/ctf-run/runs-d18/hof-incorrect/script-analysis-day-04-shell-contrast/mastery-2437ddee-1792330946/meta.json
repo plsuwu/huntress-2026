@@ -1,0 +1,42 @@
+{
+  "challenge": "script-analysis-day-04-shell-contrast/mastery",
+  "op": "retry",
+  "run_for_time": false,
+  "attempt_id": "2437ddee-7fc9-4aff-bb56-182b7c059a1f",
+  "started_at": "2026-10-18T13:42:27.477Z",
+  "deadline": "2026-10-18T13:43:47.477Z",
+  "shape": "artifacts[2]+downloads[2]",
+  "start_ms": 1446.9816289999999,
+  "start_ttfb_ms": 1443.321424,
+  "clock": {
+    "start_sent": "2026-10-18T13:42:26.545Z",
+    "start_received": "2026-10-18T13:42:27.992Z",
+    "start_date_header": "2026-10-18T13:42:27.000Z",
+    "last_delivery": "2026-10-18T13:42:28.396Z",
+    "submit_sent": "2026-10-18T13:42:28.399Z",
+    "submit_received": "2026-10-18T13:42:28.740Z",
+    "submit_date_header": "2026-10-18T13:42:28.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 31227,
+      "wire": 31227,
+      "ttfb_ms": 333.678307,
+      "total_ms": 334.371531,
+      "done_at_ms": 1781.5823019999998,
+      "analyse_ms": 33.197121
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 30290,
+      "wire": 30290,
+      "ttfb_ms": 370.347826,
+      "total_ms": 370.962053,
+      "done_at_ms": 1818.172718,
+      "analyse_ms": 31.920878
+    }
+  ]
+}

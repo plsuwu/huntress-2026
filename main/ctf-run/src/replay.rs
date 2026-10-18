@@ -146,9 +146,10 @@ pub struct Outcome {
 
 /// Runs one case through its lane (analyses in parallel, like a live run).
 pub fn replay(case: &Case, lane_name: Option<&str>) -> Res<Outcome> {
-    let ctx = RunCtx::new(&case.challenge);
+    let mut ctx = RunCtx::new(&case.challenge);
     let lane = lanes::find(lane_name, &ctx.base).ok_or_else(|| format!("no lane for {:?}", ctx.base))?;
     let attempt = Attempt::from_value(&case.challenge, case.start.clone())?;
+    ctx.started_ms = attempt.started_at.as_deref().and_then(crate::time::parse_iso);
     let deliveries: Vec<Delivery> = case
         .deliveries
         .iter()

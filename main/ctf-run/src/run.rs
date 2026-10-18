@@ -319,7 +319,7 @@ fn warm_burst(pool: &Arc<Pool>, challenge: &str, n: usize) {
 }
 
 pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
-    let ctx = RunCtx::new(&opts.challenge);
+    let mut ctx = RunCtx::new(&opts.challenge);
     let lane = lanes::find(opts.lane.as_deref(), &ctx.base);
     match (lane, opts.dry) {
         (Some(l), _) => say!("lane", "{}", l.name()),
@@ -374,6 +374,7 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
         attempt.deadline.as_deref().unwrap_or("none")
     );
 
+    ctx.started_ms = attempt.started_at.as_deref().and_then(time::parse_iso);
     let queries: Vec<String> = attempt.deliveries.iter().map(gm::download_query).collect();
     let jobs = opts.jobs.unwrap_or(queries.len()).clamp(1, MAX_JOBS);
     let next = AtomicUsize::new(0);

@@ -187,9 +187,17 @@ fn pick_set<'a>(label: &str, sets: &[&'a Set]) -> Result<(usize, &'a Set), Strin
 /// use the newer rule. From day 18 the single-solve grader also wants `for_indirect` for a FOR-over-`h<N>`
 /// statement (days 14-17 single accepted `call_double`). Evidence: utils/solver_py_scripts/day-13-script-analysis/NOTES.md,
 /// day-18-script-analysis/NOTES.md and the fixtures.
+/// On 2026-10-18 the GM re-graded every day's time trial/mastery to the plain syntax rule
+/// (`batch::classify_expansion_syntax`): ranked attempts started 13:18Z still took the old labels, every one
+/// started from 13:42Z failed on them (Day 9 + Day 18 mastery oracles), so attempts started after
+/// `SYNTAX_RULE_FROM_MS` use it. Single solves keep the per-day rules (all of them were solved before the change).
+const SYNTAX_RULE_FROM_MS: i64 = 1_792_330_200_000; // 2026-10-18T13:30:00Z, between the last old and first new grading
+
 fn classify_expansion(raw: &str, ctx: &RunCtx) -> Result<&'static str, String> {
     let day = ctx.day.unwrap_or(u8::MAX);
-    if day <= 11 || (day == 13 && ctx.mode == Mode::Single) {
+    if ctx.mode != Mode::Single && ctx.started_ms.map_or(true, |t| t >= SYNTAX_RULE_FROM_MS) {
+        batch::classify_expansion_syntax(raw)
+    } else if day <= 11 || (day == 13 && ctx.mode == Mode::Single) {
         batch::classify_expansion_v3(raw)
     } else {
         batch::classify_expansion_v13(raw, ctx.mode == Mode::Single && day < 18)

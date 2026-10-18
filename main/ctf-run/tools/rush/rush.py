@@ -531,7 +531,12 @@ def takeover(day, lane):
             modes.append((mode, f"{single}/{mode}", [single, flag]))
     jobs = []
     for mode, rid, args in modes:
-        st = get(f"{API}/?op=status&challenge={urllib.parse.quote(rid)}", timeout=120)
+        try:
+            st = get(f"{API}/?op=status&challenge={urllib.parse.quote(rid)}", timeout=120)
+        except urllib.error.HTTPError as e:  # 409 start_required: never started (Day 18 mobile TT/mastery)
+            if e.code != 409:
+                raise
+            st = {}
         if st.get("result") == "CORRECT":
             lines.append(f"- {mode}: already CORRECT")
         elif mode != "single_solve" and not rows[rid].get("run_for_time_supported"):

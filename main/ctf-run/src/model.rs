@@ -54,12 +54,15 @@ pub struct RunCtx {
     pub base: String,
     pub day: Option<u8>,
     pub mode: Mode,
+    /// The attempt's server `started_at` (Unix ms), once known: the GM re-grades labels over time, so a
+    /// lane can pick the rule that was live when the attempt started (replays of old fixtures included).
+    pub started_ms: Option<i64>,
 }
 
 impl RunCtx {
     pub fn new(challenge: &str) -> RunCtx {
         let (base, mode) = Mode::split(challenge);
-        RunCtx { challenge: challenge.to_string(), base: base.to_string(), day: day_of(base), mode }
+        RunCtx { challenge: challenge.to_string(), base: base.to_string(), day: day_of(base), mode, started_ms: None }
     }
 }
 

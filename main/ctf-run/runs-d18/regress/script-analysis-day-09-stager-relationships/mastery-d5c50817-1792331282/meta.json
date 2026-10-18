@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-09-stager-relationships/mastery",
+  "op": "retry",
+  "run_for_time": false,
+  "attempt_id": "d5c50817-4e5b-44ad-b458-57c7a7ac96fb",
+  "started_at": "2026-10-18T13:48:11.242Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 10482.119364,
+  "start_ttfb_ms": 10458.825845,
+  "clock": {
+    "start_sent": "2026-10-18T13:48:02.068Z",
+    "start_received": "2026-10-18T13:48:12.550Z",
+    "start_date_header": "2026-10-18T13:48:12.000Z",
+    "last_delivery": "2026-10-18T13:48:15.377Z",
+    "submit_sent": "2026-10-18T13:48:15.399Z",
+    "submit_received": "2026-10-18T13:48:18.139Z",
+    "submit_date_header": "2026-10-18T13:48:18.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-09-stager-relationships-mastery.zip",
+      "bytes": 412169,
+      "wire": 412169,
+      "ttfb_ms": 1764.760573,
+      "total_ms": 2748.700162,
+      "done_at_ms": 13230.937451999998,
+      "analyse_ms": 77.8824
+    }
+  ]
+}

@@ -359,3 +359,17 @@ replay -> timed), module map, testing rules.
   TT 638 / mastery 638, script TT 728, binary TT 1980 (next 3696) / mastery 4750 (next 93 s). #2 script mastery
   1667 vs 1645 (5695 answers; 6 re-rolls stuck at 1667 - client-side parse/solve time is the lever, not luck).
   Ranked run dirs (small lanes) in `runs-d17/ranked/`.
+- 2026-10-18 - Day 18 rush. Release seen 23:00:09. Warmups and binary-RE TT/mastery were ONE-SHOT (ranked pool 1, no
+  regular pool, `hall_of_fame_eligible:false`). The coordinator fired all four from the jumpbox after each lane merged
+  (`-t/-m --one-shot-ok`), and all were CORRECT first time. Lane fixes: warmups 3-rail fence (`codec::rail_fence_decode`),
+  metadata MP4/MKV/AVI video geometry (`formats/video.rs`), script Apps Script `[..].join("")` literals plus day-18
+  single `for_indirect`. Mobile and binary needed no code change. Mobile's agent was blocked by the classifier on
+  untimed `-t/-m` (its `cd <wt> && ./target/...` form misses the allowedTools rule). The coordinator ran them, and
+  `rush.py takeover` crashed on 409 `start_required` (fixed). All 15 routes CORRECT by 23:12; 280/280 replay clean.
+  Ranked (`plan-d18-a.json` -> `campaign-d18-b.log`; `-a` died on the jumpbox's stale route cache, so run
+  `ctf-run routes --refresh` there first): 7 runs, all CORRECT, **#1 on 6/6** dual-pool routes. Full pass
+  (`plan-full-d18{,-b,-c}.json`, 139 eligible routes, budget 1, past_first): 139 CORRECT, 40 rank gains, board
+  **#1 26 -> 36 of 152**, top-3 70 -> 80. **GM re-grade:** between 13:18Z and 13:42Z every TT/mastery `batch-*-expansion`
+  switched to a pure-syntax rule (`batch::classify_expansion_syntax`, gated on `RunCtx.started_ms`; see
+  `utils/solver_py_scripts/day-18-script-analysis/process-story/NOTES.md`). Before it was found, 6 ranked script runs
+  (days 3-6) came back incorrect.

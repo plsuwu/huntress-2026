@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-18-frame-of-reference",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "95e047fd-f011-4805-b0c4-d4c9934b955d",
+  "started_at": "2026-10-18T13:00:07.456Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1829.8599179999999,
+  "start_ttfb_ms": 1829.539719,
+  "clock": {
+    "start_sent": "2026-10-18T13:00:06.026Z",
+    "start_received": "2026-10-18T13:00:07.856Z",
+    "start_date_header": "2026-10-18T13:00:07.000Z",
+    "last_delivery": "2026-10-18T13:00:09.244Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-18-evidence.zip",
+      "bytes": 18665,
+      "wire": 18665,
+      "ttfb_ms": 1388.2559159999998,
+      "total_ms": 1388.299053,
+      "done_at_ms": 3218.3541999999998,
+      "analyse_ms": 0.110705
+    }
+  ]
+}

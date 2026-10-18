@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-18-process-story/mastery",
+  "op": "retry",
+  "run_for_time": false,
+  "attempt_id": "db8e8fd5-1be4-46e4-9184-36b8207dbe9f",
+  "started_at": "2026-10-18T14:05:40.377Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 9082.842431,
+  "start_ttfb_ms": 9035.270097,
+  "clock": {
+    "start_sent": "2026-10-18T14:05:32.881Z",
+    "start_received": "2026-10-18T14:05:41.964Z",
+    "start_date_header": "2026-10-18T14:05:41.000Z",
+    "last_delivery": "2026-10-18T14:05:43.846Z",
+    "submit_sent": "2026-10-18T14:05:43.896Z",
+    "submit_received": "2026-10-18T14:05:50.480Z",
+    "submit_date_header": "2026-10-18T14:05:50.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-18-process-story-mastery.zip",
+      "bytes": 598510,
+      "wire": 598510,
+      "ttfb_ms": 1714.0072499999999,
+      "total_ms": 1752.3493939999998,
+      "done_at_ms": 10835.299485,
+      "analyse_ms": 129.882248
+    }
+  ]
+}

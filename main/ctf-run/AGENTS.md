@@ -118,6 +118,12 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   ugrep, which recurses from cwd when `$(find ...)` expands to nothing. Kill that process; do not press Escape while
   the agent runs a long oracle. The coordinator shell is zsh: `for v in $L` does not word-split (`${=L}`).
   The user held ranked runs until every lane was merged, then ran one campaign over all routes.
+- **Day 18 lessons:** one-shot TT/mastery (warmups, binary-RE) are not HoF-eligible. From Day 19 the user wants lanes
+  and the first pass to fire them once single is CORRECT, since solves count more than HoF. The GM can re-grade old
+  routes without notice (2026-10-18: Batch expansion labels). If a fixture-clean lane starts failing ranked runs,
+  stop that lane's campaign, reproduce on an untimed `--retry`, run `oracle_groups.py`, and gate the new rule on
+  `RunCtx.started_ms` so old fixtures stay valid. Refresh the jumpbox route cache (`ctf-run routes --refresh -u ...`)
+  before a campaign on a new day.
 - Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
   timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
   merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.

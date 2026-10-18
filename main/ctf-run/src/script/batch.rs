@@ -404,6 +404,26 @@ pub fn classify_expansion_v13(raw: &str, single: bool) -> Result<&'static str, S
     Ok(if r == "delayed" && re!(r"\bcall\s+set\b", "i").is_match(raw) { "percent" } else { r })
 }
 
+/// 2026-10-18 grader (old days' TT/mastery re-graded server-side; Day 9 mastery oracle): the label is the
+/// statement's own syntax - FOR-indirect -> `for_indirect`, `call set "%%a%%.."` -> `call_double` whatever the
+/// names, `!a!` -> `delayed`, plain `%a%` -> `percent`. An inline `if defined X` prefix no longer matters.
+pub fn classify_expansion_syntax(raw: &str) -> Result<&'static str, String> {
+    if re!(r"\bfor\b[^\n]*\bin\b[^\n]*\bdo\b", "i").is_match(raw) {
+        re!(r"%%([A-Za-z_]\w*?)%%[A-Za-z]%%").search(raw).ok_or_else(|| format!("for-indirect fragment prefix in {raw:?}"))?;
+        return Ok("for_indirect");
+    }
+    if re!(r"\bcall\s+set\b", "i").is_match(raw) && raw.contains("%%") {
+        return Ok("call_double");
+    }
+    if re!(r"![^!\s]+!").is_match(raw) {
+        return Ok("delayed");
+    }
+    if re!(r"%[^%\s]+%").is_match(raw) {
+        return Ok("percent");
+    }
+    Err(format!("expansion form of {raw:?}"))
+}
+
 #[derive(Clone, Debug)]
 pub struct Batch {
     pub plan: Plan,
@@ -442,6 +462,22 @@ pub fn analyse(text: &str) -> Result<Batch, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Statements and labels confirmed one field at a time on an untimed Day 9 mastery (2026-10-18 grader).
+    #[test]
+    fn syntax_rule_matches_2026_10_18_oracle() {
+        for (raw, want) in [
+            (r#"call set "recovered_configuration=%%fragment0%%%%fragment1%%%%fragment2%%%%fragment3%%""#, "call_double"),
+            (r#"call set "ReCoVeReD=%%FrAg0%%%%FrAg1%%%%FrAg2%%%%FrAg3%%""#, "call_double"),
+            (r#"if defined HUNTRESS_READY call set "ReCoVeReD=%%FrAg0%%%%FrAg1%%%%FrAg2%%%%FrAg3%%""#, "call_double"),
+            (r#"if defined HUNTRESS_READY set "cfg=!v_a0!!v_a1!!v_a2!!v_a3!""#, "delayed"),
+            (r#"if defined HUNTRESS_READY set "cfg=%h0%%h1%%h2%%h3%""#, "percent"),
+            (r#"set "recovered_configuration=%fragment0%%fragment1%%fragment2%%fragment3%""#, "percent"),
+            (r#"set "item9=%item0%%item1%%item2%%item3%""#, "percent"),
+        ] {
+            assert_eq!(classify_expansion_syntax(raw).unwrap(), want, "{raw}");
+        }
+    }
 
     #[test]
     fn rebuilds_fragments() {
