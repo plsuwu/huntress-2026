@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-19-static-unpacking",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "aaa926fb-bc29-488a-b7ab-c006c464c91d",
+  "started_at": "2026-10-19T13:00:09.779Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1534.5628100000001,
+  "start_ttfb_ms": 1531.9650120000001,
+  "clock": {
+    "start_sent": "2026-10-19T13:03:25.725Z",
+    "start_received": "2026-10-19T13:03:27.259Z",
+    "start_date_header": "2026-10-19T13:03:27.000Z",
+    "last_delivery": "2026-10-19T13:03:32.138Z",
+    "submit_sent": "2026-10-19T13:03:32.138Z",
+    "submit_received": "2026-10-19T13:03:35.355Z",
+    "submit_date_header": "2026-10-19T13:03:35.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32838781,
+      "wire": 32838781,
+      "ttfb_ms": 1329.9535790000002,
+      "total_ms": 4653.518622,
+      "done_at_ms": 6188.385075,
+      "analyse_ms": 224.551207
+    }
+  ]
+}

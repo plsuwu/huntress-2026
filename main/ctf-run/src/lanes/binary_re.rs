@@ -9,7 +9,7 @@
 
 use super::{Analysed, Analysis, Lane};
 use crate::crypto::sha256::{hex, sha256};
-use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, pe, wasm, x86, zip};
+use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, overlay, pe, wasm, x86, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 use std::collections::BTreeMap;
@@ -65,6 +65,8 @@ pub struct Spec {
     pub hcfg_section: Option<String>,
     /// Itanium-mangled names found outside an ELF symtab (MinGW PE: COFF string table).
     pub mangled_names: Vec<String>,
+    /// Final validated packed overlay (`PK19`): (magic offset, file length - offset).
+    pub overlay: Option<(usize, usize)>,
 }
 
 /// One delivery: specimens grouped by day (`d01` -> primary specimen + sidecar files).
@@ -157,8 +159,12 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
                 s.objects.insert(x.name.clone(), String::from_utf8_lossy(t).into_owned());
             }
         }
-        // Stripped d01 builds keep the marker string only in its `.huntress` section.
-        if !s.objects.contains_key("marker") {
+        // The marker is the `.huntress` section as UTF-8 minus trailing NULs (Day 19 wording; stripped d01 builds
+        // have no `marker` symbol), else the string behind the `marker` OBJECT symbol.
+        let section = e.section(".huntress").and_then(|x| e.data(d, x)).map(|b| &b[..b.iter().rposition(|&c| c != 0).map_or(0, |p| p + 1)]);
+        if let Some(t) = section.filter(|b| !b.is_empty() && std::str::from_utf8(b).is_ok()) {
+            s.objects.insert("marker".into(), String::from_utf8_lossy(t).into_owned());
+        } else if !s.objects.contains_key("marker") {
             let text = e.section(".huntress").and_then(|x| e.data(d, x)).and_then(|b| bytes::cstr(b, 0)).filter(|b| !b.is_empty() && b.iter().all(|c| (0x20..0x7f).contains(c)));
             if let Some(t) = text {
                 s.objects.insert("marker".into(), String::from_utf8_lossy(t).into_owned());
@@ -226,7 +232,19 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.mangled_names = scan_mangled(d);
     }
     lap("cpp");
-    s.hcfg = if s.container == Some(Container::Jar) { jar_hcfg(d) } else { hcfg::raw(d).or_else(|| hcfg::base64_constant(d)) };
+    // A packed overlay carries the config: the HCFG record at unpacked offset 0 (d19), ahead of any raw hit in the stub.
+    let packed = (s.container != Some(Container::Jar)).then(|| overlay::last(d)).flatten();
+    s.overlay = packed.as_ref().map(|o| (o.offset, d.len() - o.offset));
+    s.hcfg = if let Some(o) = &packed {
+        hcfg::at(&o.unpacked, 0).map(|mut h| {
+            h.source = "overlay";
+            h
+        })
+    } else if s.container == Some(Container::Jar) {
+        jar_hcfg(d)
+    } else {
+        hcfg::raw(d).or_else(|| hcfg::base64_constant(d))
+    };
     if s.hcfg.is_none() || s.is_dotnet {
         s.xor_config = hcfg::xor_json(d).map(|(v, _, _)| v);
     }
@@ -398,9 +416,11 @@ fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
 }
 
 fn container_label(s: &Spec, q: &Question) -> Result<String, String> {
-    let exact = q.format_kind.as_deref() == Some("exact_text");
+    // Enum (d12+ since Day 19): elf / pe / pe_cli / jar / wasm / neko_bytecode.
+    let exact = matches!(q.format_kind.as_deref(), Some("exact_text" | "enum"));
     let syntax = q.format_syntax.as_deref().unwrap_or("");
     Ok(match s.container {
+        Some(Container::Pe) if s.is_dotnet && q.format_kind.as_deref() == Some("enum") => "pe_cli".into(),
         Some(Container::Pe) if s.is_dotnet && (syntax.contains("container_runtime") || syntax.contains("managed")) => "PE32_dotnet".into(),
         Some(Container::Elf) => (if exact { "elf" } else { "ELF" }).into(),
         Some(Container::Pe) => (if exact { "pe" } else { "PE" }).into(),
@@ -486,7 +506,13 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
                 .ok_or_else(|| format!("{}: config has no {key:?}", s.name))?
         }
         // A stripped build has no recover_code symbol: the question then turns exact_text ("none" when absent).
-        "analysis_recover_code" if matches!(s.disassembly, Some(Ok(ref v)) if v.is_empty()) && q.format_kind.as_deref() == Some("exact_text") => "none".into(),
+        // Since Day 19 the question is a `pattern` whose syntax names the `none` token.
+        "analysis_recover_code"
+            if matches!(s.disassembly, Some(Ok(ref v)) if v.is_empty())
+                && (q.format_kind.as_deref() == Some("exact_text") || q.format_syntax.as_deref().is_some_and(|x| x.contains("literal token none"))) =>
+        {
+            "none".into()
+        }
         "analysis_recover_code" => need(s.recover_code.map(|v| v.to_string()), "recover_code return value")?,
         "analysis_typeinfo_symbol" => need(typeinfo_symbol(cxx_names(s)), "unambiguous _ZTI typeinfo symbol")?,
         f if f.starts_with("analysis_mangled_") && f.ends_with("_symbol") => {
@@ -503,6 +529,8 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
         "analysis_method_count" => need(s.main_class.as_ref().map(|c| c.methods.len().to_string()), "Main-Class")?,
         "analysis_access_flags" => need(s.main_class.as_ref().map(|c| c.access.to_string()), "Main-Class")?,
         "analysis_hcfg_storage" => hcfg_storage(s, h()?)?,
+        "analysis_overlay_offset" => need(s.overlay.map(|o| o.0.to_string()), "validated packed overlay")?,
+        "analysis_overlay_size" => need(s.overlay.map(|o| o.1.to_string()), "validated packed overlay")?,
         f if s.objects.contains_key(&f["analysis_".len().min(f.len())..]) => s.objects[&f["analysis_".len()..]].clone(),
         other => return Err(format!("unknown field {other:?} for {} ({:?})", s.name, s.container)),
     })
@@ -534,7 +562,26 @@ impl Lane for BinaryRe {
         Ok(Box::new(sets))
     }
 
-    fn answer(&self, q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, String> {
+    fn answer(&self, q: &Question, done: &Analysed, ctx: &RunCtx) -> Result<String, String> {
+        enum_checked(q, answer_any(q, done, ctx)?)
+    }
+}
+
+/// An `enum` answer must be one of `accepted_values` (a unique case-insensitive match is taken verbatim).
+fn enum_checked(q: &Question, a: String) -> Result<String, String> {
+    let Some(vals) = q.raw.get("answer_format").and_then(|f| f.get("accepted_values")).and_then(Value::as_array) else { return Ok(a) };
+    let vals: Vec<&str> = vals.iter().filter_map(Value::as_str).collect();
+    if vals.contains(&a.as_str()) {
+        return Ok(a);
+    }
+    match vals.iter().filter(|v| v.eq_ignore_ascii_case(&a)).collect::<Vec<_>>().as_slice() {
+        [one] => Ok(one.to_string()),
+        _ => Err(format!("{}: {a:?} is not one of {vals:?}", q.id)),
+    }
+}
+
+fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, String> {
+    {
         let (day, field) = q.key.split_once('_').ok_or_else(|| format!("unexpected id {:?}", q.key))?;
         // Mastery: `delivery N:` (or set N) picks the evidence set; otherwise the only one.
         let all: Vec<&Vec<Set>> = done.all::<Vec<Set>>().map(|(_, s)| s).collect();
