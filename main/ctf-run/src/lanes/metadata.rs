@@ -283,6 +283,49 @@ fn audio_facts(a: &audio::Audio, d: &[u8]) -> String {
     )
 }
 
+/// `...-elf-<field>` -> an ELF identification/header field read from the header alone (d19: "determine
+/// architecture directly from the ELF header" - section tables may be absent or bogus, so `Elf::parse` is
+/// not used). Byte order comes from EI_DATA (big-endian ELFs store e_machine big-endian). d19 graded
+/// `e-machine-u16-hex` as `0x%04x`; other fields are unverified. A file that is not ELF answers `none`.
+fn elf_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-elf-")?;
+    let want = &key[i + 5..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("elf-").unwrap_or(want);
+    if !b.starts_with(b"\x7fELF") {
+        return Some(Ok(none()));
+    }
+    let (class, data, osabi) = (b.get(4).copied(), b.get(5).copied(), b.get(7).copied());
+    let e = match data {
+        Some(1) => crate::formats::bytes::Endian::Little,
+        Some(2) => crate::formats::bytes::Endian::Big,
+        other => return Some(Err(format!("ELF EI_DATA {other:?} is neither LSB nor MSB; {}", facts("elf", b)))),
+    };
+    let u16f = |at: usize| e.u16(b, at).ok_or_else(|| format!("ELF header truncated; {}", facts("elf", b)));
+    let entry = || -> Result<u64, String> {
+        match class {
+            Some(2) => e.u64(b, 24),
+            Some(1) => e.u32(b, 24).map(u64::from),
+            _ => None,
+        }
+        .ok_or_else(|| format!("ELF entry not derivable; {}", facts("elf", b)))
+    };
+    Some(match want {
+        "e-machine-u16-hex" | "machine-u16-hex" => u16f(18).map(|m| format!("0x{m:04x}")),
+        "e-machine" | "e-machine-u16" | "e-machine-decimal" => u16f(18).map(|m| m.to_string()),
+        "e-machine-name" | "architecture" | "arch" => u16f(18).map(|m| elf::machine_name(m).to_string()),
+        "e-type-u16-hex" => u16f(16).map(|t| format!("0x{t:04x}")),
+        "e-type" | "e-type-u16" => u16f(16).map(|t| t.to_string()),
+        "e-entry-hex" | "entry-hex" => entry().map(|v| format!("0x{v:x}")),
+        "ei-class" | "class" => Ok(match class { Some(1) => "ELF32".into(), Some(2) => "ELF64".into(), c => format!("{c:?}") }),
+        "ei-data" | "endianness" | "byte-order" => Ok(if data == Some(1) { "little".into() } else { "big".into() }),
+        "ei-osabi" | "osabi" => Ok(osabi.unwrap_or(0).to_string()),
+        _ => Err(format!("unknown ELF field {want:?}; {}", facts("elf", b))),
+    })
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -362,6 +405,8 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     }
     if let Some(e) = elf::Elf::parse(b) {
         f.push(format!("elf class {} machine {} type {} entry 0x{:x}", e.class, e.machine, e.kind, e.entry));
+    } else if b.starts_with(b"\x7fELF") {
+        f.push(format!("elf header only (sections unparseable): ident {}", hex(&b[..b.len().min(24)])));
     }
     if let Some(props) = cfb::msi_properties(b) {
         f.push(format!("msi {props:?} revision {:?}", cfb::summary_string(b, 9)));
@@ -460,6 +505,9 @@ impl Lane for Metadata {
             return filename_answer(members, &key).ok_or_else(|| format!("no member matches {key:?} in {:?}", members.iter().map(|m| &m.0).collect::<Vec<_>>()));
         }
         let data = data.ok_or_else(|| format!("no file {member:?} for {label:?} (members {:?})", members.iter().map(|m| &m.0).collect::<Vec<_>>()))?;
+        if let Some(r) = elf_answer(&key, data) {
+            return r;
+        }
         for (suffix, h) in HANDLERS {
             if key.ends_with(suffix) {
                 return h(data).ok_or_else(|| format!("{suffix}: not derivable; {}", facts(member, data)));
@@ -489,6 +537,18 @@ mod tests {
         w[20] = 7;
         assert_eq!(media_answer("d17-audio-001-media-primary-audio-codec-name", &w).unwrap().unwrap(), "pcm_mulaw");
         assert!(media_answer("d17-audio-001-media-primary-audio-codec-name", b"plain text").unwrap().is_err());
+    }
+
+    #[test]
+    fn elf_fields() {
+        let mut h = b"\x7fELF\x02\x01\x01\0\0\0\0\0\0\0\0\0\x02\0\x3e\0".to_vec();
+        let k = "d19-elf-001-elf-e-machine-u16-hex";
+        assert_eq!(elf_answer(k, &h).unwrap().unwrap(), "0x003e");
+        h[5] = 2;
+        h[18..20].copy_from_slice(&[0, 8]);
+        assert_eq!(elf_answer(k, &h).unwrap().unwrap(), "0x0008");
+        assert_eq!(elf_answer(k, b"MZ\x90\0").unwrap().unwrap(), "none");
+        assert!(elf_answer("d19-elf-001-sha256", &h).is_none());
     }
 
     #[test]
