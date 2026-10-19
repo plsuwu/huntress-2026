@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Day-release orchestrator: five lane agents (Claude Code in tmux) plus an automated first pass.
+"""Day-release orchestrator: one agent per lane (Claude Code in tmux) plus an automated first pass.
 
   rush.py all     [--day N] [--rehearse]   prep + launch + watch (what the systemd timer runs at 22:45 AEST)
   rush.py prep    [--day N]                reset the lane worktrees to master, build every target (warm caches)
@@ -10,11 +10,15 @@
 Options: --lanes a,b (subset, e.g. for a rehearsal), --no-agents (watch: first pass + briefs only, no tmux).
 
 Release: 23:00 Australia/Brisbane; Day N = that date's day of the month (Day 15 = 2026-10-15). The first pass is
-pure ctf-run, no model: per lane, single-solve plus the untimed regular time trial and mastery, all at once (dual-pool
-routes only - timed-by-default ones are left to the coordinator). Anything incorrect gets the grouped oracle. Each
+pure ctf-run, no model: per lane, single-solve, then - once it is CORRECT - time trial and mastery together (binary-RE:
+mastery after a CORRECT TT). Dual-pool routes get an untimed regular attempt; timed-by-default ones a timed start,
+one-shots with --one-shot-ok (from Day 19: solves beat HoF entries). Untimed failures get the grouped oracle. Each
 lane's brief (results, errors, oracle output, instructions) is written to runs-dNN/rush/brief-<lane>.md and the lane
 agent is told to read it - as soon as that lane's first pass ends, not when all lanes end.
-Every ctf-run here and in the agents' panes runs with CTF_NO_RANKED=1: ranked attempts stay with the coordinator.
+Every ctf-run here and in the agents' panes runs with CTF_NO_RANKED=hof: ctf-run refuses only --timed, so dual-pool
+Hall of Fame runs stay with the coordinator's campaign.
+MANUAL lanes (web, new on Day 19) have no solver: their first pass is a read-only recon brief and the user directs the
+agent by hand (no stall escalation, no takeover).
 Release detection: warmups-day-NN status every 1 s from 22:59:50 (404 -> 200), op=list as a fallback; each lane then
 fetches its own routes (search=<prefix>NN) and starts at once. After the briefs, stalled agents (Stop hook after the
 brief, no tool activity since, no done marker, 180 s) are escalated to runs-dNN/rush/stalled-<lane>.md for the
@@ -41,7 +45,15 @@ LANES = {  # lane -> (challenge prefix, lane source, fixtures dir)
     "script": ("script-analysis-day-", "script_analysis.rs", "script"),
     "binary": ("binary-reverse-engineering-day-", "binary_re.rs", "binary_re"),
     "mobile": ("mobile-android-day-", "mobile.rs", "mobile"),
+    "web": (None, None, None),  # expected from Day 19, format unknown - a MANUAL lane
 }
+# Lanes with no ctf-run solver: no first pass, only a read-only recon brief (route rows + op=status, which answers an
+# unstarted route with its questions contract and starts nothing), and no stall escalation or takeover - the user
+# directs the agent by hand. Their routes are found by the list's lane= filter (values from op=openapi), falling back
+# to any row of the day whose lane field is not one of the established lanes.
+MANUAL = {"web": ("web", "web-exploitation")}
+KNOWN_LANE_FIELDS = ("warmups", "metadata-forensics", "script-analysis", "binary-reverse-engineering",
+                     "mobile-android", "welcome")
 
 
 def log(msg):
@@ -59,7 +71,8 @@ def token():
 
 
 def env():
-    return dict(os.environ, HUNTRESS_GM_TOKEN=token(), HUNTRESS_GM_URL=API, CTF_NO_RANKED="1")
+    # hof: ctf-run refuses only --timed (dual-pool Hall of Fame runs); one-shot / timed-by-default solves are allowed.
+    return dict(os.environ, HUNTRESS_GM_TOKEN=token(), HUNTRESS_GM_URL=API, CTF_NO_RANKED="hof")
 
 
 def sh(args, cwd=None, check=True, **kw):
@@ -107,7 +120,7 @@ def prep(day):
 
 def prime_prompt(day, lane):
     prefix, src, fix = LANES[lane]
-    tpl = open(os.path.join(HERE, "prompts", "prime.md")).read()
+    tpl = open(os.path.join(HERE, "prompts", "prime-manual.md" if lane in MANUAL else "prime.md")).read()
     return tpl.format(day=day, prev=day - 1, lane=lane, prefix=prefix, src=src, fix=fix,
                       wt=os.path.join(WT_ROOT, lane), repo=REPO, state=state_dir(day))
 
@@ -115,8 +128,9 @@ def prime_prompt(day, lane):
 def allowed_tools(lane):
     """Allow rules for a lane agent: its own worktree's ctf-run, relative and absolute. The auto-mode classifier
     denied the brief's plain untimed `-t` start on Day 16 ("Auto-Mode Bypass") and the binary agent stalled; an
-    explicit rule skips the classifier for that binary only. Safe because the pane exports CTF_NO_RANKED=1, which
-    ctf-run checks for presence - and an `env -u ...` / `VAR=... ` prefix no longer matches the rule."""
+    explicit rule skips the classifier for that binary only. The pane exports CTF_NO_RANKED=hof (one-shot and
+    timed-by-default solves allowed, --timed HoF runs refused) - and an `env -u ...` / `VAR=... ` prefix no longer
+    matches the rule."""
     return ["Bash(./target/release/ctf-run *)",
             f"Bash({os.path.join(WT_ROOT, lane, 'ctf-run', 'target', 'release', 'ctf-run')} *)"]
 
@@ -291,6 +305,102 @@ def lane_rows(day, lane, rel, tries_s=20):
     return mine(rel.rows), "list"
 
 
+def manual_rows(day, lane, rel, tries_s=20):
+    """A MANUAL lane's routes (id prefix unknown): op=list&day=N&lane=<value> for each of its filter values, retried for
+    tries_s, then every row of the day's global list whose lane field is not an established lane."""
+    end = time.time() + tries_s
+    while time.time() < end:
+        for value in MANUAL[lane]:
+            try:
+                rows = get(f"{API}/?op=list&day={day}&lane={value}", timeout=15).get("challenges", [])
+                rows = [c for c in rows if c.get("day") == day]
+                if rows:
+                    return rows, f"lane={value}"
+            except Exception as e:  # noqa: BLE001
+                log(f"{lane}: lane={value} list failed: {e!r}")
+        time.sleep(1)
+    log(f"{lane}: lane filter found nothing in {tries_s} s - waiting for the global list")
+    rel.listed.wait()
+    return [c for c in rel.rows if c.get("lane") not in KNOWN_LANE_FIELDS], "list (unknown lane field)"
+
+
+def recon(day, lane, rows):
+    """Read-only look at a MANUAL lane's routes: op=status per route, never start. An unstarted route answers
+    409 start_required *with* its public questions contract (answer_ids, questions, artifacts); a released but
+    locked TT/mastery answers 409 prerequisite_required. Full responses go to runs-dNN/rush/recon-<lane>/."""
+    out = os.path.join(state_dir(day), f"recon-{lane}")
+    os.makedirs(out, exist_ok=True)
+
+    def one(row):
+        try:
+            code, st = 200, get(f"{API}/?op=status&challenge={urllib.parse.quote(row['id'])}", timeout=120)
+        except urllib.error.HTTPError as e:
+            code = e.code
+            try:
+                st = json.loads(e.read() or b"{}")
+            except ValueError:
+                st = {}
+        except Exception as e:  # noqa: BLE001
+            code, st = None, {"error": repr(e)}
+        path = os.path.join(out, row["id"].replace("/", "__") + ".json")
+        with open(path, "w") as f:
+            json.dump({"row": row, "status_code": code, "status": st}, f, indent=1)
+        return {"row": row, "code": code, "status": st, "file": path}
+
+    rows = sorted(rows, key=lambda c: ({"single_solve": 0, "time_trial": 1, "mastery": 2}.get(c.get("mode"), 9), c["id"]))
+    with ThreadPoolExecutor(max(1, min(8, len(rows)))) as pool:
+        items = list(pool.map(one, rows))
+    return {"lane": lane, "routes": [c["id"] for c in rows], "items": items}
+
+
+def clip(v, n=1500):
+    s = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+    return s if len(s) <= n else s[:n] + f" ... ({len(s)} chars)"
+
+
+def manual_brief(day, rep, how):
+    """Brief for a MANUAL lane: every player-facing field of each route (the status contract), nothing solved."""
+    lane = rep["lane"]
+    lines = [f"# Day {day} - {lane} lane: recon brief (nothing started or submitted)", "",
+             f"Routes ({len(rep['routes'])}, found via {how}): {', '.join(rep['routes']) or '(none)'}", ""]
+    if not rep["routes"]:
+        lines += [f"No {lane} routes on Day {day}: neither the lane filter ({', '.join(MANUAL[lane])}) nor the global",
+                  "list had a day row outside the established lanes. Check `op=list&day=N&all=true` by hand.", ""]
+    row_keys = ("mode", "lane", "day", "run_for_time_supported", "ranked_deadline_ms", "ranked_pool_size",
+                "ranked_set_count", "regular_pool_size", "regular_set_count")
+    shown = {"questions", "answer_ids", "artifacts", "prompt", "guidance", "name", "title", "mode"}
+    for it in rep["items"]:
+        row, st = it["row"], it["status"]
+        lines.append(f"## {row['id']} - {row.get('title') or row.get('name')}")
+        lines.append("row: " + ", ".join(f"{k}={row.get(k)}" for k in row_keys if k in row))
+        for k in ("prompt", "guidance"):
+            if row.get(k) or st.get(k):
+                lines.append(f"{k}: {clip(st.get(k) or row.get(k))}")
+        lines.append(f"status: HTTP {it['code']}" + (f" error={st.get('error')}" if st.get("error") else ""))
+        qs, ids = st.get("questions") or [], st.get("answer_ids") or []
+        if qs or ids:
+            lines += [f"questions ({len(qs)}; answer_ids {len(ids)}):", "```"]
+            lines += [clip(q, 600) for q in qs[:12]]
+            if len(qs) > 12:
+                lines.append(f"... {len(qs) - 12} more in the status file")
+            lines.append("```")
+        if st.get("artifacts"):
+            lines += ["artifacts:", "```", clip(st["artifacts"], 2000), "```"]
+        extra = {k: v for k, v in st.items() if k not in shown}
+        if extra:  # anything new (targets, instance URLs, ...) - shown in full up to the clip
+            lines += ["other fields:", "```", clip(extra, 2500), "```"]
+        lines += [f"full response: `{it['file']}`", ""]
+    tpl = open(os.path.join(HERE, "prompts", "task-manual.md")).read()
+    lines.append(tpl.format(day=day, lane=lane, wt=os.path.join(WT_ROOT, lane), repo=REPO, state=state_dir(day)))
+    path = os.path.join(state_dir(day), f"brief-{lane}.md")
+    with open(path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    with open(os.path.join(state_dir(day), f"firstpass-{lane}.json"), "w") as f:
+        json.dump({"lane": lane, "routes": rep["routes"], "how": how,
+                   "steps": [{"mode": "recon", "result": f"{len(rep['routes'])} routes (manual lane)"}]}, f, indent=1)
+    return path
+
+
 _CACHE_LOCK = threading.Lock()
 
 
@@ -329,6 +439,69 @@ def ctf_run(args, out_dir, where=CTF):
             "errors": errors[:40], "tail": r.stderr.strip().splitlines()[-8:]}
 
 
+# binary-RE's mastery answers 409 prerequisite_required until its time trial is CORRECT (Day 17).
+SEQUENTIAL_MASTERY = {"binary"}
+ORDER = {"single_solve": 0, "time_trial": 1, "mastery": 2}
+
+
+def route_kind(cfg):
+    if cfg.get("run_for_time_supported"):
+        return "dual-pool"
+    return "ONE-SHOT" if cfg.get("ranked_pool_size") == 1 else "timed by default"
+
+
+def mode_args(single, mode, cfg):
+    """ctf-run args for a TT/mastery route. Dual-pool: plain start = untimed regular attempt. Timed by default: plain
+    start is timed (allowed under CTF_NO_RANKED=hof). One-shot (ranked pool 1, the route's only attempt): --one-shot-ok."""
+    args = [single, "-t" if mode == "time_trial" else "-m"]
+    if route_kind(cfg) == "ONE-SHOT":
+        args.append("--one-shot-ok")
+    return args
+
+
+def chain(lane, single, cfgs, run, solved=(), hold=None):
+    """Single-solve first; TT and mastery only once it is CORRECT (until then they answer 409 prerequisite_required,
+    and a one-shot must not be spent on a solver that just failed), then both at once - except SEQUENTIAL_MASTERY
+    lanes, whose mastery waits for a CORRECT TT. A mastery that still answers prerequisite_required (a lane newly
+    gated on its TT; the refused start spends nothing) is run once more after a CORRECT TT.
+    `run(args)` -> ctf_run result; modes in `solved` are already CORRECT and only gate the others; `hold` maps a mode
+    to the reason it must not be started (it then counts as not CORRECT)."""
+    hold = hold or {}
+
+    def go(mode, args):
+        if mode in solved:
+            return {"mode": mode, "result": "CORRECT", "note": "already CORRECT"}
+        if mode in hold:
+            return {"mode": mode, "result": f"HELD ({hold[mode]})"}
+        return dict(run(args), mode=mode)
+
+    def tm(mode):
+        cfg = cfgs[f"{single}/{mode}"]
+        return dict(go(mode, mode_args(single, mode, cfg)), kind=route_kind(cfg))
+
+    def gated(r):
+        return "prerequisite_required" in " ".join(r.get("errors", []) + r.get("tail", []))
+
+    steps = [go("single_solve", [single])]
+    modes = [m for m in ("time_trial", "mastery") if f"{single}/{m}" in cfgs]
+    if steps[0]["result"] != "CORRECT":
+        return steps + [{"mode": m, "kind": route_kind(cfgs[f"{single}/{m}"]),
+                         "result": "WAITING (single-solve not CORRECT - fix it, then run this mode)"} for m in modes]
+    if lane in SEQUENTIAL_MASTERY and len(modes) == 2:
+        t = tm("time_trial")
+        m = tm("mastery") if t["result"] == "CORRECT" else {
+            "mode": "mastery", "kind": route_kind(cfgs[f"{single}/mastery"]),
+            "result": "WAITING (time trial not CORRECT - this lane's mastery needs it first)"}
+        return steps + [t, m]
+    with ThreadPoolExecutor(max(1, len(modes))) as pool:
+        ran = [f.result() for f in [pool.submit(tm, m) for m in modes]]
+    t = next((r for r in ran if r["mode"] == "time_trial"), None)
+    for i, r in enumerate(ran):
+        if r["mode"] == "mastery" and gated(r) and t and t["result"] == "CORRECT":
+            ran[i] = tm("mastery")
+    return steps + ran
+
+
 def first_pass(day, lane, rows, routes_cfg):
     prefix = LANES[lane][0]
     out = f"runs-d{day:02d}"
@@ -338,37 +511,25 @@ def first_pass(day, lane, rows, routes_cfg):
     if not single:
         report["note"] = "no single-solve route for this lane"
         return report
-    # All modes at once: none waits for single-solve's verdict (each submit's grading + response is 2-8 s at
-    # release load, and the server records each route's solve when it grades, not when we hear back). A wrong
-    # solver then also fails TT/mastery - harmless: those are untimed regular variants (pools 16-128), REFUSED
-    # submits spend nothing, and every failure still lands in the brief + grouped oracle for the lane agent.
-    jobs = [("single_solve", [single])]
-    for mode, flag in (("time_trial", "-t"), ("mastery", "-m")):
-        cfg = routes_cfg.get(f"{single}/{mode}")
-        if not cfg:
-            continue
-        if not cfg.get("run_for_time_supported"):
-            report["steps"].append({"mode": mode, "result": "SKIPPED (timed by default - coordinator only)"})
-            continue
-        jobs.append((mode, [single, flag]))
+
     def run(args):  # one mode's crash (e.g. a 900 s timeout) must not discard the others' results
         try:
             return ctf_run(args, out)
         except Exception as e:  # noqa: BLE001
             return {"result": f"CRASHED {e!r}", "dir": None, "errors": [], "tail": []}
 
-    with ThreadPoolExecutor(len(jobs)) as pool:
-        futs = [(mode, pool.submit(run, args)) for mode, args in jobs]
-        ran = [dict(f.result(), mode=mode) for mode, f in futs]
-    order = {"single_solve": 0, "time_trial": 1, "mastery": 2}
-    report["steps"] = sorted(ran + report["steps"], key=lambda s: order.get(s["mode"], 9))
+    # Fast solves beat Hall of Fame entries (user, Day 18): one-shot and timed-by-default routes run here too,
+    # chained on a CORRECT single-solve. Only --timed (dual-pool HoF runs) stays with the coordinator.
+    report["steps"] = chain(lane, single, routes_cfg, run)
 
     def oracle(s):
         r = subprocess.run(["python3", "-I", os.path.join(CTF, "tools", "oracle_groups.py"), s["dir"]],
                            cwd=CTF, text=True, capture_output=True, env=env(), timeout=1800)
         s["oracle"] = r.stdout.strip().splitlines()[-40:]
 
-    wrong = [s for s in report["steps"] if s.get("result") == "incorrect" and s.get("dir")]
+    # Partial submits only mean something on an open untimed attempt (single-solve, dual-pool regular play).
+    wrong = [s for s in report["steps"] if s.get("result") == "incorrect" and s.get("dir")
+             and s.get("kind") in (None, "dual-pool")]
     if wrong:
         with ThreadPoolExecutor(len(wrong)) as pool:
             list(pool.map(oracle, wrong))
@@ -377,12 +538,13 @@ def first_pass(day, lane, rows, routes_cfg):
 
 def brief(day, report):
     lane = report["lane"]
-    done = all(s.get("result") in ("CORRECT",) or str(s.get("result")).startswith("SKIPPED") for s in report["steps"]) \
+    done = all(s.get("result") == "CORRECT" for s in report["steps"]) \
         and any(s.get("mode") == "mastery" for s in report["steps"])
     lines = [f"# Day {day} - {lane} lane: first-pass brief", "",
              f"Routes: {', '.join(report['routes']) or '(none)'}", ""]
     for s in report["steps"]:
-        lines.append(f"## {s.get('mode')}: {s.get('result')}")
+        kind = f" ({s['kind']})" if s.get("kind") else ""
+        lines.append(f"## {s.get('mode')}{kind}: {s.get('result')}")
         if s.get("dir"):
             lines.append(f"run dir: `{os.path.join(CTF, s['dir'])}`")
         if s.get("errors"):
@@ -411,6 +573,8 @@ def watch(day, rehearse):
 
     def lane_job(lane):
         t = time.time()
+        if lane in MANUAL:
+            return manual_job(lane, t)
         try:
             rows, how = lane_rows(day, lane, rel)
             merge_routes(rows)
@@ -424,6 +588,25 @@ def watch(day, rehearse):
             return
         try:
             open(os.path.join(sd, f"sent-{lane}"), "w").close()  # stall clock: stops before this are the prime turn
+            send(lane, f"Day {day} is live. Read {path} and follow it.")
+        except Exception as e:  # noqa: BLE001
+            log(f"{lane}: could not reach the agent pane ({e!r}) - brief is at {path}")
+
+    def manual_job(lane, t):
+        try:
+            rows, how = manual_rows(day, lane, rel)
+            merge_routes(rows)
+            log(f"{lane}: {len(rows)} routes via {how} in {time.time() - t:.1f} s")
+            path = manual_brief(day, recon(day, lane, rows), how)
+        except Exception as e:  # noqa: BLE001
+            path = os.path.join(sd, f"brief-{lane}.md")
+            with open(path, "w") as f:
+                f.write(f"# Day {day} - {lane} lane: recon CRASHED\n\n{e!r}\n\nList the day's routes by hand "
+                        f"(op=list&day={day}&lane=...) and wait for the user's direction.\n")
+        log(f"{lane}: recon brief in {time.time() - t:.0f} s -> {path}")
+        if NO_AGENTS:
+            return
+        try:  # no sent-<lane> marker: a manual lane is never escalated as stalled
             send(lane, f"Day {day} is live. Read {path} and follow it.")
         except Exception as e:  # noqa: BLE001
             log(f"{lane}: could not reach the agent pane ({e!r}) - brief is at {path}")
@@ -467,9 +650,9 @@ def monitor(day, until_s=90 * 60, every_s=10):
     a false positive must not race a live agent. The coordinator runs `rush.py takeover` (or nudges the agent)."""
     sd, end, flagged = state_dir(day), time.time() + until_s, {}
     while time.time() < end:
-        pending = [l for l in LANES if not os.path.exists(os.path.join(sd, f"done-{l}"))]
+        pending = [l for l in LANES if l not in MANUAL and not os.path.exists(os.path.join(sd, f"done-{l}"))]
         if not pending:
-            log("every lane agent is done")
+            log("every solver lane agent is done")
             return
         for lane in pending:
             idle = stall_since(sd, lane)
@@ -508,12 +691,17 @@ def latest_correct(run_root, mode):
 
 
 def takeover(day, lane):
-    """Coordinator tool for a stalled lane, run against the lane worktree's build: untimed attempts for every mode
-    whose route is not CORRECT yet (all at once; timed-by-default routes skipped), fixtures for modes without one,
-    then the lane replay. Reports only - the coordinator reviews, commits on the lane branch and touches done."""
+    """Coordinator tool for a stalled lane, run against the lane worktree's build: every mode whose route is not
+    CORRECT yet, chained like the first pass (`chain`) - except a timed-by-default / one-shot route that already has an
+    attempt, which is left to the coordinator (a retry spends another attempt; a one-shot has none left). Then fixtures
+    for modes without one and the lane replay. Reports only - the coordinator reviews, commits on the lane branch and
+    touches done."""
     wt, fix = os.path.join(WT_ROOT, lane, "ctf-run"), LANES[lane][2]
     out = os.path.join(CTF, f"runs-d{day:02d}")
     lines = [f"# takeover: day {day} {lane} ({wt})", ""]
+    if lane in MANUAL:
+        lines.append(f"{lane} is a manual lane (no ctf-run solver) - direct its agent in tmux window rush:{lane}")
+        return finish_takeover(day, lane, lines)
     b = sh(["cargo", "build", "--release", "--features", "tls"], cwd=wt, check=False)
     if b.returncode:
         lines += ["build FAILED:", "```", *b.stderr.strip().splitlines()[-25:], "```"]
@@ -525,31 +713,30 @@ def takeover(day, lane):
     if not single:
         lines.append(f"no day-{day} routes for {lane} in the route cache")
         return finish_takeover(day, lane, lines)
-    modes = [("single_solve", single, [single])]
-    for mode, flag in (("time_trial", "-t"), ("mastery", "-m")):
+    modes = [("single_solve", single, None)]
+    for mode in ("time_trial", "mastery"):
         if f"{single}/{mode}" in rows:
-            modes.append((mode, f"{single}/{mode}", [single, flag]))
-    jobs = []
-    for mode, rid, args in modes:
+            modes.append((mode, f"{single}/{mode}", None))
+    solved, hold = set(), {}
+    for mode, rid, _ in modes:
         try:
             st = get(f"{API}/?op=status&challenge={urllib.parse.quote(rid)}", timeout=120)
-        except urllib.error.HTTPError as e:  # 409 start_required: never started (Day 18 mobile TT/mastery)
+        except urllib.error.HTTPError as e:  # 409 start_required / prerequisite_required: no attempt yet
             if e.code != 409:
                 raise
             st = {}
         if st.get("result") == "CORRECT":
-            lines.append(f"- {mode}: already CORRECT")
-        elif mode != "single_solve" and not rows[rid].get("run_for_time_supported"):
-            lines.append(f"- {mode}: not CORRECT, timed by default - coordinator only")
-        else:
-            jobs.append((mode, args))
-    if jobs:
-        with ThreadPoolExecutor(len(jobs)) as pool:
-            done = [(m, pool.submit(ctf_run, a, out, wt)) for m, a in jobs]
-            for m, f in done:
-                r = f.result()
-                lines.append(f"- {m}: {r['result']} ({r['dir']})")
-                lines += [f"    {e}" for e in r["errors"][:10]]
+            solved.add(mode)
+        elif mode != "single_solve" and route_kind(rows[rid]) != "dual-pool" and st.get("attempt_id"):
+            hold[mode] = f"{route_kind(rows[rid])} route already has an attempt (result {st.get('result')}) - coordinator only"
+
+    def run(args):
+        return ctf_run(args, out, wt)
+
+    for r in chain(lane, single, rows, run, solved, hold):
+        lines.append(f"- {r['mode']}" + (f" ({r['kind']})" if r.get("kind") else "") + f": {r['result']}"
+                     + (f" ({r['dir']})" if r.get("dir") else ""))
+        lines += [f"    {e}" for e in r.get("errors", [])[:10]]
     slug = slugify(rows[single].get("title") or rows[single].get("name")) if lane == "warmups" else None
     run_root = os.path.join(out, single)
     for mode, _, _ in modes:
@@ -586,6 +773,8 @@ def status(day):
         done = os.path.exists(os.path.join(sd, f"done-{lane}"))
         idle = stall_since(sd, lane)
         agent = "done" if done else (f"STOPPED {idle:.0f} s ago (no done marker)" if idle is not None else "working")
+        if lane in MANUAL and not done:
+            agent = f"manual (user-directed, tmux window rush:{lane})"
         if not done and os.path.exists(os.path.join(sd, f"takeover-{lane}.md")):
             agent += " | takeover report written"
         summary = " | ".join("{}={}".format(s.get("mode"), s.get("result")) for s in steps) or "-"

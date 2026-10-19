@@ -80,7 +80,17 @@ pub fn check_route(mode: Mode, op: StartOp, timed: bool, dry: bool, one_shot_ok:
     Ok(())
 }
 
-/// `CTF_NO_RANKED=1` (set for unattended lane agents): refuse anything that could spend a ranked attempt -
+/// `CTF_NO_RANKED=hof` (rush first pass and lane agents from Day 19): solves come first, so one-shot and
+/// timed-by-default routes may be started; only `--timed` - a Hall of Fame attempt on a dual-pool route, which the
+/// coordinator's campaign owns - is refused.
+pub fn check_no_hof(timed: bool) -> Result<(), String> {
+    if timed {
+        return Err("CTF_NO_RANKED=hof: --timed starts a Hall of Fame attempt (the coordinator's campaign)".into());
+    }
+    Ok(())
+}
+
+/// `CTF_NO_RANKED=1` (any value but `hof`): refuse anything that could spend a ranked attempt -
 /// `--timed`, `--one-shot-ok`, and non-dry starts/retries on timed-by-default or uncached routes. Untimed
 /// regular play (dual-pool routes), single-solve, practice and dry reconnects stay allowed.
 pub fn check_unranked(mode: Mode, op: StartOp, timed: bool, dry: bool, one_shot_ok: bool, route: Option<&Route>) -> Result<(), String> {
@@ -328,8 +338,10 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
     }
     let route = gm::cached_routes().and_then(|rs| rs.into_iter().find(|r| r.id == opts.challenge));
     check_route(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?;
-    if std::env::var_os("CTF_NO_RANKED").is_some() {
-        check_unranked(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?;
+    match std::env::var_os("CTF_NO_RANKED") {
+        Some(v) if v == "hof" => check_no_hof(opts.timed)?,
+        Some(_) => check_unranked(ctx.mode, opts.op, opts.timed, opts.dry, opts.one_shot_ok, route.as_ref())?,
+        None => {}
     }
 
     let sets = route.as_ref().and_then(|r| if opts.timed { r.ranked_set_count } else { r.regular_set_count.or(r.ranked_set_count) });
@@ -665,6 +677,9 @@ mod tests {
         assert!(check_unranked(Mastery, Start, false, false, false, None).is_err());
         assert!(check_unranked(Single, Start, false, false, false, None).is_ok());
         assert!(check_unranked(TimeTrial, Start, false, true, false, Some(&solved)).is_ok());
+        // CTF_NO_RANKED=hof: only --timed (Hall of Fame) is refused.
+        assert!(check_no_hof(true).is_err());
+        assert!(check_no_hof(false).is_ok());
         assert!(check_route(Mastery, Start, true, true, false, Some(&dual)).is_err());
         assert!(check_route(Mastery, Start, false, true, false, Some(&dual)).is_ok());
         assert!(check_route(Mastery, Practice, false, true, false, Some(&one_shot)).is_ok());

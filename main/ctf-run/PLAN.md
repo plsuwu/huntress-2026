@@ -373,3 +373,15 @@ replay -> timed), module map, testing rules.
   switched to a pure-syntax rule (`batch::classify_expansion_syntax`, gated on `RunCtx.started_ms`; see
   `utils/solver_py_scripts/day-18-script-analysis/process-story/NOTES.md`). Before it was found, 6 ranked script runs
   (days 3-6) came back incorrect.
+- 2026-10-19 - Full HoF pass before Day 19 (16:25-17:00 AEST; netprobe timer stopped for the run). The jumpbox had been
+  powered off since ~11:40 AEST (auto shutdown on uptime). After the user restarted it, its binary hashed equal to a HEAD
+  `nix build`, so no deploy was needed. Survey `runs-hof/survey-full-d19.{json,txt}` (days 1-18, 180 routes): 138
+  eligible with attempts left. Binary d09 TT is exhausted. Binary d01/d02 and metadata d01 still have attempts but are not
+  HoF-eligible. `plan-full-d19.json` (budget 1, past_first) -> `campaign-full-d19.log`: 137 CORRECT, 1 submit HTTP 503
+  (warmups d05 mastery: the attempt was consumed and the campaign's 503 retry does not fire at budget 1; re-run in
+  `plan-full-d19-b`, CORRECT). 40 time improvements, 21 rank gains; across the 138 routes **#1 35 -> 38**, top-3 78 -> 84.
+- 2026-10-19 - Rush for Day 19. New `CTF_NO_RANKED=hof` mode (`run::check_no_hof`): only `--timed` is refused. The rush first pass
+  is now chained: single-solve, then TT + mastery once single is CORRECT. One-shots run with `--one-shot-ok`, binary's
+  mastery after its TT. Lane agents get the same rules. A web lane was added as a MANUAL lane (read-only recon brief,
+  user-directed agent). Rehearsed on solved Day 18 (warmups/binary one-shots, mobile dual-pool): all CORRECT via
+  already_solved reconnects, same attempt ids, nothing spent. 284/284 replay clean.

@@ -97,9 +97,11 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`, `--allowedTools` for the lane's own `ctf-run` binary - the auto-mode classifier blocked untimed starts on Day 16) -> **watch** (release = `op=status&challenge=warmups-day-NN` going 404 -> 200, polled every 1 s from 22:59:50, with
   the old 3 s `op=list` poll as fallback; a released day's global list takes 4-10 s, so each lane then fetches its own
   routes with `op=list&day=N&search=<prefix>NN` (~1.5-3.5 s; the `lane=` filter rejects binary-RE), merges them into
-  the route cache under a lock, and starts its **first pass** at once: single-solve, untimed
-  regular time trial + mastery **all started at once** (no wait on single-solve's verdict; a wrong solver only costs
-  untimed regular variants), grouped oracle on `incorrect`; writes `runs-dNN/rush/brief-<lane>.md` and sends that
+  the route cache under a lock, and starts its **first pass** at once (`chain`, since Day 19): single-solve, then -
+  only once it is CORRECT - time trial and mastery together (binary-RE: mastery after a CORRECT TT; a mastery still
+  answering 409 `prerequisite_required` is re-run once after a CORRECT TT). Dual-pool routes get an untimed regular
+  attempt, timed-by-default routes a timed plain start, one-shots `--one-shot-ok`. Grouped oracle on untimed
+  `incorrect` only; writes `runs-dNN/rush/brief-<lane>.md` and sends that
   lane's agent "read the brief" the moment its own pass ends; `send()` first dismisses an open Claude Code picker such
   as "Teach auto mode...", which would otherwise eat the message). `all` kills the previous day's tmux session first.
 - **Stalled agents:** each agent's `--settings` file (`runs-dNN/rush/settings-<lane>.json`) has a `Stop` hook
@@ -124,8 +126,17 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   stop that lane's campaign, reproduce on an untimed `--retry`, run `oracle_groups.py`, and gate the new rule on
   `RunCtx.started_ms` so old fixtures stay valid. Refresh the jumpbox route cache (`ctf-run routes --refresh -u ...`)
   before a campaign on a new day.
-- Everything automated runs with `CTF_NO_RANKED=1` (ctf-run refuses `--timed`, `--one-shot-ok` and starts on
-  timed-by-default routes). Ranked runs, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
+- **Manual lanes** (`rush.py` `MANUAL`; `web` from Day 19, format unknown): no ctf-run solver and no first pass. Routes
+  come from `op=list&day=N&lane=web|web-exploitation` (OpenAPI lane values), falling back to any day row whose `lane`
+  field is not an established lane. Recon is read-only: `op=status` per route, which answers an unstarted route with
+  409 `start_required` plus its questions contract. Full JSON goes to `runs-dNN/rush/recon-<lane>/`, and
+  `brief-<lane>.md` shows every field. The agent (`prompts/prime-manual.md`, `task-manual.md`) presents the
+  challenges and waits for the user, who directs it in tmux window `rush:<lane>`. It starts nothing unless told to. The
+  lane is never escalated as stalled, and `takeover` refuses it. `merge.sh` merges it on `done-<lane>` like the rest.
+- Everything automated runs with `CTF_NO_RANKED=hof` (since Day 19: ctf-run refuses only `--timed`, so one-shot and
+  timed-by-default solves go ahead; any other value, e.g. `=1`, keeps the old full guard: no `--timed`, no
+  `--one-shot-ok`, no starts on timed-by-default routes). `takeover` chains the same way but holds a timed-by-default
+  or one-shot route that already has an attempt. HoF campaigns, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
   merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.
 - Commit to `master` before 22:45 - lanes branch from the committed HEAD. Follow: `journalctl --user -fu huntress-rush`,
   `tmux -L huntress attach -t rush`, `rush.py status --day N`. Rehearse on a released day with
