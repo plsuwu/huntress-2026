@@ -14,6 +14,14 @@ The first pass above did not finish this lane. Make every mode of your lane CORR
    `--one-shot-ok`; it is the route's only attempt, so fire it only after single-solve is CORRECT and the replay
    (fixtures + the new single run) is clean. Never `--timed`. Free single-solve resubmits are the fastest format
    oracle; use the grouped oracle for large answer sets (untimed attempts only).
+   **A timed-by-default or ONE-SHOT mode that is not CORRECT** (above: its timed result, then a `practice` line):
+   the first pass already ran its untimed practice continuation (`--practice`: same artifact, no clock, free) and,
+   if that was incorrect, the grouped oracle on it. Iterate there on your own: fix, rebuild, re-run
+   `./target/release/ctf-run <single-solve id> -t|-m --practice -o runs-d{day:02d}` (it reopens the same attempt) and
+   `python3 -I tools/oracle_groups.py <practice run dir>` until it is CORRECT, then confirm with `op=status` that the
+   route shows CORRECT. If the GM refuses practice because fresh attempts remain (timed by default, pool > 1),
+   validate the fix (fixtures, single-solve, the failed run's saved artifacts), then `--retry` - it spends one of
+   those attempts, which is fine. A failed run dir is the evidence: its artifacts and submitted answers are saved.
 4. Turn the graded runs into fixtures: `python3 -I tools/fixtures_from_runs.py <run dirs>` (warmups: add `--slug <slug>`).
 5. Write `utils/solver_py_scripts/day-{day:02d}-<lane dir>/<slug>/NOTES.md` (what was new, what was graded, gotchas).
 6. `git add -A && git commit` on your branch (end the message with the usual Co-Authored-By line).

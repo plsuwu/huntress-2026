@@ -100,8 +100,10 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   the route cache under a lock, and starts its **first pass** at once (`chain`, since Day 19): single-solve, then -
   only once it is CORRECT - time trial and mastery together (binary-RE: mastery after a CORRECT TT; a mastery still
   answering 409 `prerequisite_required` is re-run once after a CORRECT TT). Dual-pool routes get an untimed regular
-  attempt, timed-by-default routes a timed plain start, one-shots `--one-shot-ok`. Grouped oracle on untimed
-  `incorrect` only; writes `runs-dNN/rush/brief-<lane>.md` and sends that
+  attempt, timed-by-default routes a timed plain start, one-shots `--one-shot-ok`. A timed / one-shot mode that is
+  not CORRECT gets an untimed `--practice` run on the same artifact right away. A CORRECT there counts for gating;
+  if incorrect, the grouped oracle runs on that practice attempt and the agent keeps iterating with `--practice`
+  (`prompts/task.md`). Grouped oracle on untimed attempts only; writes `runs-dNN/rush/brief-<lane>.md` and sends that
   lane's agent "read the brief" the moment its own pass ends; `send()` first dismisses an open Claude Code picker such
   as "Teach auto mode...", which would otherwise eat the message). `all` kills the previous day's tmux session first.
 - **Stalled agents:** each agent's `--settings` file (`runs-dNN/rush/settings-<lane>.json`) has a `Stop` hook

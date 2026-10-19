@@ -463,7 +463,10 @@ def chain(lane, single, cfgs, run, solved=(), hold=None):
     """Single-solve first; TT and mastery only once it is CORRECT (until then they answer 409 prerequisite_required,
     and a one-shot must not be spent on a solver that just failed), then both at once - except SEQUENTIAL_MASTERY
     lanes, whose mastery waits for a CORRECT TT. A mastery that still answers prerequisite_required (a lane newly
-    gated on its TT; the refused start spends nothing) is run once more after a CORRECT TT.
+    gated on its TT; the refused start spends nothing) is run once more after a CORRECT TT. A timed-by-default or
+    one-shot mode that is not CORRECT (failed, expired, or HELD) gets an untimed `--practice` run at once: the GM
+    reopens the last artifact without a clock once fresh attempts are used up. A CORRECT there (e.g. the timed run
+    only missed its deadline) counts for gating; otherwise its run dir is the open attempt for the grouped oracle.
     `run(args)` -> ctf_run result; modes in `solved` are already CORRECT and only gate the others; `hold` maps a mode
     to the reason it must not be started (it then counts as not CORRECT)."""
     hold = hold or {}
@@ -477,7 +480,13 @@ def chain(lane, single, cfgs, run, solved=(), hold=None):
 
     def tm(mode):
         cfg = cfgs[f"{single}/{mode}"]
-        return dict(go(mode, mode_args(single, mode, cfg)), kind=route_kind(cfg))
+        r = dict(go(mode, mode_args(single, mode, cfg)), kind=route_kind(cfg))
+        if r["kind"] != "dual-pool" and r["result"] != "CORRECT":
+            p = run([single, "-t" if mode == "time_trial" else "-m", "--practice"])
+            r["practice"] = p
+            if p.get("result") == "CORRECT":
+                r.update(timed_result=r["result"], result="CORRECT")
+        return r
 
     def gated(r):
         return "prerequisite_required" in " ".join(r.get("errors", []) + r.get("tail", []))
@@ -527,9 +536,12 @@ def first_pass(day, lane, rows, routes_cfg):
                            cwd=CTF, text=True, capture_output=True, env=env(), timeout=1800)
         s["oracle"] = r.stdout.strip().splitlines()[-40:]
 
-    # Partial submits only mean something on an open untimed attempt (single-solve, dual-pool regular play).
+    # Partial submits only mean something on an open untimed attempt: single-solve, dual-pool regular play, and the
+    # practice continuation of a failed timed / one-shot attempt.
     wrong = [s for s in report["steps"] if s.get("result") == "incorrect" and s.get("dir")
              and s.get("kind") in (None, "dual-pool")]
+    wrong += [s["practice"] for s in report["steps"] if (s.get("practice") or {}).get("result") == "incorrect"
+              and s["practice"].get("dir")]
     if wrong:
         with ThreadPoolExecutor(len(wrong)) as pool:
             list(pool.map(oracle, wrong))
@@ -544,7 +556,8 @@ def brief(day, report):
              f"Routes: {', '.join(report['routes']) or '(none)'}", ""]
     for s in report["steps"]:
         kind = f" ({s['kind']})" if s.get("kind") else ""
-        lines.append(f"## {s.get('mode')}{kind}: {s.get('result')}")
+        via = f" via practice (timed attempt: {s['timed_result']})" if s.get("timed_result") else ""
+        lines.append(f"## {s.get('mode')}{kind}: {s.get('result')}{via}")
         if s.get("dir"):
             lines.append(f"run dir: `{os.path.join(CTF, s['dir'])}`")
         if s.get("errors"):
@@ -553,6 +566,16 @@ def brief(day, report):
             lines += ["grouped oracle (untimed partial submits):", "```", *s["oracle"], "```"]
         if s.get("result") not in ("CORRECT",) and s.get("tail") and not s.get("errors"):
             lines += ["tail:", "```", *s["tail"], "```"]
+        p = s.get("practice")
+        if p:
+            lines.append(f"practice (untimed continuation of that attempt): {p.get('result')}"
+                         + (f" - run dir `{os.path.join(CTF, p['dir'])}`" if p.get("dir") else ""))
+            if p.get("errors"):
+                lines += ["```", *p["errors"], "```"]
+            if p.get("oracle"):
+                lines += ["grouped oracle on the practice attempt:", "```", *p["oracle"], "```"]
+            if p.get("result") != "CORRECT" and p.get("tail") and not p.get("errors") and not p.get("oracle"):
+                lines += ["```", *p["tail"], "```"]
         lines.append("")
     tpl = open(os.path.join(HERE, "prompts", "task-done.md" if done else "task.md")).read()
     lines.append(tpl.format(day=day, lane=lane, wt=os.path.join(WT_ROOT, lane), repo=REPO,
@@ -692,8 +715,9 @@ def latest_correct(run_root, mode):
 
 def takeover(day, lane):
     """Coordinator tool for a stalled lane, run against the lane worktree's build: every mode whose route is not
-    CORRECT yet, chained like the first pass (`chain`) - except a timed-by-default / one-shot route that already has an
-    attempt, which is left to the coordinator (a retry spends another attempt; a one-shot has none left). Then fixtures
+    CORRECT yet, chained like the first pass (`chain`) - except that a timed-by-default / one-shot route that already
+    has an attempt gets no new timed start (a retry spends another attempt; a one-shot has none left), only the untimed
+    practice continuation. Then fixtures
     for modes without one and the lane replay. Reports only - the coordinator reviews, commits on the lane branch and
     touches done."""
     wt, fix = os.path.join(WT_ROOT, lane, "ctf-run"), LANES[lane][2]
@@ -728,7 +752,7 @@ def takeover(day, lane):
         if st.get("result") == "CORRECT":
             solved.add(mode)
         elif mode != "single_solve" and route_kind(rows[rid]) != "dual-pool" and st.get("attempt_id"):
-            hold[mode] = f"{route_kind(rows[rid])} route already has an attempt (result {st.get('result')}) - coordinator only"
+            hold[mode] = f"{route_kind(rows[rid])} route already has an attempt (result {st.get('result')}): no new timed start"
 
     def run(args):
         return ctf_run(args, out, wt)
@@ -737,6 +761,11 @@ def takeover(day, lane):
         lines.append(f"- {r['mode']}" + (f" ({r['kind']})" if r.get("kind") else "") + f": {r['result']}"
                      + (f" ({r['dir']})" if r.get("dir") else ""))
         lines += [f"    {e}" for e in r.get("errors", [])[:10]]
+        if r.get("practice"):
+            pr = r["practice"]
+            lines.append(f"    practice: {pr.get('result')}" + (f" ({pr['dir']})" if pr.get("dir") else "")
+                         + ("" if pr.get("result") == "CORRECT" else
+                            f" - grouped oracle: python3 -I tools/oracle_groups.py {pr.get('dir')}"))
     slug = slugify(rows[single].get("title") or rows[single].get("name")) if lane == "warmups" else None
     run_root = os.path.join(out, single)
     for mode, _, _ in modes:
