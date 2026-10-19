@@ -13,6 +13,7 @@ pub mod lnk;
 pub mod macho;
 pub mod media;
 pub mod ooxml;
+pub mod overlay;
 pub mod pe;
 pub mod video;
 pub mod wasm;
