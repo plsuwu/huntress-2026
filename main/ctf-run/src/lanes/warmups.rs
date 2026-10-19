@@ -49,9 +49,9 @@ impl T {
             T::Rot47 => Some(codec::rot47(s)),
             T::Atbash => Some(codec::atbash(s)),
             T::Rev => Some(codec::reverse(s)),
-            T::B64 => codec::printable(&codec::base64(t)?),
-            T::B32 => codec::printable(&codec::base32(t)?),
-            T::Hex => codec::printable(&codec::hex(t)?),
+            T::B64 => codec::text_any(&codec::base64(t)?),
+            T::B32 => codec::text_any(&codec::base32(t)?),
+            T::Hex => codec::text_any(&codec::hex(t)?),
             T::Num => codec::numbers(t),
             T::Pct => codec::has_percent(t).then(|| codec::percent_decode_all(t)),
             T::Ent => codec::has_entity(t).then(|| codec::html_unescape_all(t)),
@@ -65,7 +65,7 @@ impl T {
                     return None;
                 }
                 let bytes: Vec<u8> = c.as_bytes().chunks(8).map(|ch| u8::from_str_radix(std::str::from_utf8(ch).unwrap(), 2).unwrap()).collect();
-                codec::printable(&bytes)
+                codec::text_any(&bytes)
             }
         }
     }
@@ -90,6 +90,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         16 => T::Morse, // "Dot Com": Morse of the hex digits ("sixteen little symbols")
         17 => T::Bacon, // "Bacon Bits": 5-bit a/b groups of the hex digits ("sixteen guests")
         18 => T::Rail(3), // "Off the Rails": 3-rail fence ("three rails, one very zigzag commute")
+        19 => T::Hex, // "Little Things": hex of UTF-16LE (+ BOM); `T::Hex` falls back to UTF-16
         _ => return None,
     })
 }
@@ -604,6 +605,13 @@ mod tests {
         assert_eq!(codec::rail_fence_decode(&rail(SENT, 3), 3), SENT);
         assert_eq!(slug(solve_blob(&rail(SENT, 3))), "zesty-sunset-quartz-65");
         assert_eq!(slug(solve_blob(&format!("{}\n", rail(SENT, 5)))), "zesty-sunset-quartz-65");
+        // Day 19 "Little Things": hex of UTF-16LE with a BOM (blob); a row with or without its own BOM.
+        let u16hex = |s: &str, bom: bool| (if bom { "fffe".to_string() } else { String::new() }) + &s.encode_utf16().map(|u| format!("{:02x}{:02x}", u & 0xff, u >> 8)).collect::<String>();
+        assert_eq!(slug(solve_blob(&u16hex(SENT, true))), "zesty-sunset-quartz-65");
+        for bom in [true, false] {
+            let row = format!("01\tTmljZSB3b3Jr\n19\t{}\n", u16hex(&SENT[9..], bom));
+            assert_eq!(slug(solve_rows(&row, &BTreeMap::new())), "zesty-sunset-quartz-65");
+        }
         let (head, tail) = SENT.split_at(30);
         let b64 = |s: &str| {
             const A: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

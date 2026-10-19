@@ -8,6 +8,29 @@ pub fn printable(b: &[u8]) -> Option<String> {
     (!t.is_empty() && t.chars().all(|c| !c.is_control() || matches!(c, '\r' | '\n' | '\t'))).then(|| t.to_string())
 }
 
+/// UTF-16 text (day 19 "Little Things": hex of UTF-16LE with a BOM). A BOM picks the byte order;
+/// without one, every high (or low) byte must be zero, i.e. Latin-1 text in either order. The
+/// result must pass `printable`.
+pub fn utf16_text(b: &[u8]) -> Option<String> {
+    if b.len() < 2 || b.len() % 2 != 0 {
+        return None;
+    }
+    let (body, le) = match (b[0], b[1]) {
+        (0xff, 0xfe) => (&b[2..], true),
+        (0xfe, 0xff) => (&b[2..], false),
+        _ if b.chunks(2).all(|p| p[1] == 0 && p[0] != 0) => (b, true),
+        _ if b.chunks(2).all(|p| p[0] == 0 && p[1] != 0) => (b, false),
+        _ => return None,
+    };
+    let units: Vec<u16> = body.chunks(2).map(|p| if le { u16::from_le_bytes([p[0], p[1]]) } else { u16::from_be_bytes([p[0], p[1]]) }).collect();
+    printable(String::from_utf16(&units).ok()?.as_bytes())
+}
+
+/// Printable text as UTF-8, else as UTF-16 (`utf16_text`).
+pub fn text_any(b: &[u8]) -> Option<String> {
+    printable(b).or_else(|| utf16_text(b))
+}
+
 fn strip_ws(s: &str) -> String {
     s.chars().filter(|c| !c.is_whitespace()).collect()
 }
