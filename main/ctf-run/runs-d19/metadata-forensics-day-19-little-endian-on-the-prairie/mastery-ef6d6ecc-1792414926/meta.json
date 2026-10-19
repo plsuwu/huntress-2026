@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-19-little-endian-on-the-prairie/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "ef6d6ecc-2c83-4870-b1d2-95fb9f9c8074",
+  "started_at": "2026-10-19T13:02:08.873Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2591.553738,
+  "start_ttfb_ms": 2590.866674,
+  "clock": {
+    "start_sent": "2026-10-19T13:02:06.501Z",
+    "start_received": "2026-10-19T13:02:09.093Z",
+    "start_date_header": "2026-10-19T13:02:09.000Z",
+    "last_delivery": "2026-10-19T13:02:10.853Z",
+    "submit_sent": "2026-10-19T13:02:10.854Z",
+    "submit_received": "2026-10-19T13:02:13.572Z",
+    "submit_date_header": "2026-10-19T13:02:13.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-19-little-endian-on-the-prairie-mastery.zip",
+      "bytes": 3143708,
+      "wire": 3143708,
+      "ttfb_ms": 1421.55567,
+      "total_ms": 1740.2841690000002,
+      "done_at_ms": 4331.902277,
+      "analyse_ms": 19.386708
+    }
+  ]
+}
