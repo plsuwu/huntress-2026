@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-20-jenkins-pipeline-intrusion/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "9675b7e2-4eeb-4250-b891-9454a8339373",
+  "started_at": "2026-10-20T13:00:29.015Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1579.17544,
+  "start_ttfb_ms": 1540.189522,
+  "clock": {
+    "start_sent": "2026-10-20T13:00:27.958Z",
+    "start_received": "2026-10-20T13:00:29.537Z",
+    "start_date_header": "2026-10-20T13:00:29.000Z",
+    "last_delivery": "2026-10-20T13:00:31.238Z",
+    "submit_sent": "2026-10-20T13:00:31.296Z",
+    "submit_received": "2026-10-20T13:00:34.080Z",
+    "submit_date_header": "2026-10-20T13:00:34.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-20-jenkins-pipeline-intrusion-mastery.zip",
+      "bytes": 650363,
+      "wire": 650363,
+      "ttfb_ms": 1478.026435,
+      "total_ms": 1594.25825,
+      "done_at_ms": 3173.672268,
+      "analyse_ms": 106.095794
+    }
+  ]
+}

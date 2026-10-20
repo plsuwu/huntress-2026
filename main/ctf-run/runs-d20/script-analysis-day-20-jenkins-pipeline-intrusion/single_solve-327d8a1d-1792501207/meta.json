@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-20-jenkins-pipeline-intrusion",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "327d8a1d-1935-4412-a6a3-c8203d2d501c",
+  "started_at": "2026-10-20T13:00:08.866Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1567.237629,
+  "start_ttfb_ms": 1548.396288,
+  "clock": {
+    "start_sent": "2026-10-20T13:00:07.649Z",
+    "start_received": "2026-10-20T13:00:09.216Z",
+    "start_date_header": "2026-10-20T13:00:09.000Z",
+    "last_delivery": "2026-10-20T13:00:11.058Z",
+    "submit_sent": "2026-10-20T13:00:11.067Z",
+    "submit_received": "2026-10-20T13:00:15.464Z",
+    "submit_date_header": "2026-10-20T13:00:15.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 130248,
+      "wire": 130248,
+      "ttfb_ms": 1734.095664,
+      "total_ms": 1823.1336279999998,
+      "done_at_ms": 3390.620562,
+      "analyse_ms": 18.289137
+    }
+  ]
+}

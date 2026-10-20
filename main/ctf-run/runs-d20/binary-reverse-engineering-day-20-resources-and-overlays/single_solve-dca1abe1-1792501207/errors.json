@@ -1,0 +1,4 @@
+{
+  "d20_analysis_hcfg_resource_size": "unknown field \"analysis_hcfg_resource_size\" for d20--variant-000.elf (Some(Elf))",
+  "d20_analysis_overlay_offset": "d20--variant-000.elf: no validated packed overlay"
+}
