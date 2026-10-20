@@ -243,9 +243,10 @@ pub const ML_PREFIXES: &[&str] = &["polyglot-", "host-hta-", "host-wsf-", "host-
 /// Finds and decodes the descriptor literal: `descriptor_x = "..."` (any language's assignment
 /// syntax), MOF `Descriptor = "...";`, then - for languages not seen yet - the
 /// `HUNTRESS_ANALYSIS_V1:<KIND>-<payload>` marker or any string that decodes to a descriptor.
+/// The assignment may sit inside an escaped string (Day 19 `.aspx` host: `descriptor_x = \"...\"`).
 pub fn analyse_literal(text: &str) -> Result<BTreeMap<String, String>, String> {
     let ok = |f: &BTreeMap<String, String>| f.contains_key("role") || f.contains_key("steps");
-    for m in [re!(r#"(?i)descriptor_\w+\s*(?::\s*\w+\s*)?(?::=|[=:])\s*"([^"]+)""#).search(text), re!(r#"\bDescriptor\s*=\s*"([^"]+)"\s*;"#).search(text)].into_iter().flatten() {
+    for m in [re!(r#"(?i)descriptor_\w+\s*(?::\s*\w+\s*)?(?::=|[=:])\s*\\?"([^"\\]+)\\?""#).search(text), re!(r#"\bDescriptor\s*=\s*"([^"]+)"\s*;"#).search(text)].into_iter().flatten() {
         if let Ok(f) = decode_literal(m.g(1)) {
             if ok(&f) {
                 return Ok(f);
@@ -354,5 +355,15 @@ mod tests {
         assert_eq!(f.get("file_path").map(String::as_str), Some("/tmp/huntress-google_apps_script/.58db6ebfbb172c43.stage"));
         let no_marker: String = text.lines().skip_while(|l| !l.starts_with("function")).map(|l| format!("{l}\n")).collect();
         assert_eq!(analyse_literal(&no_marker).unwrap(), f);
+    }
+
+    /// Day 19 `.aspx` host embeds the C# script as one escaped string (`descriptor_x = \"..\"`); the
+    /// first pass only found it via the `HEX-` marker.
+    #[test]
+    fn escaped_literal_without_marker() {
+        let text = std::fs::read_to_string("testdata/d19-host-aspx-csharp.csx").unwrap();
+        let want = analyse_literal(&text).unwrap();
+        assert_eq!(want.get("host_profile").map(String::as_str), Some("aspx_inline_csharp"));
+        assert_eq!(analyse_literal(&text.replace("HUNTRESS_ANALYSIS_V1:", "")).unwrap(), want);
     }
 }
