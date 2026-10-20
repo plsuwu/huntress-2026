@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-19-reflection-maze",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "073bf87d-498d-4796-aad2-600f6efcc56c",
+  "started_at": "2026-10-19T13:00:08.090Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1515.921172,
+  "start_ttfb_ms": 1515.789338,
+  "clock": {
+    "start_sent": "2026-10-19T13:00:06.857Z",
+    "start_received": "2026-10-19T13:00:08.373Z",
+    "start_date_header": "2026-10-19T13:00:08.000Z",
+    "last_delivery": "2026-10-19T13:00:10.074Z",
+    "submit_sent": "2026-10-19T13:00:10.074Z",
+    "submit_received": "2026-10-19T13:00:13.110Z",
+    "submit_date_header": "2026-10-19T13:00:13.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "reflection_maze.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1689.586237,
+      "total_ms": 1700.62531,
+      "done_at_ms": 3216.724543,
+      "analyse_ms": 0.037884
+    }
+  ]
+}

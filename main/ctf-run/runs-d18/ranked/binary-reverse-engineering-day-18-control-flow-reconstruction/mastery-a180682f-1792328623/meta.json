@@ -1,0 +1,62 @@
+{
+  "challenge": "binary-reverse-engineering-day-18-control-flow-reconstruction/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a180682f-4afd-4ef4-9057-8391f0e3f246",
+  "started_at": "2026-10-18T13:03:43.609Z",
+  "deadline": "2026-10-18T13:08:08.609Z",
+  "shape": "artifacts[4]+downloads[4]",
+  "start_ms": 543.052156,
+  "start_ttfb_ms": 536.8352990000001,
+  "clock": {
+    "start_sent": "2026-10-18T13:03:43.181Z",
+    "start_received": "2026-10-18T13:03:43.724Z",
+    "start_date_header": "2026-10-18T13:03:43.000Z",
+    "last_delivery": "2026-10-18T13:03:47.246Z",
+    "submit_sent": "2026-10-18T13:03:47.248Z",
+    "submit_received": "2026-10-18T13:03:48.579Z",
+    "submit_date_header": "2026-10-18T13:03:48.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 32942130,
+      "wire": 32942130,
+      "ttfb_ms": 189.26584,
+      "total_ms": 469.34707799999995,
+      "done_at_ms": 1012.804713,
+      "analyse_ms": 1944.31128
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 32835240,
+      "wire": 32835240,
+      "ttfb_ms": 191.52319,
+      "total_ms": 525.251233,
+      "done_at_ms": 1068.5997439999999,
+      "analyse_ms": 1914.272433
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32835259,
+      "wire": 32835259,
+      "ttfb_ms": 186.77097,
+      "total_ms": 509.728411,
+      "done_at_ms": 1052.982468,
+      "analyse_ms": 1934.06006
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 32942112,
+      "wire": 32942112,
+      "ttfb_ms": 215.11919600000002,
+      "total_ms": 2857.639801,
+      "done_at_ms": 3400.9243960000003,
+      "analyse_ms": 664.720153
+    }
+  ]
+}

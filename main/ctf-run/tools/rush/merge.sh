@@ -10,7 +10,7 @@ cd "$(dirname "$0")/../.."                       # ctf-run/
 STATE="runs-d$DAY/rush"
 [ "$(git rev-parse --abbrev-ref HEAD)" = master ] || { echo "main checkout is not on master" >&2; exit 1; }
 merged=""
-for lane in warmups metadata script binary mobile web; do
+for lane in warmups metadata script binary mobile; do
   branch="day$DAY/$lane"
   if [ ! -e "$STATE/done-$lane" ]; then echo "$lane: not done yet"; continue; fi
   if ! git rev-parse -q --verify "$branch" >/dev/null; then echo "$lane: no branch $branch"; continue; fi

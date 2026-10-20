@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-19-reflection-maze/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "42828530-0d16-4814-906c-b90050fde6f2",
+  "started_at": "2026-10-19T13:00:24.998Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 2286.1797039999997,
+  "start_ttfb_ms": 2285.440216,
+  "clock": {
+    "start_sent": "2026-10-19T13:00:22.900Z",
+    "start_received": "2026-10-19T13:00:25.187Z",
+    "start_date_header": "2026-10-19T13:00:25.000Z",
+    "last_delivery": "2026-10-19T13:00:27.075Z",
+    "submit_sent": "2026-10-19T13:00:27.075Z",
+    "submit_received": "2026-10-19T13:00:30.242Z",
+    "submit_date_header": "2026-10-19T13:00:30.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "reflection_maze_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1446.2470970000002,
+      "total_ms": 1448.831905,
+      "done_at_ms": 3735.1127970000002,
+      "analyse_ms": 0.035274
+    },
+    {
+      "delivery": 1,
+      "name": "reflection_maze_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1486.8077340000002,
+      "total_ms": 1488.834312,
+      "done_at_ms": 3775.10606,
+      "analyse_ms": 0.012568000000000001
+    },
+    {
+      "delivery": 5,
+      "name": "reflection_maze_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1813.066224,
+      "total_ms": 1813.1081249999997,
+      "done_at_ms": 4099.481249,
+      "analyse_ms": 0.025019
+    },
+    {
+      "delivery": 3,
+      "name": "reflection_maze_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1876.925718,
+      "total_ms": 1878.506064,
+      "done_at_ms": 4164.790762,
+      "analyse_ms": 0.015042999999999999
+    },
+    {
+      "delivery": 4,
+      "name": "reflection_maze_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1886.7839900000001,
+      "total_ms": 1888.439561,
+      "done_at_ms": 4174.806974,
+      "analyse_ms": 0.007961000000000001
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-18-control-flow-reconstruction/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a91beafb-0fc3-4de7-8e31-6ae9cd075864",
+  "started_at": "2026-10-18T13:03:19.689Z",
+  "deadline": "2026-10-18T13:04:39.689Z",
+  "shape": "download",
+  "start_ms": 417.97636900000003,
+  "start_ttfb_ms": 415.87808,
+  "clock": {
+    "start_sent": "2026-10-18T13:03:19.354Z",
+    "start_received": "2026-10-18T13:03:19.772Z",
+    "start_date_header": "2026-10-18T13:03:19.000Z",
+    "last_delivery": "2026-10-18T13:03:21.137Z",
+    "submit_sent": "2026-10-18T13:03:21.137Z",
+    "submit_received": "2026-10-18T13:03:22.682Z",
+    "submit_date_header": "2026-10-18T13:03:22.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 32835257,
+      "wire": 32835257,
+      "ttfb_ms": 229.01313000000002,
+      "total_ms": 693.015285,
+      "done_at_ms": 1111.201051,
+      "analyse_ms": 671.436632
+    }
+  ]
+}

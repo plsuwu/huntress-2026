@@ -1,0 +1,10 @@
+{
+  "d19_analysis_config_campaign": "d19--variant-000.elf: config has no \"campaign\"",
+  "d19_analysis_config_domain": "d19--variant-000.elf: config has no \"domain\"",
+  "d19_analysis_config_mutex": "d19--variant-000.elf: config has no \"mutex\"",
+  "d19_analysis_config_url": "d19--variant-000.elf: config has no \"url\"",
+  "d19_analysis_config_crc32_hex": "d19--variant-000.elf: no HCFG blob found",
+  "d19_analysis_hcfg_version": "d19--variant-000.elf: no HCFG blob found",
+  "d19_analysis_overlay_offset": "unknown field \"analysis_overlay_offset\" for d19--variant-000.elf (Some(Elf))",
+  "d19_analysis_overlay_size": "unknown field \"analysis_overlay_size\" for d19--variant-000.elf (Some(Elf))"
+}

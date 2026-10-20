@@ -5,8 +5,9 @@ fixtures/
 # these aren't really "sensitive" in the sense that i 
 # will likely never use them again
 .env
+.env.openrouter
 huntress-2026.ovpn
 huntress-id_ed25519
 **/artifacts/
 result
-__pycache__/
+**/__pycache__/

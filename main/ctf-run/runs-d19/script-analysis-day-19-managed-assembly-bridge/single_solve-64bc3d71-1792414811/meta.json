@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-19-managed-assembly-bridge",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "64bc3d71-4714-4df2-a0d3-a61bed84a208",
+  "started_at": "2026-10-19T13:00:13.947Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 3242.1960090000002,
+  "start_ttfb_ms": 3218.553923,
+  "clock": {
+    "start_sent": "2026-10-19T13:00:11.238Z",
+    "start_received": "2026-10-19T13:00:14.480Z",
+    "start_date_header": "2026-10-19T13:00:14.000Z",
+    "last_delivery": "2026-10-19T13:00:16.332Z",
+    "submit_sent": "2026-10-19T13:00:16.340Z",
+    "submit_received": "2026-10-19T13:00:20.937Z",
+    "submit_date_header": "2026-10-19T13:00:20.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 124102,
+      "wire": 124102,
+      "ttfb_ms": 1792.686432,
+      "total_ms": 1830.312984,
+      "done_at_ms": 5072.7006,
+      "analyse_ms": 20.895659000000002
+    }
+  ]
+}

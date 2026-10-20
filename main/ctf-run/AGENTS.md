@@ -128,13 +128,6 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   stop that lane's campaign, reproduce on an untimed `--retry`, run `oracle_groups.py`, and gate the new rule on
   `RunCtx.started_ms` so old fixtures stay valid. Refresh the jumpbox route cache (`ctf-run routes --refresh -u ...`)
   before a campaign on a new day.
-- **Manual lanes** (`rush.py` `MANUAL`; `web` from Day 19, format unknown): no ctf-run solver and no first pass. Routes
-  come from `op=list&day=N&lane=web|web-exploitation` (OpenAPI lane values), falling back to any day row whose `lane`
-  field is not an established lane. Recon is read-only: `op=status` per route, which answers an unstarted route with
-  409 `start_required` plus its questions contract. Full JSON goes to `runs-dNN/rush/recon-<lane>/`, and
-  `brief-<lane>.md` shows every field. The agent (`prompts/prime-manual.md`, `task-manual.md`) presents the
-  challenges and waits for the user, who directs it in tmux window `rush:<lane>`. It starts nothing unless told to. The
-  lane is never escalated as stalled, and `takeover` refuses it. `merge.sh` merges it on `done-<lane>` like the rest.
 - Everything automated runs with `CTF_NO_RANKED=hof` (since Day 19: ctf-run refuses only `--timed`, so one-shot and
   timed-by-default solves go ahead; any other value, e.g. `=1`, keeps the old full guard: no `--timed`, no
   `--one-shot-ok`, no starts on timed-by-default routes). `takeover` chains the same way but holds a timed-by-default

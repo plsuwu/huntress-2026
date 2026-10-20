@@ -382,6 +382,5 @@ replay -> timed), module map, testing rules.
   `plan-full-d19-b`, CORRECT). 40 time improvements, 21 rank gains; across the 138 routes **#1 35 -> 38**, top-3 78 -> 84.
 - 2026-10-19 - Rush for Day 19. New `CTF_NO_RANKED=hof` mode (`run::check_no_hof`): only `--timed` is refused. The rush first pass
   is now chained: single-solve, then TT + mastery once single is CORRECT. One-shots run with `--one-shot-ok`, binary's
-  mastery after its TT. Lane agents get the same rules. A web lane was added as a MANUAL lane (read-only recon brief,
-  user-directed agent). Rehearsed on solved Day 18 (warmups/binary one-shots, mobile dual-pool): all CORRECT via
+  mastery after its TT. Lane agents get the same rules. Rehearsed on solved Day 18 (warmups/binary one-shots, mobile dual-pool): all CORRECT via
   already_solved reconnects, same attempt ids, nothing spent. 284/284 replay clean.

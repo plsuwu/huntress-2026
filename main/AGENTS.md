@@ -23,7 +23,7 @@ HUNTRESS_GM_TOKEN=gm1.a95b647824bcb4ffda7d362554fa6712.9c1806ce647b69001bff42e70
 | Description                       | Method | Endpoint / Query Params / JSON Payload                                         |
 | ---                               | ---    | ---                                                                            |
 | List challenges                   | GET    | `/?op=list&all=true`                                                           |
-| Filter challenges                 | GET    | `/?op=list&day=1&lane=web&search=keyword`                                      |
+| Filter challenges                 | GET    | `/?op=list&day=1&lane=warmups&search=keyword`                                  |
 | Check challenge attempt status    | GET    | `/?op=status&challenge=<id>`                                                   |
 | Retrieve challenge artifact       | GET    | `/?op=artifact&challenge=<id>&delivery=0&capability=<token>`                   |
 | Download challenge artifact       | GET    | `/?op=download&challenge=<id>&delivery=0&capability=<token>`                   |

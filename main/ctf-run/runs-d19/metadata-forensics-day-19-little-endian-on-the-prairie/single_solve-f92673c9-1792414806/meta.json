@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-19-little-endian-on-the-prairie",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f92673c9-192a-4d7b-88f3-f36452f1a862",
+  "started_at": "2026-10-19T13:00:07.688Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1418.8782959999999,
+  "start_ttfb_ms": 1418.696427,
+  "clock": {
+    "start_sent": "2026-10-19T13:00:06.553Z",
+    "start_received": "2026-10-19T13:00:07.972Z",
+    "start_date_header": "2026-10-19T13:00:07.000Z",
+    "last_delivery": "2026-10-19T13:00:09.529Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-19-evidence.zip",
+      "bytes": 1849,
+      "wire": 1849,
+      "ttfb_ms": 1556.6687940000002,
+      "total_ms": 1556.998372,
+      "done_at_ms": 2976.025175,
+      "analyse_ms": 0.223347
+    }
+  ]
+}

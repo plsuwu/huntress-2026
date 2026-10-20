@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-19-managed-assembly-bridge/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "6c08d8a1-387c-48b0-bd08-632477e22df4",
+  "started_at": "2026-10-19T13:00:41.360Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 4809.931758000001,
+  "start_ttfb_ms": 4754.421722,
+  "clock": {
+    "start_sent": "2026-10-19T13:00:37.858Z",
+    "start_received": "2026-10-19T13:00:42.668Z",
+    "start_date_header": "2026-10-19T13:00:42.000Z",
+    "last_delivery": "2026-10-19T13:00:46.732Z",
+    "submit_sent": "2026-10-19T13:00:46.786Z",
+    "submit_received": "2026-10-19T13:00:54.573Z",
+    "submit_date_header": "2026-10-19T13:00:54.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-19-managed-assembly-bridge-mastery.zip",
+      "bytes": 621140,
+      "wire": 621140,
+      "ttfb_ms": 3453.51565,
+      "total_ms": 3938.0527739999998,
+      "done_at_ms": 8748.166577,
+      "analyse_ms": 125.24033800000001
+    }
+  ]
+}
