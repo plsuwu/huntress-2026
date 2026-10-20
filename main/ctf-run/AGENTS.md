@@ -37,7 +37,7 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/script/` | script-analysis toolkit: descriptor model + rubric, label-driven decode, cmd.exe model, JScript evaluator, families |
 | `src/evidence.rs` | nested-zip registry (`a.zip -> member` labels) |
 | `src/rx.rs` | Python-`re`-compatible backtracking regex (backrefs, lookaround) so reference patterns port verbatim; `re!()` caches compiled patterns |
-| `tools/` | `deploy.sh` (build+test on the jumpbox), `fixtures_<lane>.py` (manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `campaign.py`, `phase0_probe.py` |
+| `tools/` | `deploy.sh` (static binary -> jumpbox), `fixtures_<lane>.py` (original manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `run_legs.py` (per-leg timings), `hof_survey.py` / `hof_campaign.py` (Hall of Fame), `rush/` (release night) |
 | `fixtures/<lane>/*.json` | replay manifests (point at the original files under `../utils/solver_py_scripts`) |
 
 ## The lane contract (`src/lanes/mod.rs`)
@@ -91,48 +91,7 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 
 ## Day release automation (`tools/rush/`)
 
-- `install-timer.sh` installs a systemd user timer (12:45 UTC = 22:45 AEST, event days) running `rush.py all`:
-  **prep** (persistent lane worktrees `../../wt/<lane>` reset to `master` on branch `dayNN/<lane>`, symlinked
-  `ctf-run/fixtures` + `.env`, every target pre-built) -> **launch** (tmux `-L huntress`, session `rush`, one Claude per
-  lane in auto mode with `--add-dir` limited to `ctf-run/` + `utils/` (not the repo root: the jumpbox key lives there), primed by `prompts/prime.md`, `--allowedTools` for the lane's own `ctf-run` binary - the auto-mode classifier blocked untimed starts on Day 16) -> **watch** (release = `op=status&challenge=warmups-day-NN` going 404 -> 200, polled every 1 s from 22:59:50, with
-  the old 3 s `op=list` poll as fallback; a released day's global list takes 4-10 s, so each lane then fetches its own
-  routes with `op=list&day=N&search=<prefix>NN` (~1.5-3.5 s; the `lane=` filter rejects binary-RE), merges them into
-  the route cache under a lock, and starts its **first pass** at once (`chain`, since Day 19): single-solve, then -
-  only once it is CORRECT - time trial and mastery together (binary-RE: mastery after a CORRECT TT; a mastery still
-  answering 409 `prerequisite_required` is re-run once after a CORRECT TT). Dual-pool routes get an untimed regular
-  attempt, timed-by-default routes a timed plain start, one-shots `--one-shot-ok`. A timed / one-shot mode that is
-  not CORRECT gets an untimed `--practice` run on the same artifact right away. A CORRECT there counts for gating;
-  if incorrect, the grouped oracle runs on that practice attempt and the agent keeps iterating with `--practice`
-  (`prompts/task.md`). Grouped oracle on untimed attempts only; writes `runs-dNN/rush/brief-<lane>.md` and sends that
-  lane's agent "read the brief" the moment its own pass ends; `send()` first dismisses an open Claude Code picker such
-  as "Teach auto mode...", which would otherwise eat the message). `all` kills the previous day's tmux session first.
-- **Stalled agents:** each agent's `--settings` file (`runs-dNN/rush/settings-<lane>.json`) has a `Stop` hook
-  (`stopped-<lane>`) and a heartbeat (`active-<lane>` on every tool call/prompt). After the briefs, the watcher flags
-  a lane whose agent stopped after its brief, with no activity since and no `done-<lane>`, for 180 s: it writes
-  `stalled-<lane>.md` (pane tail) and never touches the worktree. The coordinator's watcher should wake on `stalled-*`
-  as well as `done-*`, then run `rush.py takeover --day N --lanes <lane>`, or message the agent. Takeover builds the
-  lane worktree, runs untimed attempts for modes not yet CORRECT, adds missing fixtures, replays, and writes
-  `takeover-<lane>.md`. The coordinator then reviews, commits on the lane branch and touches done.
-- **Day 17 lessons:** TT/mastery now answer 409 `prerequisite_required` until single-solve is CORRECT (binary-RE
-  mastery also waits for TT), so the first pass's TT/mastery starts fail on any lane whose single-solve fails, and
-  the agent re-runs them after its fix (follow-up: chain TT/mastery on a CORRECT single in `first_pass`). The
-  release probe treats 409 `start_required` as released. Binary roll-up ids use `_`; `tools/oracle_groups.py`
-  groups them by day (`d01`..`dNN`, ~17 submits), then splits failing days by field. A wrong field masks the others in
-  a partial submit, so probe label vocabularies one field per submit. Watch agents for hung shell calls: their `grep` is
-  ugrep, which recurses from cwd when `$(find ...)` expands to nothing. Kill that process; do not press Escape while
-  the agent runs a long oracle. The coordinator shell is zsh: `for v in $L` does not word-split (`${=L}`).
-  The user held ranked runs until every lane was merged, then ran one campaign over all routes.
-- **Day 18 lessons:** one-shot TT/mastery (warmups, binary-RE) are not HoF-eligible. From Day 19 the user wants lanes
-  and the first pass to fire them once single is CORRECT, since solves count more than HoF. The GM can re-grade old
-  routes without notice (2026-10-18: Batch expansion labels). If a fixture-clean lane starts failing ranked runs,
-  stop that lane's campaign, reproduce on an untimed `--retry`, run `oracle_groups.py`, and gate the new rule on
-  `RunCtx.started_ms` so old fixtures stay valid. Refresh the jumpbox route cache (`ctf-run routes --refresh -u ...`)
-  before a campaign on a new day.
-- Everything automated runs with `CTF_NO_RANKED=hof` (since Day 19: ctf-run refuses only `--timed`, so one-shot and
-  timed-by-default solves go ahead; any other value, e.g. `=1`, keeps the old full guard: no `--timed`, no
-  `--one-shot-ok`, no starts on timed-by-default routes). `takeover` chains the same way but holds a timed-by-default
-  or one-shot route that already has an attempt. HoF campaigns, deploys and merges are the coordinator's: `tools/rush/merge.sh DAY [--deploy]`
-  merges lanes whose agent touched `runs-dNN/rush/done-<lane>`, then gates on `cargo test` + the full replay.
-- Commit to `master` before 22:45 - lanes branch from the committed HEAD. Follow: `journalctl --user -fu huntress-rush`,
-  `tmux -L huntress attach -t rush`, `rush.py status --day N`. Rehearse on a released day with
-  `rush.py watch --day N --rehearse [--lanes x] [--no-agents]` (solved routes only reconnect; submits say already_solved).
+`tools/rush/rush.py` runs a release night: lane worktrees, one primed Claude per lane in tmux, an automated
+first pass, and briefs. `tools/rush/merge.sh DAY [--deploy]` merges finished lanes behind `cargo test` and the
+full replay. It is started by hand now (the systemd timer was removed on 2026-10-20). The coordinator's runbook,
+policies and lessons are in `../orchestrator/`.

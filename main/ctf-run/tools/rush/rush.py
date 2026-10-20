@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Day-release orchestrator: one agent per lane (Claude Code in tmux) plus an automated first pass.
 
-  rush.py all     [--day N] [--rehearse]   prep + launch + watch (what the systemd timer runs at 22:45 AEST)
+  rush.py all     [--day N] [--rehearse]   prep + launch + watch (start it ~22:45 AEST; see orchestrator/runbook.md)
   rush.py prep    [--day N]                reset the lane worktrees to master, build every target (warm caches)
   rush.py launch  [--day N]                tmux session `rush` (socket -L huntress): one primed Claude per lane
   rush.py watch   [--day N] [--rehearse]   wait for the release, run the first pass per lane, dispatch briefs

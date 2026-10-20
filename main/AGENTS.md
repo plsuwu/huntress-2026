@@ -35,27 +35,8 @@ HUNTRESS_GM_TOKEN=gm1.a95b647824bcb4ffda7d362554fa6712.9c1806ce647b69001bff42e70
 | Retry challenge                   | POST   | `/` - `{"op":"retry","challenge":"<id>"}`                                      |
 | Continue legacy practice          | POST   | `/` - `{"op":"practice","challenge":"<id>"}`                                   |
 
-### Hall of Fame leaderboard (undocumented)
-
-Not part of the Game Master `op=` API or its OpenAPI description - found via the browser's leaderboard page. Same
-host and `Bearer` token:
-
-```
-GET https://2026.huntress.ctf.games/api/speed-scoreboard?mode=mastery&view=rankings&limit=3&offset=0&sort=elapsed_ms&direction=asc&challenge=script-analysis-day-15-credential-store-clues
-```
-
-| Parameter   | Meaning                                                                    |
-| ---         | ---                                                                        |
-| `mode`      | `time_trial` or `mastery`                                                  |
-| `view`      | `rankings`                                                                 |
-| `limit`/`offset` | paging (`limit=200` returns every team on a route)                    |
-| `sort`/`direction` | `elapsed_ms` / `asc`                                                |
-| `challenge` | the **base** challenge id (no `/time_trial` or `/mastery` suffix)          |
-
-Rows carry `team_name` (ours is **`help`**), `rank`, `elapsed_ms`, `par_ms`, `answer_count`, `set_count`.
-`elapsed_ms` ~= (submit sent - `started_at`) + server grading time; the scoring round trip after grading is not
-counted. Pair it with `?op=status&challenge=<id>/<mode>` (`ranked_attempts_remaining`, `hall_of_fame_eligible`)
-to decide where ranked attempts are worth spending.
+The Hall of Fame speed-scoreboard API (undocumented, same host and token) is described in
+`orchestrator/hall-of-fame.md`.
 
 - Send `POST` requests with `Content-Type: application/json`.
 - The `run_for_time` property only applies to dual-pool challenges.
@@ -100,7 +81,8 @@ Python: it iterates faster while you're still exploring an unfamiliar encoding o
 classification, and lets you confirm answers against the live Game Master before committing to the
 compiled solver. Keep the working script once it answers correctly - it's a useful reference for
 future challenges that reuse the same patterns and should be considered integral. See `ctf-run/AGENTS.md` 
-for how the compiled solver should relate to it.
+for how the compiled solver should relate to it. Since Day 15 the standing instruction is to solve new
+days directly in `ctf-run` (see `orchestrator/policies.md`).
 
 ### Reusable modules
 
@@ -119,7 +101,7 @@ make focused queries for MITRE ATT&CK techniques, which is preferable over web s
 
 Sometimes, however, you will need to do token-heavy research; rather than bloating your context by reading
 in content, you may wish to use ephemeral sub-agents and instruct it to perform research. Instruct them 
-to use the `code-research` skill here.
+to use the `previous-solution-research` skill here.
 
 Never spin up more than one sub-agent at most; if you feel like this is necessary, there is a good chance
 you are trying to multitask too heavily. Additionally, rather than trying to perform additional work while
@@ -131,8 +113,7 @@ wrong tasks.
 Check `flake.nix` for a full list of tooling specific to this environment. Useful tools include:
 
 - `uv`: for Python-related tooling,
-- `bun`: for Javascript-related tooling,
-- 
+- `bun`: for Javascript-related tooling.
 
 Other tools that are globally installed:
 - `curl`
@@ -140,4 +121,10 @@ Other tools that are globally installed:
 - `jq`
 - ripgrep (`rg`)
 - Archive utilities: 7zip (`7z`), `unar`, `gnutar`, `xz`
-- `uv` for Python and `pip`
+- `pip`
+
+## Coordinating a release night
+
+If you are the coordinator (watching rush lane agents, merging, deploying, running ranked campaigns), start
+with `orchestrator/README.md`: standing user policies, the release-night runbook, Hall of Fame mechanics,
+grading lessons and a dated history all live there.
