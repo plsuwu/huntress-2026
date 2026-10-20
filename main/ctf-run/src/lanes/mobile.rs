@@ -235,11 +235,34 @@ pub struct Apks {
     pub items: Vec<(String, Result<String, String>)>,
 }
 
+/// The single `ANS-` code across the named APK members; `Ok(None)` when they carry none.
+fn unique_code<'a>(z: &Zip, names: impl Iterator<Item = &'a str>, what: &str) -> Result<Option<String>, String> {
+    let mut codes = std::collections::BTreeSet::new();
+    for name in names {
+        codes.extend(ans_codes(&z.read_name(name, b"infected")?));
+    }
+    match codes.len() {
+        0 => Ok(None),
+        1 => Ok(codes.into_iter().next()),
+        _ => Err(format!("{what}: several candidates {codes:?}")),
+    }
+}
+
 fn solve_apk(bytes: &[u8]) -> Result<String, String> {
     let z = Zip::parse(bytes)?;
     let raw = z.read_name(PUZZLE, b"infected")?;
     let v = Value::parse_bytes(&raw).map_err(|e| format!("{PUZZLE}: {e}"))?;
-    decode(&v)
+    // A puzzle string naming an APK member (d20 `dynamic`: `data` = `assets/payload.dex`, a secondary DEX
+    // whose string table holds the code).
+    let members: Vec<&str> = v.as_object().unwrap_or_default().iter().filter_map(|(_, x)| x.as_str()).filter(|s| *s != PUZZLE && z.find(s).is_some()).collect();
+    if let Some(a) = unique_code(&z, members.iter().copied(), "referenced members")? {
+        return Ok(a);
+    }
+    decode(&v).or_else(|e| {
+        // Native libraries (d15/16 carried the code in `libarena.so` too).
+        let libs: Vec<String> = z.files().filter(|f| f.name.starts_with("lib/") && f.name.ends_with(".so")).map(|f| f.name.clone()).collect();
+        unique_code(&z, libs.iter().map(String::as_str), "lib/*.so")?.ok_or(e)
+    })
 }
 
 fn collect(name: &str, bytes: &[u8], out: &mut Vec<(String, Result<String, String>)>, depth: u8) -> Result<(), String> {
