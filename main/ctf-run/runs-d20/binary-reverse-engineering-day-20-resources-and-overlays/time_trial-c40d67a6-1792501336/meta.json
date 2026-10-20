@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-20-resources-and-overlays/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "c40d67a6-ecc4-4bb6-aad6-359521c6d08c",
+  "started_at": "2026-10-20T13:02:17.019Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1196.981029,
+  "start_ttfb_ms": 1193.812357,
+  "clock": {
+    "start_sent": "2026-10-20T13:02:16.020Z",
+    "start_received": "2026-10-20T13:02:17.217Z",
+    "start_date_header": "2026-10-20T13:02:17.000Z",
+    "last_delivery": "2026-10-20T13:02:23.769Z",
+    "submit_sent": "2026-10-20T13:02:23.769Z",
+    "submit_received": "2026-10-20T13:02:25.365Z",
+    "submit_date_header": "2026-10-20T13:02:25.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 33207443,
+      "wire": 33207443,
+      "ttfb_ms": 1438.3194320000002,
+      "total_ms": 6329.974988,
+      "done_at_ms": 7527.07324,
+      "analyse_ms": 221.767717
+    }
+  ]
+}
