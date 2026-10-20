@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-20-universal-appeal/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7f314c83-5c37-4797-b13a-03add21162b4",
+  "started_at": "2026-10-20T13:02:33.079Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1275.9430929999999,
+  "start_ttfb_ms": 1275.843641,
+  "clock": {
+    "start_sent": "2026-10-20T13:02:32.100Z",
+    "start_received": "2026-10-20T13:02:33.376Z",
+    "start_date_header": "2026-10-20T13:02:33.000Z",
+    "last_delivery": "2026-10-20T13:02:35.496Z",
+    "submit_sent": "2026-10-20T13:02:35.496Z",
+    "submit_received": "2026-10-20T13:02:37.006Z",
+    "submit_date_header": "2026-10-20T13:02:36.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 628759,
+      "wire": 628759,
+      "ttfb_ms": 1849.6277719999998,
+      "total_ms": 2114.856163,
+      "done_at_ms": 3391.004671,
+      "analyse_ms": 5.1579369999999995
+    }
+  ]
+}
