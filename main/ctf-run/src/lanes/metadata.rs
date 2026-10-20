@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{audio, cfb, dotnet, elf, email, lnk, media, ooxml, pe, video, zip};
+use crate::formats::{audio, cfb, dotnet, elf, email, lnk, macho, media, ooxml, pe, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -326,6 +326,42 @@ fn elf_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     })
 }
 
+/// `...-macho-<field>` -> a Mach-O architecture field over every slice (thin = one, fat/universal =
+/// the fat_arch table, `cafebabe`/`cafebabf`). d20 graded `cpu-type-set` on a thin arm64 file as
+/// `["0x0100000c"]` (`0x%08x` lowercase, compact JSON). For a fat file each slice's own header must agree
+/// with its table entry ("what truly supports"), else refuse; set = unique values sorted (unverified on
+/// multi-slice files). Other fields are unverified guesses.
+fn macho_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-macho-")?;
+    let want = &key[i + 7..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("macho-").unwrap_or(want);
+    let Some(sl) = macho::slices(b) else { return Some(Err(format!("not a Mach-O; {}", facts("macho", b)))) };
+    let mut cpus = Vec::new();
+    for s in &sl {
+        match (s.claimed, s.actual) {
+            (_, None) => return Some(Err(format!("Mach-O slice without a Mach-O header {sl:?}; {}", facts("macho", b)))),
+            (Some(c), Some(a)) if c.0 != a.0 => return Some(Err(format!("fat table and slice header disagree {sl:?}; {}", facts("macho", b)))),
+            (_, Some(a)) => cpus.push(a),
+        }
+    }
+    let set = |f: &dyn Fn(&(u32, u32)) -> String| {
+        let mut v: Vec<String> = cpus.iter().map(f).collect();
+        v.sort();
+        v.dedup();
+        compact_json(&v)
+    };
+    Some(Ok(match want {
+        "cpu-type-set" | "cpu-types" | "cputype-set" => set(&|c| format!("0x{:08x}", c.0)),
+        "cpu-type-name-set" | "architectures" | "arch-set" => set(&|c| macho::cpu_name(c.0).to_string()),
+        "slice-count" | "arch-count" | "nfat-arch" => sl.len().to_string(),
+        "is-universal" | "is-fat" => sl[0].claimed.is_some().to_string(),
+        _ => return Some(Err(format!("unknown Mach-O field {want:?}; slices {sl:?}; {}", facts("macho", b)))),
+    }))
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -407,6 +443,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
         f.push(format!("elf class {} machine {} type {} entry 0x{:x}", e.class, e.machine, e.kind, e.entry));
     } else if b.starts_with(b"\x7fELF") {
         f.push(format!("elf header only (sections unparseable): ident {}", hex(&b[..b.len().min(24)])));
+    }
+    if let Some(sl) = macho::slices(b) {
+        f.push(format!("macho slices {sl:?}"));
     }
     if let Some(props) = cfb::msi_properties(b) {
         f.push(format!("msi {props:?} revision {:?}", cfb::summary_string(b, 9)));
@@ -508,6 +547,9 @@ impl Lane for Metadata {
         if let Some(r) = elf_answer(&key, data) {
             return r;
         }
+        if let Some(r) = macho_answer(&key, data) {
+            return r;
+        }
         for (suffix, h) in HANDLERS {
             if key.ends_with(suffix) {
                 return h(data).ok_or_else(|| format!("{suffix}: not derivable; {}", facts(member, data)));
@@ -549,6 +591,25 @@ mod tests {
         assert_eq!(elf_answer(k, &h).unwrap().unwrap(), "0x0008");
         assert_eq!(elf_answer(k, b"MZ\x90\0").unwrap().unwrap(), "none");
         assert!(elf_answer("d19-elf-001-sha256", &h).is_none());
+    }
+
+    #[test]
+    fn macho_fields() {
+        let k = "d20-macho-001-macho-cpu-type-set";
+        let thin = b"\xcf\xfa\xed\xfe\x0c\0\0\x01\0\0\0\0\x02\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+        assert_eq!(macho_answer(k, thin).unwrap().unwrap(), r#"["0x0100000c"]"#);
+        let mut fat = b"\xca\xfe\xba\xbe\0\0\0\x02".to_vec();
+        fat.extend_from_slice(b"\x01\0\0\x0c\0\0\0\0\0\0\0\x40\0\0\0\x20\0\0\0\0");
+        fat.extend_from_slice(b"\x01\0\0\x07\0\0\0\x03\0\0\0\x60\0\0\0\x20\0\0\0\0");
+        fat.resize(0x40, 0);
+        fat.extend_from_slice(thin);
+        let mut x86 = thin.to_vec();
+        x86[4] = 7;
+        fat.extend_from_slice(&x86);
+        assert_eq!(macho_answer(k, &fat).unwrap().unwrap(), r#"["0x01000007","0x0100000c"]"#);
+        fat[0x60 + 4] = 0x0c;
+        assert!(macho_answer(k, &fat).unwrap().is_err());
+        assert!(macho_answer("d20-macho-001-sha256", thin).is_none());
     }
 
     #[test]

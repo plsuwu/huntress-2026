@@ -78,3 +78,52 @@ pub fn cpu_name(cputype: u32) -> &'static str {
         _ => "unknown",
     }
 }
+
+/// One architecture of a thin or fat (universal) Mach-O: the fat table's claim (`None` for a thin
+/// file) and what the slice's own header says (`None` when the slice is not a Mach-O header).
+#[derive(Clone, Debug, PartialEq)]
+pub struct Slice {
+    pub claimed: Option<(u32, u32)>,
+    pub actual: Option<(u32, u32)>,
+    pub offset: u64,
+    pub size: u64,
+}
+
+/// (cputype, cpusubtype) from a thin header at the start of `d`.
+fn thin_cpu(d: &[u8]) -> Option<(u32, u32)> {
+    let le = u32::from_le_bytes(d.get(..4)?.try_into().ok()?);
+    let e = match le {
+        MH_MAGIC | MH_MAGIC_64 => Endian::Little,
+        x if x.swap_bytes() == MH_MAGIC || x.swap_bytes() == MH_MAGIC_64 => Endian::Big,
+        _ => return None,
+    };
+    Some((e.u32(d, 4)?, e.u32(d, 8)?))
+}
+
+/// Every architecture: a thin file is one slice; a fat file (`cafebabe` 32-bit or `cafebabf` 64-bit
+/// fat_arch entries, big-endian) lists its table in order. `None` for anything else.
+pub fn slices(d: &[u8]) -> Option<Vec<Slice>> {
+    if let Some(c) = thin_cpu(d) {
+        return Some(vec![Slice { claimed: None, actual: Some(c), offset: 0, size: d.len() as u64 }]);
+    }
+    let e = Endian::Big;
+    let wide = match e.u32(d, 0)? {
+        0xCAFE_BABE => false,
+        0xCAFE_BABF => true,
+        _ => return None,
+    };
+    let n = e.u32(d, 4)? as usize;
+    // Java class files share `cafebabe` (minor/major version there).
+    if n == 0 || n > 64 {
+        return None;
+    }
+    let mut out = Vec::new();
+    for i in 0..n {
+        let p = 8 + i * if wide { 32 } else { 20 };
+        let (cpu, sub) = (e.u32(d, p)?, e.u32(d, p + 4)?);
+        let (offset, size) = if wide { (e.u64(d, p + 8)?, e.u64(d, p + 16)?) } else { (e.u32(d, p + 8)? as u64, e.u32(d, p + 12)? as u64) };
+        let actual = usize::try_from(offset).ok().and_then(|o| d.get(o..)).and_then(thin_cpu);
+        out.push(Slice { claimed: Some((cpu, sub)), actual, offset, size });
+    }
+    Some(out)
+}

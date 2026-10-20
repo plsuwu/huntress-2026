@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-20-universal-appeal/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f541894d-14ec-40d7-a9fa-f75371f3f6bd",
+  "started_at": "2026-10-20T13:02:43.552Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1979.540861,
+  "start_ttfb_ms": 1979.174916,
+  "clock": {
+    "start_sent": "2026-10-20T13:02:42.497Z",
+    "start_received": "2026-10-20T13:02:44.477Z",
+    "start_date_header": "2026-10-20T13:02:44.000Z",
+    "last_delivery": "2026-10-20T13:02:47.200Z",
+    "submit_sent": "2026-10-20T13:02:47.202Z",
+    "submit_received": "2026-10-20T13:02:48.953Z",
+    "submit_date_header": "2026-10-20T13:02:48.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-20-universal-appeal-mastery.zip",
+      "bytes": 3144536,
+      "wire": 3144536,
+      "ttfb_ms": 1477.184535,
+      "total_ms": 2703.532982,
+      "done_at_ms": 4683.265193,
+      "analyse_ms": 19.359863
+    }
+  ]
+}
