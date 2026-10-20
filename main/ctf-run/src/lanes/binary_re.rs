@@ -67,6 +67,8 @@ pub struct Spec {
     pub mangled_names: Vec<String>,
     /// Final validated packed overlay (`PK19`): (magic offset, file length - offset).
     pub overlay: Option<(usize, usize)>,
+    /// Resource overlay (`RS20`): the HCFG resource length field.
+    pub hcfg_resource_size: Option<usize>,
 }
 
 /// One delivery: specimens grouped by day (`d01` -> primary specimen + sidecar files).
@@ -232,9 +234,10 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.mangled_names = scan_mangled(d);
     }
     lap("cpp");
-    // A packed overlay carries the config: the HCFG record at unpacked offset 0 (d19), ahead of any raw hit in the stub.
+    // A packed (d19) or resource (d20) overlay carries the config: the HCFG record at offset 0 of the decoded bytes, ahead of any raw hit in the stub.
     let packed = (s.container != Some(Container::Jar)).then(|| overlay::last(d)).flatten();
     s.overlay = packed.as_ref().map(|o| (o.offset, d.len() - o.offset));
+    s.hcfg_resource_size = packed.as_ref().and_then(|o| o.resource_size);
     s.hcfg = if let Some(o) = &packed {
         hcfg::at(&o.unpacked, 0).map(|mut h| {
             h.source = "overlay";
@@ -531,6 +534,7 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
         "analysis_hcfg_storage" => hcfg_storage(s, h()?)?,
         "analysis_overlay_offset" => need(s.overlay.map(|o| o.0.to_string()), "validated packed overlay")?,
         "analysis_overlay_size" => need(s.overlay.map(|o| o.1.to_string()), "validated packed overlay")?,
+        "analysis_hcfg_resource_size" => need(s.hcfg_resource_size.map(|n| n.to_string()), "validated resource overlay")?,
         f if s.objects.contains_key(&f["analysis_".len().min(f.len())..]) => s.objects[&f["analysis_".len()..]].clone(),
         other => return Err(format!("unknown field {other:?} for {} ({:?})", s.name, s.container)),
     })

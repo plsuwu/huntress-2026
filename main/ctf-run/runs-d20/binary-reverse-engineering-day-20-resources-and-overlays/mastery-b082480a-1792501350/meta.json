@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-20-resources-and-overlays/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "b082480a-6446-478b-8ce8-2b094e384780",
+  "started_at": "2026-10-20T13:02:31.309Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 1530.2495600000002,
+  "start_ttfb_ms": 1524.83785,
+  "clock": {
+    "start_sent": "2026-10-20T13:02:30.061Z",
+    "start_received": "2026-10-20T13:02:31.591Z",
+    "start_date_header": "2026-10-20T13:02:31.000Z",
+    "last_delivery": "2026-10-20T13:02:54.280Z",
+    "submit_sent": "2026-10-20T13:02:54.281Z",
+    "submit_received": "2026-10-20T13:02:56.507Z",
+    "submit_date_header": "2026-10-20T13:02:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 33314284,
+      "wire": 33314284,
+      "ttfb_ms": 1419.368393,
+      "total_ms": 14631.085602000001,
+      "done_at_ms": 16161.516384999999,
+      "analyse_ms": 217.68051799999998
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 33207420,
+      "wire": 33207420,
+      "ttfb_ms": 1399.461909,
+      "total_ms": 20077.798711,
+      "done_at_ms": 21608.232981,
+      "analyse_ms": 213.181448
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 33314295,
+      "wire": 33314295,
+      "ttfb_ms": 1853.520798,
+      "total_ms": 21845.429745,
+      "done_at_ms": 23375.921779999997,
+      "analyse_ms": 208.78936000000002
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 33314320,
+      "wire": 33314320,
+      "ttfb_ms": 1798.3514089999999,
+      "total_ms": 22119.693718000002,
+      "done_at_ms": 23650.199019,
+      "analyse_ms": 205.409378
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 33207463,
+      "wire": 33207463,
+      "ttfb_ms": 1780.377996,
+      "total_ms": 22477.443665,
+      "done_at_ms": 24007.944126000002,
+      "analyse_ms": 210.833348
+    }
+  ]
+}
