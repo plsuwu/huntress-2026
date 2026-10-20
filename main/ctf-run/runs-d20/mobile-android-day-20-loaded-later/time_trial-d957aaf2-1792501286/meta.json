@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-20-loaded-later/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d957aaf2-b75b-49a2-ab48-a45d9f7e256f",
+  "started_at": "2026-10-20T13:01:27.270Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1078.492765,
+  "start_ttfb_ms": 1078.077319,
+  "clock": {
+    "start_sent": "2026-10-20T13:01:26.362Z",
+    "start_received": "2026-10-20T13:01:27.441Z",
+    "start_date_header": "2026-10-20T13:01:27.000Z",
+    "last_delivery": "2026-10-20T13:01:28.889Z",
+    "submit_sent": "2026-10-20T13:01:28.889Z",
+    "submit_received": "2026-10-20T13:01:30.518Z",
+    "submit_date_header": "2026-10-20T13:01:30.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "loaded_later_time_trial.apk",
+      "bytes": 12768,
+      "wire": 12768,
+      "ttfb_ms": 1446.5226460000001,
+      "total_ms": 1448.054044,
+      "done_at_ms": 2526.7211559999996,
+      "analyse_ms": 0.033836
+    }
+  ]
+}
