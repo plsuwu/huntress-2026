@@ -91,6 +91,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         17 => T::Bacon, // "Bacon Bits": 5-bit a/b groups of the hex digits ("sixteen guests")
         18 => T::Rail(3), // "Off the Rails": 3-rail fence ("three rails, one very zigzag commute")
         19 => T::Hex, // "Little Things": hex of UTF-16LE (+ BOM); `T::Hex` falls back to UTF-16
+        20 => T::Hex, // "Big Entrance": hex of UTF-16BE (+ `feff` BOM)
         _ => return None,
     })
 }
