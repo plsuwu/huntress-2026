@@ -39,6 +39,7 @@ pub enum T {
     Morse,
     Bacon,
     Rail(u8),
+    Gz,
 }
 
 impl T {
@@ -60,6 +61,7 @@ impl T {
             T::Morse => morse_variants(t).into_iter().next(),
             T::Bacon => bacon_variants(t).into_iter().next(),
             T::Rail(n) => Some(codec::rail_fence_decode(s, n as usize)),
+            T::Gz => codec::text_any(&decompress(&codec::base64(t)?)?),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -69,6 +71,17 @@ impl T {
                 codec::text_any(&bytes)
             }
         }
+    }
+}
+
+/// Day 21 "Under Pressure": base64 of a gzip member (zlib accepted too); `None` unless the bytes
+/// carry a compression header.
+fn decompress(b: &[u8]) -> Option<Vec<u8>> {
+    use crate::formats::inflate;
+    match b {
+        [0x1f, 0x8b, ..] => inflate::gunzip(b).ok(),
+        [0x78, f, ..] if (0x7800u16 | *f as u16) % 31 == 0 => inflate::unzlib(b).ok(),
+        _ => None,
     }
 }
 
@@ -93,6 +106,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         18 => T::Rail(3), // "Off the Rails": 3-rail fence ("three rails, one very zigzag commute")
         19 => T::Hex, // "Little Things": hex of UTF-16LE (+ BOM); `T::Hex` falls back to UTF-16
         20 => T::Hex, // "Big Entrance": hex of UTF-16BE (+ `feff` BOM)
+        21 => T::Gz, // "Under Pressure": base64 of gzip ("a familiar wrapper, something compressed inside")
         _ => return None,
     })
 }
@@ -133,7 +147,7 @@ fn structured(frag: &str) -> Option<(T, String)> {
     }
     let b64ish = v.bytes().all(|b| b.is_ascii_alphanumeric() || b"+/_-=".contains(&b));
     if b64ish && v.bytes().any(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b"=+/_".contains(&b)) {
-        return try_(T::B64);
+        return try_(T::Gz).or_else(|| try_(T::B64));
     }
     None
 }
@@ -421,7 +435,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = rails.into_iter().find_map(|c| match_template(&c)) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
-        let next = [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
+        let next = [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
         if let Some(n) = next {
             t = n;
             continue;
@@ -668,5 +682,16 @@ mod tests {
         let b14 = b.replace("\n99\t", "\n14\t");
         let Outcome::Solved { slug, .. } = solve_rows(&b14, &none) else { panic!("{:?}", solve_rows(&b14, &none)) };
         assert_eq!(slug, "zesty-sunset-quartz-65");
+    }
+    #[test]
+    fn gzip_blob() {
+        // Day 21 "Under Pressure" single-solve: base64 of a gzip member.
+        let blob = "H4sIAAAAAAACAyXJMQ7CQAwEwK8sPSfR0PABKqj4gHFWyQkcR7bD8XwKpp17V2J4vDBRferrjFp6YkjYvh3wcKS/Pzwi96f1+i+/ogVZczBQjlqIqxhxkyzGBZSZ0dRtk8xmntK1nU8/iFIChW4AAAA=\n";
+        let Outcome::Solved { slug, .. } = solve_blob(blob) else { panic!("{:?}", solve_blob(blob)) };
+        assert_eq!(slug, "eager-compass-mosaic-50");
+        // Mastery row 21 (pinned to the day's codec) carries a gzip member of its fragment.
+        let rows = "01\tTmljZSB3b3JrIGRlY29kaW5nIHRoaXMgd2FybXVwISBUbyBzb2x2ZQ==\n21\tH4sIAAAAAAAC/w3IsQ2AMAwEwFV+ACLR0LAAFUOY6AUpjFHeCMaHK2+A7s1bIo8m8LWasFMPOzL+JBZzYjUl+wzazl5q+GVS8ZC1WqbxA9mlzW9GAAAA\n";
+        let Outcome::Solved { slug, .. } = solve_rows(rows, &BTreeMap::new()) else { panic!("{:?}", solve_rows(rows, &BTreeMap::new())) };
+        assert_eq!(slug, "eager-compass-mosaic-50");
     }
 }
