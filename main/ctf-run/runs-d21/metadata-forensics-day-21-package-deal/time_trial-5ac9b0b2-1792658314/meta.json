@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-21-package-deal/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "5ac9b0b2-0809-4c10-a2c5-e18ede202853",
+  "started_at": "2026-10-22T08:38:36.415Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2636.707504,
+  "start_ttfb_ms": 2632.705859,
+  "clock": {
+    "start_sent": "2026-10-22T08:38:34.043Z",
+    "start_received": "2026-10-22T08:38:36.680Z",
+    "start_date_header": "2026-10-22T08:38:36.000Z",
+    "last_delivery": "2026-10-22T08:38:38.664Z",
+    "submit_sent": "2026-10-22T08:38:38.664Z",
+    "submit_received": "2026-10-22T08:38:40.384Z",
+    "submit_date_header": "2026-10-22T08:38:40.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 633236,
+      "wire": 633236,
+      "ttfb_ms": 1475.1400700000002,
+      "total_ms": 1982.0374439999998,
+      "done_at_ms": 4618.996935,
+      "analyse_ms": 1.6421540000000001
+    }
+  ]
+}
