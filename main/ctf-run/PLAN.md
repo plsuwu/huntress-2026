@@ -6,7 +6,8 @@ discarded. Primary target: the CourseStack proxy `http://10.0.0.219/huntress-ctf
 "add a question kind, a container reader or a language front-end", never "write a new challenge solver".
 Background on what changes day to day: `../utils/LANE_PATTERNS.md`.
 
-Principles: std-only in the default build (hand-written parsers and scanners, no regex engine), `--features tls` for
+Principles: hand-written format parsers; hot primitives (inflate, CRC-32, zstd, substring search, regex, JSON, MD5/SHA-1)
+come from crates where a benchmark showed they beat the hand-rolled code (2026-10-22, see the log), `--features tls` for
 the external https API only; every lane is a full native port of its proven Python reference, gated by replaying the
 saved fixtures; nothing ever submits a guess.
 
@@ -384,3 +385,32 @@ replay -> timed), module map, testing rules.
   is now chained: single-solve, then TT + mastery once single is CORRECT. One-shots run with `--one-shot-ok`, binary's
   mastery after its TT. Lane agents get the same rules. Rehearsed on solved Day 18 (warmups/binary one-shots, mobile dual-pool): all CORRECT via
   already_solved reconnects, same attempt ids, nothing spent. 284/284 replay clean.
+- 2026-10-22 - Crate pass over hand-rolled primitives (branch `perf/crates`). Each swap was kept only if it
+  benchmarked faster: perf/hyperfine on `replay fixtures/<lane>`, plus micro-benchmarks on the real day-20 payloads
+  (scratch crate, not kept). Kept: `memchr` (`bytes::find`/`find_all`, http header scan), `crc32fast` (9x slice-by-8),
+  `libdeflate-sys` (inflate 587 -> 1011 MB/s, vs zlib-rs 774 and miniz_oxide 566. flate2's zero-fill cost another 8 %),
+  `zstd`/libzstd (3-6x ruzstd on the 3.7 MB script-mastery start body), `serde_json` with `arbitrary_precision` into
+  `json::Value` (1.6x; identical `Value`s on all 1520 JSON files in the repo. Exponents are normalised to Python/JS
+  form, `1e5` -> `1e+5`), `fancy-regex` behind `rx` (below), `md-5` (1.2-1.5x), `sha1` (5x with SHA-NI, 2x without),
+  RustCrypto `pbkdf2` for single WinZip keys (3x ring with SHA-NI, 1.7x without), and mimalloc on glibc too (it was
+  musl-only). Rejected after measuring: RustCrypto `aes`+`ctr` (9.9 vs 12.0 GB/s for ours), any PBKDF2 crate for the
+  batch (`pbkdf2x8`, 2.2 ms per 80 blocks, vs RustCrypto 5.1/9.0 ms and ring 16 ms), sonic-rs (its serde path
+  drops number text). Replay suites, before -> after (musl static, the deployed build): binary_re 8.81 -> 5.19 s,
+  script 3.60 -> 3.34 s, metadata 428 -> 343 ms; warmups/mobile unchanged (noise). Fresh-process day-20 fixtures
+  (musl): binary_re TT 206 -> 120 ms, mastery 293 -> 198 ms; metadata TT 20 -> 16 ms; script mastery 210 -> 200 ms;
+  script TT neutral. `rx` lessons: compile cost matters because a live run is one process. Unicode `\w` makes regex
+  NFAs ~10x costlier to build, so each pattern has an ASCII-mode build used for ASCII subjects (same results there) and
+  a lazily built Unicode one. A global cache keeps `format!`ed patterns to one compile each. Without these two the
+  swap was a 40 % *loss* on script fixtures. Python syntax is bridged by `rx::translate` (`$` -> `(?=\n?\z)` outside
+  MULTILINE, `\Z`, `{,n}`, stray braces, `[`/`&`/`~` in classes, punctuation escapes as `\x{..}`). On this hybrid
+  P/E-core desktop, compare `cpu_core/cycles` (perf stat) as well as wall time. `tools/bench.sh OLD NEW [lanes]`
+  repeats the comparison.
+  Deployed 2026-10-22 16:05 AEST (static musl `48c2542f`; the previous binary is kept as
+  `target/release/ctf-run.prev-608adf3f` on the jumpbox). Live check there: untimed regular `--retry` on all 10 day-20
+  TT/mastery routes, all CORRECT. Jumpbox analyse legs (`tools/run_legs.py`): binary TT 629-669 -> 415 ms, binary
+  mastery 2083 ms (vs 1766-3639 before). Regular-pool downloads had a 4.5 s ttfb (fresh variants are generated on
+  demand) against 0.2-0.4 s on ranked pools.
+- 2026-10-22 - Full HoF pass on the new binary (see `../orchestrator/history.md`): 158 routes, #1 15 -> 57. Two
+  warmups masteries failed on a `-<digits>`-suffixed answer, which `match_template` used to truncate. The suffix is now
+  submitted whole (test `digit_suffixed_answer_is_submitted_whole`, real day-19 bytes), and ranked suffixed sets
+  were confirmed CORRECT. Deployed `7f302241` (previous: `ctf-run.prev-48c2542f`, `ctf-run.prev-608adf3f`).

@@ -13,6 +13,8 @@ API = "https://2026.huntress.ctf.games"
 TEAM = "help"
 TOKEN = os.environ.get("HUNTRESS_GM_TOKEN") or open(os.path.expanduser("~/.huntress_token")).read().strip()
 ROUTES = os.path.expanduser("~/.cache/ctf-run/routes.json")
+# Only ctf-run's lanes: new lanes (web-exploitation from Day 20) must not be touched at all, not even by status queries.
+LANES = ("warmups-", "metadata-forensics-", "script-analysis-", "binary-reverse-engineering-", "mobile-android-")
 
 
 def get(url):
@@ -57,7 +59,7 @@ def main():
     for c in rows:
         rid = c.get("id", "")
         m = re.search(r"-day-(\d+)", rid)
-        if "/" in rid and rid.split("/")[1] in ("time_trial", "mastery") and m and lo <= int(m.group(1)) <= hi:
+        if rid.startswith(LANES) and "/" in rid and rid.split("/")[1] in ("time_trial", "mastery") and m and lo <= int(m.group(1)) <= hi:
             rids.append(rid)
     with ThreadPoolExecutor(8) as ex:
         res = list(ex.map(survey, sorted(rids)))

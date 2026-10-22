@@ -117,3 +117,8 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
 - `ps | grep -c` exits 1 on zero matches. Don't treat that as an ssh failure.
 - On Day 20 the auto-mode classifier refused an `scp` of campaign logs from the jumpbox into the repo. Ask the user
   to approve or copy them; the logs stay in `~/ctf-run-v2/runs-hof/` on the jumpbox either way.
+- When the jumpbox is slow to accept connections (2026-10-22: ~39 s per ssh handshake), open one multiplexed master
+  and route everything through it: `ssh -i $K -o ConnectTimeout=150 -o ServerAliveInterval=15 -M -S /tmp/claude-1000/jb/s -fN $H`,
+  then `ssh -S /tmp/claude-1000/jb/s $H ...` and `scp -o ControlPath=/tmp/claude-1000/jb/s ...` take under 1 s. Keep the socket
+  path short: Unix sockets cap it at 108 bytes, and the session scratchpad path is too long. `deploy.sh` opens its own
+  connections, so do its four steps by hand through the socket if it times out.

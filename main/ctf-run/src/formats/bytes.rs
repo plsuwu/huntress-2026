@@ -47,46 +47,27 @@ pub fn cstr(b: &[u8], at: usize) -> Option<&[u8]> {
     Some(&rest[..rest.iter().position(|&c| c == 0).unwrap_or(rest.len())])
 }
 
-/// First index of byte `b`: 16 bytes per step with the classic has-zero-byte trick.
+/// First index of byte `b` (SIMD via the `memchr` crate).
 pub fn memchr(b: u8, hay: &[u8]) -> Option<usize> {
-    const LO: u64 = 0x0101_0101_0101_0101;
-    const HI: u64 = 0x8080_8080_8080_8080;
-    let rep = LO * b as u64;
-    let mut i = 0;
-    while i + 16 <= hay.len() {
-        let a = u64::from_le_bytes(hay[i..i + 8].try_into().unwrap()) ^ rep;
-        let c = u64::from_le_bytes(hay[i + 8..i + 16].try_into().unwrap()) ^ rep;
-        let ta = a.wrapping_sub(LO) & !a & HI;
-        let tc = c.wrapping_sub(LO) & !c & HI;
-        if ta | tc != 0 {
-            return Some(if ta != 0 { i + (ta.trailing_zeros() / 8) as usize } else { i + 8 + (tc.trailing_zeros() / 8) as usize });
-        }
-        i += 16;
-    }
-    hay[i..].iter().position(|&c| c == b).map(|p| i + p)
+    memchr::memchr(b, hay)
 }
 
 pub fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
-    if needle.is_empty() || hay.len() < needle.len() {
+    if needle.is_empty() {
         return None;
     }
-    let first = needle[0];
-    let mut i = 0;
-    while let Some(p) = memchr(first, &hay[i..=hay.len() - needle.len()]) {
-        let at = i + p;
-        if &hay[at..at + needle.len()] == needle {
-            return Some(at);
-        }
-        i = at + 1;
-    }
-    None
+    memchr::memmem::find(hay, needle)
 }
 
-/// Every offset of `needle` in `hay`.
+/// Every offset of `needle` in `hay`, overlapping matches included.
 pub fn find_all(hay: &[u8], needle: &[u8]) -> Vec<usize> {
     let mut out = Vec::new();
+    if needle.is_empty() {
+        return out;
+    }
+    let finder = memchr::memmem::Finder::new(needle);
     let mut i = 0;
-    while let Some(p) = find(&hay[i..], needle) {
+    while let Some(p) = finder.find(&hay[i..]) {
         out.push(i + p);
         i += p + 1;
     }

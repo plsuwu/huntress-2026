@@ -77,6 +77,22 @@ A solver that was 100% on fixtures then failed 7 ranked runs in a row.
 - **Old ledgers are hints, not truth.** The question contract itself can change between sessions. Old ledgers
   (`~/Documents/.workdir/3/...`) are hints only.
 
+### Warmups: a `-<digits>` tail is part of the answer (2026-10-22)
+
+Two ranked warmups masteries (Day 19 and Day 20) came back `incorrect` in the full HoF pass. In each, exactly one
+set decoded to `...submit this exact answer to the Game Master: sunny-forest-ripple-60-17580`. The lane cut the
+tail and submitted `sunny-forest-ripple-60`, because the question's `answer_format` says "a two-digit number".
+
+- **Evidence:** across all 256 graded warmups mastery runs saved on the jumpbox, suffixed sets appeared only in
+  those two failures. The 2026-10-15 note that read the tail as row padding was never graded. After the fix, two
+  more ranked runs had a suffixed set (`...-21-10979`, `...-53-23712`) and both came back CORRECT with the whole
+  string submitted.
+- **Rule:** submit exactly what the sentence says (`warmups::match_template`), even when it breaks `answer_format`.
+- **Reproducing for free failed:** six untimed regular Day 19 variants had no suffixed set. The suffix may be rare,
+  or confined to ranked pools.
+- **Checker:** an independent row decoder (Python, rows 1-20) agreed with ctf-run on every set, which ruled out a
+  decoding bug and left the answer format as the cause.
+
 ## Label vocabularies the grader picks from the generator
 
 The Day 17 binary roll-up (d01..d17 in one evidence.zip) rejected about 150 labels before the hits:

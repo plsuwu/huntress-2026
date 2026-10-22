@@ -8,7 +8,8 @@
 //! with the known sentence. A transform pinned down for a row in one set is reused for that row in
 //! the other sets (a Caesar row that falls inside the slug cannot be resolved on its own).
 //!
-//! Every answer is a template- or slug-validated `word-word-word-NN`; anything else is an error.
+//! Every answer is a template- or slug-validated `word-word-word-NN` (or, when the sentence itself carries it,
+//! `word-word-word-NN-<digits>`, submitted whole); anything else is an error.
 
 use super::{Analysed, Analysis, Lane};
 use crate::codec;
@@ -236,9 +237,12 @@ fn bacon_variants(frag: &str) -> Vec<String> {
     v
 }
 
-/// The slug, if `text` is exactly the sentence (trailing whitespace allowed). The last row may be
-/// padded to the common row width with `-<digits>` (seen 2026-10-15: `v-35-3783` -> `...whale-35-3783`);
-/// the slug format is exact (three words, two digits), so such a tail is unambiguous.
+/// The answer, if `text` is exactly the sentence (trailing whitespace allowed): a slug, or a slug
+/// followed by `-<digits>` (e.g. `...ripple-60-17580`), which is submitted **whole**. The sentence says
+/// "submit this exact answer", and the grader agrees: on 2026-10-22 two ranked warmups masteries (days 19
+/// and 20) each had one such set, the truncated `...-60` was graded incorrect, and none of 252 other graded
+/// mastery runs had a suffixed set. (The 2026-10-15 note that read the tail as row padding, `v-35-3783`, was
+/// never graded.) The two-digit `answer_format` describes the common case, not this one.
 pub fn match_template(text: &str) -> Option<String> {
     let i = text.find(PREFIX)?;
     let rest = text[i + PREFIX.len()..].trim_end();
@@ -246,11 +250,8 @@ pub fn match_template(text: &str) -> Option<String> {
         return Some(rest.to_string());
     }
     let parts: Vec<&str> = rest.splitn(5, '-').collect();
-    if parts.len() == 5 && parts[4].bytes().all(|b| b.is_ascii_digit()) && !parts[4].is_empty() {
-        let slug = parts[..4].join("-");
-        if codec::is_slug(&slug) {
-            return Some(slug);
-        }
+    if parts.len() == 5 && parts[4].bytes().all(|b| b.is_ascii_digit()) && !parts[4].is_empty() && codec::is_slug(&parts[..4].join("-")) {
+        return Some(rest.to_string());
     }
     None
 }
@@ -638,8 +639,16 @@ mod tests {
     fn digit_padded_final_row() {
         let blob = "01\tTmljZSB3b3I=\n02\tx qrpbqva\n03\t672074686973207761\n04\t01110010 01101101 01110101 01110000 00100001 00100000 01010100 01101111 00100000\n05\t115 111 108 118 101 44 32 115\n06\t165 142 155 151 164 040 164 150 151\n07\t%73%20%65%78%61%63%74%20%61\n08\t&#110;&#115;&#119;&#101;&#114;&#32;&#116;&#111;&#32;\n09\t\"\\u0074\\u0068\\u0065\\u0020\\u0047\\u0061\\u006d\\u0065\"\n10\tEBGWC43UMVZDUIA=\n11\tcGVwcHktc2Nv\n12\tlahw-reto\n13\tv-35-3783";
         let Outcome::Solved { slug, .. } = solve_rows(blob, &BTreeMap::new()) else { panic!("{:?}", solve_rows(blob, &BTreeMap::new())) };
-        assert_eq!(slug, "peppy-scooter-whale-35");
+        assert_eq!(slug, "peppy-scooter-whale-35-3783");
         assert!(match_template(&format!("{PREFIX}a-b-c-12-x")).is_none());
+    }
+
+    #[test]
+    fn digit_suffixed_answer_is_submitted_whole() {
+        // Day 19 ranked mastery set 1 (2026-10-22): the truncated `sunny-forest-ripple-60` was graded incorrect.
+        let blob = "01\tTmljZSB3\n02\tbex qr\n03\t636f64696e67\n04\t00100000 01110100 01101000 01101001 01110011 00100000\n05\t119 97 114 109 117 112\n06\t041 040 124 157 040 163\n07\t%6f%6c%76%65%2c%20\n08\t&#115;&#117;&#98;&#109;&#105;&#116;\n09\t\"\\u0020\\u0074\\u0068\\u0069\\u0073\\u0020\"\n10\tMV4GCY3UEA======\n11\tYW5zd2Vy\n12\tht ot \n13\tv Tznv\n14\t Thzal\n15\tCi DF?\n16\t-.... . --... ----. ..--- -.. -.... -.... -.... ..-. --... ..---\n17\taabba aabab aabbb aaabb aabbb aabaa aaaba abbab aabbb aaaba aabba abaab\n18\tp-pe6l\n19\tfffe30002d0031003700350038003000";
+        let Outcome::Solved { slug, .. } = solve_rows(blob, &BTreeMap::new()) else { panic!("{:?}", solve_rows(blob, &BTreeMap::new())) };
+        assert_eq!(slug, "sunny-forest-ripple-60-17580");
     }
 
     #[test]

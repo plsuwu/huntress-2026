@@ -1,0 +1,32 @@
+{
+  "challenge": "warmups-day-19/mastery",
+  "op": "retry",
+  "run_for_time": false,
+  "attempt_id": "09bd0cfb-ae57-4cd9-9453-95222677873a",
+  "started_at": "2026-10-22T07:20:44.690Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2459.632838,
+  "start_ttfb_ms": 2458.817361,
+  "clock": {
+    "start_sent": "2026-10-22T07:20:42.373Z",
+    "start_received": "2026-10-22T07:20:44.832Z",
+    "start_date_header": "2026-10-22T07:20:44.000Z",
+    "last_delivery": "2026-10-22T07:20:46.588Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "warmups-day-19-mastery.zip",
+      "bytes": 54043,
+      "wire": 54043,
+      "ttfb_ms": 1453.202592,
+      "total_ms": 1752.7053310000001,
+      "done_at_ms": 4212.742027,
+      "analyse_ms": 2.39392
+    }
+  ]
+}

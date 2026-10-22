@@ -51,8 +51,10 @@ pub struct Zip<'a> {
 }
 
 /// WinZip AES key material: PBKDF2-HMAC-SHA1, 1000 rounds (ring's assembly SHA-1: ~1.4x ours on the jumpbox).
+/// One key (the password check, and members `prepare_aes` did not batch): RustCrypto's PBKDF2 is
+/// 3x ring's with SHA-NI and ~1.7x without. Batches go through the 8-lane `pbkdf2x8`, faster still.
 fn winzip_kdf(password: &[u8], salt: &[u8], out: &mut [u8]) {
-    ring::pbkdf2::derive(ring::pbkdf2::PBKDF2_HMAC_SHA1, std::num::NonZeroU32::new(1000).unwrap(), salt, password, out);
+    pbkdf2::pbkdf2_hmac::<sha1::Sha1>(password, salt, 1000, out);
 }
 
 fn u16le(b: &[u8], at: usize) -> Option<u16> {
@@ -290,9 +292,7 @@ impl<'a> Zip<'a> {
 }
 
 fn zipcrypto_decrypt(password: &[u8], data: &mut [u8]) {
-    // The PKWARE key schedule uses the raw CRC-32 table step, (c >> 8) ^ T[(c ^ b) & 0xff], which is
-    // `update` without its pre/post inversion.
-    let step = |c: u32, b: u8| !crc32::update(!c, &[b]);
+    let step = crc32::step;
     let mut k = [0x1234_5678u32, 0x2345_6789, 0x3456_7890];
     let update = |k: &mut [u32; 3], b: u8| {
         k[0] = step(k[0], b);

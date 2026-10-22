@@ -75,6 +75,8 @@ oracle.
   11 base64url (unpadded), 12 reversed (+ `-` right padding to 13 chars), 13 atbash, 14 caesar +7, 15 ROT47.
 - Mastery set count = **5N - 2** (23 on d5 ... 63 on d13; d14 route lists 68).
 - Parse rows whitespace-faithfully (leading spaces matter), use the fixed index->codec mapping first, enumerate only as fallback.
+- **Submit exactly what the sentence says.** Since 2026-10-22, a set can end `...: word-word-word-NN-<digits>`. The whole
+  string is the answer, despite the two-digit `answer_format`; truncating it was graded incorrect twice (`orchestrator/grading-lessons.md`).
 
 ### Metadata forensics - one new kind per day, sometimes a recap bundle
 - Single-solve asks 1 question of the day's new kind. Kinds so far: jpeg SOF dims (`WxH`), png IHDR dims, pdf header

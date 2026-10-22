@@ -1,6 +1,8 @@
 # ctf-run
 
-Per-lane solver and low-latency runner for the Huntress CTF 2026 Game Master. Rust; std-only apart from `ring` (SHA-256 assembly) and, with `--features tls`, rustls.
+Per-lane solver and low-latency runner for the Huntress CTF 2026 Game Master. Rust; hand-written format parsers, with crates for the hot primitives that benchmarked faster than hand-rolled code
+(`ring` SHA-256, libdeflate, crc32fast, memchr, libzstd, fancy-regex, serde_json, md-5/sha1/pbkdf2, mimalloc; see
+`Cargo.toml`) and, with `--features tls`, rustls.
 
 ```sh
 cargo build --release                      # proxy (http) build

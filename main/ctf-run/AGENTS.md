@@ -2,7 +2,7 @@
 
 `ctf-run` solves Huntress CTF Game Master challenges **per lane** (warmups, mobile-android, metadata-forensics,
 binary-reverse-engineering, script-analysis) with a low-latency runner built for the CourseStack proxy
-(`http://10.0.0.219/huntress-ctf-proxy`, reached from the jumpbox `HuntressCTF@10.1.181.90`). Rust, std-only apart from `ring` (fast SHA-256; also rustls's provider);
+(`http://10.0.0.219/huntress-ctf-proxy`, reached from the jumpbox `HuntressCTF@10.1.181.90`). Rust; format parsers are hand-written, hot primitives are crates that benchmarked faster (each justified in `Cargo.toml`);
 `--features tls` adds the external https API. Background: `PLAN.md` (measurements, design, progress log) and
 `../utils/LANE_PATTERNS.md` (how each lane evolves day to day).
 
@@ -31,12 +31,12 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/gm.rs` | Game Master protocol, response normalisation (bundle preference), route cache |
 | `src/net/` | keep-alive HTTP/1.1 (gzip for JSON, identity for downloads), connection pool, fetch workers |
 | `src/lanes/` | one file per lane + `probe` (answers nothing; pipeline testing) |
-| `src/formats/` | zip (AES/ZipCrypto/ZIP64), inflate, elf, pe, macho, jvm, dotnet, cfb/MSI, lnk, media (jpeg/png/pdf), hcfg, x86 (tiny), bytes |
-| `src/crypto/` | aes (AES-NI + portable), sha1/hmac/pbkdf2, sha256, md5, crc32 |
+| `src/formats/` | zip (AES/ZipCrypto/ZIP64), inflate (libdeflate), elf, pe, macho, jvm, dotnet, cfb/MSI, lnk, media (jpeg/png/pdf), hcfg, x86 (tiny), bytes |
+| `src/crypto/` | aes (AES-NI + portable; beats RustCrypto aes+ctr), sha1/hmac/pbkdf2 (8-lane AVX2 batch beats every crate), sha256 (ring), md5 (md-5), crc32 (crc32fast) |
 | `src/codec.rs` | text codecs (base64/32, hex, numbers, percent, entities, escapes, rot/atbash/reverse, English scoring) |
 | `src/script/` | script-analysis toolkit: descriptor model + rubric, label-driven decode, cmd.exe model, JScript evaluator, families |
 | `src/evidence.rs` | nested-zip registry (`a.zip -> member` labels) |
-| `src/rx.rs` | Python-`re`-compatible backtracking regex (backrefs, lookaround) so reference patterns port verbatim; `re!()` caches compiled patterns |
+| `src/rx.rs` | Python-`re` semantics on fancy-regex (backrefs, lookaround; a syntax translator bridges `$`, `\Z`, `{,n}`, class `[`); ASCII subjects use a cheap ASCII-mode build; `re!()` and a global cache keep compiles to one per pattern |
 | `tools/` | `deploy.sh` (static binary -> jumpbox), `fixtures_<lane>.py` (original manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `run_legs.py` (per-leg timings), `hof_survey.py` / `hof_campaign.py` (Hall of Fame), `rush/` (release night) |
 | `fixtures/<lane>/*.json` | replay manifests (point at the original files under `../utils/solver_py_scripts`) |
 

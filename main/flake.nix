@@ -74,6 +74,15 @@
             xxd
             ilspycmd
             capstone
+          
+            # benchmarking utils
+            perf
+            hyperfine
+            cargo-flamegraph
+            valgrind
+            samply
+            cargo-show-asm
+            heaptrack
           ];
         };
       }

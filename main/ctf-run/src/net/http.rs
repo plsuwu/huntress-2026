@@ -36,7 +36,21 @@ fn quickack(stream: &TcpStream) {
 fn quickack(_: &TcpStream) {}
 
 fn find(hay: &[u8], needle: &[u8]) -> Option<usize> {
-    hay.windows(needle.len()).position(|w| w == needle)
+    memchr::memmem::find(hay, needle)
+}
+
+/// libzstd: one shot into an exact buffer when the frame header records the content size (3-6x
+/// ruzstd on the 3.7 MB script-mastery start body), else (streamed frames, several frames) streaming.
+fn unzstd(b: &[u8]) -> io::Result<Vec<u8>> {
+    if let Ok(Some(n)) = zstd::zstd_safe::get_frame_content_size(b)
+        && n <= 1 << 30
+        && let Ok(out) = zstd::bulk::decompress(b, n as usize)
+    {
+        return Ok(out);
+    }
+    let mut out = Vec::with_capacity(b.len() * 8);
+    zstd::stream::read::Decoder::with_buffer(b)?.read_to_end(&mut out)?;
+    Ok(out)
 }
 
 #[derive(Debug)]
@@ -404,13 +418,7 @@ impl Client {
         match encoding.as_deref() {
             None | Some("identity") => {}
             Some("gzip") => body = inflate::gunzip(&body).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
-            Some("zstd") => {
-                let mut out = Vec::with_capacity(body.len() * 8);
-                let mut src: &[u8] = &body;
-                let mut dec = ruzstd::decoding::StreamingDecoder::new(&mut src).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("zstd: {e}")))?;
-                dec.read_to_end(&mut out)?;
-                body = out;
-            }
+            Some("zstd") => body = unzstd(&body).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, format!("zstd: {e}")))?,
             Some(other) => return Err(io::Error::new(io::ErrorKind::InvalidData, format!("unsupported content-encoding {other:?}"))),
         }
         Ok(Response { status, headers, body, wire_len, ttfb, total: t0.elapsed(), reused })
@@ -495,7 +503,24 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
     use std::net::TcpListener;
+
+    #[test]
+    fn zstd_bodies() {
+        let body: Vec<u8> = (0..200_000u32).flat_map(|i| format!("{{\"q\":{i}}},").into_bytes()).collect();
+        // One-shot (content size in the frame header) and streamed (no size; two frames) paths.
+        assert_eq!(unzstd(&zstd::bulk::compress(&body, 3).unwrap()).unwrap(), body);
+        let mut streamed = Vec::new();
+        for half in body.chunks(body.len() / 2 + 1) {
+            let mut e = zstd::stream::write::Encoder::new(Vec::new(), 3).unwrap();
+            e.include_contentsize(false).unwrap();
+            e.write_all(half).unwrap();
+            streamed.extend(e.finish().unwrap());
+        }
+        assert_eq!(unzstd(&streamed).unwrap(), body);
+        assert!(unzstd(b"not zstd").is_err());
+    }
 
     #[test]
     fn endpoint_parsing() {

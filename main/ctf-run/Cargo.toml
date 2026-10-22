@@ -13,15 +13,28 @@ tls = ["dep:rustls", "dep:webpki-roots"]
 
 [dependencies]
 ring = "0.17"
-# Pure-Rust zstd decoder (no C in the static musl build): Cloudflare serves the big JSON bodies as zstd.
-ruzstd = "0.8"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
 webpki-roots = { version = "1", optional = true }
-
-# The static musl build (flake `.#ctf-run`, deployed to the jumpbox) needs a real allocator: musl's malloc made
-# script/binary-RE analysis 40-70 % slower there.
-[target.'cfg(target_env = "musl")'.dependencies]
+# Measured against the hand-rolled code they replaced (2026-10-22, `ctf-run replay` + micro-benchmarks):
+# SIMD substring search (binary-RE overlay/mangled-name scans).
+memchr = "2.8"
+# PCLMULQDQ CRC-32: ~9x the slice-by-8 table (every zip member is CRC-checked).
+crc32fast = "1.5"
+# libdeflate (C, built by `cc` like ring's): 1.7x the hand-rolled inflate, 1.3x zlib-rs.
+libdeflate-sys = "1.26"
+# libzstd: Cloudflare serves the big JSON bodies as zstd; 3-6x ruzstd on the script-mastery start body.
+zstd = { version = "0.14", default-features = false }
+# Python-`re` semantics (backrefs, lookaround) with plain patterns delegated to the regex crate's automata.
+fancy-regex = "0.19"
+# JSON parsing into `json::Value` (1.6x the hand-rolled parser); numbers keep their source text.
+serde = { version = "1", default-features = false, features = ["std"] }
+serde_json = { version = "1", features = ["arbitrary_precision"] }
+# mimalloc on every target: musl's malloc made script/binary-RE analysis 40-70 % slower on the jumpbox, and it
+# beats glibc's too (binary-RE replay -23 %).
 mimalloc = { version = "0.1", default-features = false }
+sha1 = { version = "0.11.0", default-features = false }
+md-5 = { version = "0.11.0", default-features = false }
+pbkdf2 = { version = "0.13.0", default-features = false, features = ["hmac"] }
 
 [profile.release]
 opt-level = 3

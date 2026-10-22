@@ -74,3 +74,24 @@ here after every release night.
   - Warmups TT: #5 (735 vs 484). 253 attempts left; server-bound, so re-roll in the 16-21h window.
 - **Teardown:** the user then removed the `huntress-rush` and `huntress-netprobe` systemd timers. Rush is now started
   by hand (see `runbook.md`). The netprobe findings are in `hall-of-fame.md`.
+
+## 2026-10-22: crate pass; full HoF pass
+
+- **ctf-run crate pass** (branch `perf/crates`, uncommitted at the time): hand-rolled inflate, CRC-32, zstd, substring
+  search, regex, JSON and MD5/SHA-1 were swapped for benchmarked crates. Details are in `ctf-run/PLAN.md`.
+  - Deployed to the jumpbox via a multiplexed ssh socket; ssh handshakes were taking ~39 s.
+  - Untimed regular `--retry` on all 10 Day 20 routes came back CORRECT.
+  - Jumpbox binary-RE TT analysis: ~650 -> 415 ms.
+- **Full HoF pass** (`plan-full-d22.json`, 158 routes on days 1-20, five known lanes only; Day 21 and web-exploitation
+  untouched):
+  - Budget: 3 runs (2 on 16-attempt pools) where not #1; 1 `past_first` run where already #1.
+  - 372 runs: 368 CORRECT, 2 server 503s, 2 incorrect. One 503 hit `retry` (no attempt spent); the other hit the submit
+    of warmups d09 TT (attempt lost). The 2 incorrect were warmups d19/d20 mastery (see `grading-lessons.md`).
+  - Board across the 158 routes: **#1 15 -> 57**, top-3 64 -> 117, 94 rank gains.
+  - Biggest movers: script, 28 gains (17 routes to #1); metadata, 23; warmups, 30.
+- **Warmups fix:** a `-<digits>` answer tail is now submitted whole.
+  - After fixing it, warmups d19 mastery was re-run: #6 -> #2. d20 mastery ran 2 more times and stayed #3; both
+    resumed plans had suffixed sets graded CORRECT.
+- **Survey tool:** `hof_survey.py` had queried status for the web-exploitation routes (read-only; they returned 409).
+  It now skips lanes outside the five known ones.
+

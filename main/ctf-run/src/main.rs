@@ -4,7 +4,6 @@
 //! timings go to stderr.
 
 #[allow(dead_code)] // shared library surface: fields/helpers future question kinds use
-#[cfg(target_env = "musl")]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 

@@ -85,10 +85,11 @@ impl Sha1 {
     }
 }
 
+/// One-shot SHA-1 of a buffer: the `sha1` crate (SHA-NI when present: 5x this file's compressor,
+/// and its portable code is still 2x). `Sha1` below stays for the HMAC midstates PBKDF2 needs.
 pub fn sha1(data: &[u8]) -> [u8; 20] {
-    let mut s = Sha1::new();
-    s.update(data);
-    s.finish()
+    use sha1::Digest;
+    sha1::Sha1::digest(data).into()
 }
 
 /// HMAC-SHA1 keyed once: the inner/outer states after absorbing ipad/opad are kept, so each MAC
