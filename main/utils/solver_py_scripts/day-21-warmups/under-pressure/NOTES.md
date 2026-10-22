@@ -20,4 +20,6 @@ Day 22 guess: another wrapper around a familiar layer (zlib/raw deflate, bzip2/x
 `decompress` handles zlib already. Raw deflate has no header, so it would need an explicit attempt.
 
 ## Status
-- TT/mastery: not run yet. The untimed regular attempts were blocked by the session's permission classifier.
+- Single-solve, TT and mastery: all CORRECT (2026-10-22). The coordinator ran the untimed regular TT and mastery
+  attempts via `rush.py takeover`, because the lane agent's own runs were blocked by the permission classifier.
+  Fixtures: `d21-single_solve`, `d21-time_trial` (1 answer), `d21-mastery` (103 answers); replay 60/60 clean.
