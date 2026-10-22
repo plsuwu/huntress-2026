@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-21-package-deal/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "708a062b-65d7-47bb-a28a-4a570c0e2410",
+  "started_at": "2026-10-22T08:38:52.069Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2771.940021,
+  "start_ttfb_ms": 2769.376857,
+  "clock": {
+    "start_sent": "2026-10-22T08:38:49.499Z",
+    "start_received": "2026-10-22T08:38:52.271Z",
+    "start_date_header": "2026-10-22T08:38:52.000Z",
+    "last_delivery": "2026-10-22T08:38:55.819Z",
+    "submit_sent": "2026-10-22T08:38:55.821Z",
+    "submit_received": "2026-10-22T08:38:58.347Z",
+    "submit_date_header": "2026-10-22T08:38:58.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-21-package-deal-mastery.zip",
+      "bytes": 3166714,
+      "wire": 3166714,
+      "ttfb_ms": 1477.630256,
+      "total_ms": 3530.10097,
+      "done_at_ms": 6302.234366000001,
+      "analyse_ms": 18.501462999999998
+    }
+  ]
+}

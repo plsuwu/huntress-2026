@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-21-package-deal",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7090341e-42bb-4ea3-9621-cb46679a3927",
+  "started_at": "2026-10-22T08:34:30.122Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 946.314844,
+  "start_ttfb_ms": 946.235259,
+  "clock": {
+    "start_sent": "2026-10-22T08:38:24.447Z",
+    "start_received": "2026-10-22T08:38:25.393Z",
+    "start_date_header": "2026-10-22T08:38:25.000Z",
+    "last_delivery": "2026-10-22T08:38:26.933Z",
+    "submit_sent": "2026-10-22T08:38:26.933Z",
+    "submit_received": "2026-10-22T08:38:28.550Z",
+    "submit_date_header": "2026-10-22T08:38:28.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-21-evidence.zip",
+      "bytes": 4436,
+      "wire": 4436,
+      "ttfb_ms": 1204.9491580000001,
+      "total_ms": 1539.5269219999998,
+      "done_at_ms": 2486.079204,
+      "analyse_ms": 0.032084
+    }
+  ]
+}

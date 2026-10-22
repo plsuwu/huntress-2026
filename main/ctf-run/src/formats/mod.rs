@@ -1,5 +1,6 @@
 //! Container and file-format parsers shared by every lane.
 
+pub mod apk;
 pub mod audio;
 pub mod bytes;
 pub mod cfb;

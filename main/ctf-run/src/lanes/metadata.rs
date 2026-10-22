@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{audio, cfb, dotnet, elf, email, lnk, macho, media, ooxml, pe, video, zip};
+use crate::formats::{apk, audio, cfb, dotnet, elf, email, lnk, macho, media, ooxml, pe, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -362,6 +362,61 @@ fn macho_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-apk-<field>` -> an Android package field from the binary manifest (AXML; plain-text XML is
+/// accepted too), `@0x7f..` references resolved through `resources.arsc`, signer certificates from the
+/// JAR signature and the APK Signing Block. d21 graded `package-name` (manifest `package`, verbatim);
+/// other fields are unverified. A manifest without the attribute answers `none`; a file that is not a
+/// package is refused.
+fn apk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-apk-")?;
+    let want = &key[i + 5..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("apk-").unwrap_or(want);
+    let Some(a) = apk::Apk::parse(b) else { return Some(Err(format!("not an Android package; {}", facts("apk", b)))) };
+    let opt = |v: Option<String>| v.unwrap_or_else(none);
+    let cert = a.certs.first().map(|c| c.1.as_slice());
+    let info = cert.and_then(apk::cert_info);
+    let list = |el: &str| {
+        let mut v: Vec<String> = a.manifest.iter().filter(|e| e.name == el).filter_map(|e| e.attr("name").map(|x| x.value.clone())).collect();
+        v.sort();
+        v.dedup();
+        compact_json(&v)
+    };
+    Some(Ok(match want {
+        "package-name" | "package" | "package-id" | "application-id" => opt(a.value("manifest", "package")),
+        "version-code" => opt(a.value("manifest", "versionCode")),
+        "version-name" => opt(a.value("manifest", "versionName")),
+        "min-sdk" | "min-sdk-version" => opt(a.value("uses-sdk", "minSdkVersion")),
+        "target-sdk" | "target-sdk-version" => opt(a.value("uses-sdk", "targetSdkVersion")),
+        "compile-sdk" | "compile-sdk-version" => opt(a.value("manifest", "compileSdkVersion")),
+        "app-label" | "application-label" | "label" | "app-name" | "application-name" | "product-name" => opt(a.value("application", "label")),
+        "launcher-activity" | "main-activity" | "launchable-activity" => opt(a.launcher_activity()),
+        "permissions" | "uses-permissions" | "permission-set" => list("uses-permission"),
+        "signer-sha256" | "signer-cert-sha256" | "cert-sha256" | "certificate-sha256" | "signing-cert-sha256" | "signer-certificate-sha256" => opt(cert.map(|c| hex(&sha256(c)))),
+        "signer-sha1" | "cert-sha1" | "certificate-sha1" | "signing-cert-sha1" | "signer-cert-sha1" => opt(cert.map(|c| hex(&sha1(c)))),
+        "signer-subject" | "cert-subject" | "certificate-subject" | "signer-dn" => opt(info.as_ref().map(|i| apk::dn_string(&i.subject))),
+        "signer-issuer" | "cert-issuer" | "certificate-issuer" => opt(info.as_ref().map(|i| apk::dn_string(&i.issuer))),
+        "signer-cn" | "cert-cn" | "signer-common-name" => opt(info.as_ref().and_then(|i| i.subject.iter().find(|k| k.0 == "CN").map(|k| k.1.clone()))),
+        "signer-serial" | "cert-serial" | "cert-serial-hex" => opt(info.as_ref().map(|i| i.serial_hex.clone())),
+        _ => return Some(Err(format!("unknown APK field {want:?}; {}", apk_facts(&a)))),
+    }))
+}
+
+fn apk_facts(a: &apk::Apk) -> String {
+    let els: Vec<String> = a.manifest.iter().map(|e| format!("{}{} {:?}", "  ".repeat(e.depth), e.name, e.attrs.iter().map(|x| format!("{}={}", x.name, x.value)).collect::<Vec<_>>())).collect();
+    let certs: Vec<String> = a
+        .certs
+        .iter()
+        .map(|(src, c)| {
+            let i = apk::cert_info(c);
+            format!("{src}: sha256 {} subject {:?} issuer {:?} serial {:?}", hex(&sha256(c)), i.as_ref().map(|i| apk::dn_string(&i.subject)), i.as_ref().map(|i| apk::dn_string(&i.issuer)), i.as_ref().map(|i| i.serial_hex.clone()))
+        })
+        .collect();
+    format!("apk binary_manifest {} members {:?} manifest {els:?} arsc {} certs {certs:?}", a.binary_manifest, a.members, a.arsc.is_some())
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -459,6 +514,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(m) = email::Message::parse(b) {
         f.push(email_facts(&m));
     }
+    if let Some(a) = apk::Apk::parse(b) {
+        f.push(apk_facts(&a));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -550,6 +608,9 @@ impl Lane for Metadata {
         if let Some(r) = macho_answer(&key, data) {
             return r;
         }
+        if let Some(r) = apk_answer(&key, data) {
+            return r;
+        }
         for (suffix, h) in HANDLERS {
             if key.ends_with(suffix) {
                 return h(data).ok_or_else(|| format!("{suffix}: not derivable; {}", facts(member, data)));
@@ -620,5 +681,14 @@ mod tests {
         assert_eq!(a("d17-email-001-email-attachment-sha256").unwrap(), hex(&sha256(b"hi")));
         assert_eq!(a("d17-email-001-email-in-reply-to").unwrap(), "none");
         assert!(a("d17-email-001-email-thread-root").is_err());
+    }
+    #[test]
+    fn apk_fields() {
+        let b = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/d21-mobile-001.apk")).unwrap();
+        let a = |k: &str| apk_answer(k, &b).unwrap();
+        assert_eq!(a("d21-apk-001-apk-package-name").unwrap(), "com.huntress.arena.p08281778");
+        assert_eq!(a("d21-apk-001-apk-app-label").unwrap(), "Huntress Evidence 08281778");
+        eprintln!("{}", a("d21-apk-001-apk-dump-facts").unwrap_err());
+        assert!(apk_answer("d21-apk-001-sha256", &b).is_none());
     }
 }
