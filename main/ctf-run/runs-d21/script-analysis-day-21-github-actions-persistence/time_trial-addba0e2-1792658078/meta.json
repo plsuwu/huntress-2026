@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-21-github-actions-persistence/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "addba0e2-33a2-4360-b3c2-d22a2fd46dfb",
+  "started_at": "2026-10-22T08:34:41.044Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2494.0919369999997,
+  "start_ttfb_ms": 2472.5756629999996,
+  "clock": {
+    "start_sent": "2026-10-22T08:34:38.803Z",
+    "start_received": "2026-10-22T08:34:41.297Z",
+    "start_date_header": "2026-10-22T08:34:41.000Z",
+    "last_delivery": "2026-10-22T08:34:43.034Z",
+    "submit_sent": "2026-10-22T08:34:43.040Z",
+    "submit_received": "2026-10-22T08:34:46.182Z",
+    "submit_date_header": "2026-10-22T08:34:46.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 131498,
+      "wire": 131498,
+      "ttfb_ms": 1483.747383,
+      "total_ms": 1708.618432,
+      "done_at_ms": 4202.960231,
+      "analyse_ms": 28.718838
+    }
+  ]
+}

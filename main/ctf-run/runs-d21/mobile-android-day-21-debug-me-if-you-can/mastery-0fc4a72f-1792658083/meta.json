@@ -1,0 +1,72 @@
+{
+  "challenge": "mobile-android-day-21-debug-me-if-you-can/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0fc4a72f-6e58-4663-8ede-6338db183d71",
+  "started_at": "2026-10-22T08:34:44.572Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 1447.206729,
+  "start_ttfb_ms": 1447.110839,
+  "clock": {
+    "start_sent": "2026-10-22T08:34:43.643Z",
+    "start_received": "2026-10-22T08:34:45.090Z",
+    "start_date_header": "2026-10-22T08:34:44.000Z",
+    "last_delivery": "2026-10-22T08:34:46.565Z",
+    "submit_sent": "2026-10-22T08:34:46.565Z",
+    "submit_received": "2026-10-22T08:34:48.103Z",
+    "submit_date_header": "2026-10-22T08:34:47.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 4,
+      "name": "debug_me_if_you_can_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1228.76683,
+      "total_ms": 1452.149736,
+      "done_at_ms": 2899.513341,
+      "analyse_ms": 0.025542
+    },
+    {
+      "delivery": 5,
+      "name": "debug_me_if_you_can_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1221.731723,
+      "total_ms": 1457.630347,
+      "done_at_ms": 2904.988867,
+      "analyse_ms": 0.009007000000000001
+    },
+    {
+      "delivery": 1,
+      "name": "debug_me_if_you_can_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1240.120747,
+      "total_ms": 1462.404628,
+      "done_at_ms": 2909.700586,
+      "analyse_ms": 0.006709
+    },
+    {
+      "delivery": 3,
+      "name": "debug_me_if_you_can_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1262.6204890000001,
+      "total_ms": 1475.062628,
+      "done_at_ms": 2922.3550400000004,
+      "analyse_ms": 0.015733999999999998
+    },
+    {
+      "delivery": 2,
+      "name": "debug_me_if_you_can_mastery_02.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1255.821571,
+      "total_ms": 1475.049804,
+      "done_at_ms": 2922.336756,
+      "analyse_ms": 0.042121
+    }
+  ]
+}

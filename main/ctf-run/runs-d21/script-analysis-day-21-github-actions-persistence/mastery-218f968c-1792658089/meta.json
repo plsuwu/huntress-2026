@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-21-github-actions-persistence/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "218f968c-4f7a-4c2d-8890-eb1bdc165d78",
+  "started_at": "2026-10-22T08:34:49.935Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2194.331029,
+  "start_ttfb_ms": 2161.139109,
+  "clock": {
+    "start_sent": "2026-10-22T08:34:49.049Z",
+    "start_received": "2026-10-22T08:34:51.244Z",
+    "start_date_header": "2026-10-22T08:34:51.000Z",
+    "last_delivery": "2026-10-22T08:34:53.371Z",
+    "submit_sent": "2026-10-22T08:34:53.421Z",
+    "submit_received": "2026-10-22T08:34:56.713Z",
+    "submit_date_header": "2026-10-22T08:34:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-21-github-actions-persistence-mastery.zip",
+      "bytes": 665604,
+      "wire": 665604,
+      "ttfb_ms": 1511.4177849999999,
+      "total_ms": 2026.061929,
+      "done_at_ms": 4220.529541,
+      "analyse_ms": 101.150966
+    }
+  ]
+}

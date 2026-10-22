@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-21-debug-me-if-you-can/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "6f83b648-162d-44ad-a719-c6ef49bb7efc",
+  "started_at": "2026-10-22T08:34:38.743Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2313.496964,
+  "start_ttfb_ms": 2302.686898,
+  "clock": {
+    "start_sent": "2026-10-22T08:34:36.790Z",
+    "start_received": "2026-10-22T08:34:39.103Z",
+    "start_date_header": "2026-10-22T08:34:38.000Z",
+    "last_delivery": "2026-10-22T08:34:40.641Z",
+    "submit_sent": "2026-10-22T08:34:40.641Z",
+    "submit_received": "2026-10-22T08:34:42.322Z",
+    "submit_date_header": "2026-10-22T08:34:42.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "debug_me_if_you_can_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1273.979008,
+      "total_ms": 1537.22709,
+      "done_at_ms": 3851.00103,
+      "analyse_ms": 0.023812
+    }
+  ]
+}

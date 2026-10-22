@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-21-debug-me-if-you-can",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "59a77c7e-f112-44d4-a734-02a35961b1ca",
+  "started_at": "2026-10-22T08:34:31.460Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1030.919709,
+  "start_ttfb_ms": 1030.781333,
+  "clock": {
+    "start_sent": "2026-10-22T08:34:30.617Z",
+    "start_received": "2026-10-22T08:34:31.648Z",
+    "start_date_header": "2026-10-22T08:34:31.000Z",
+    "last_delivery": "2026-10-22T08:34:33.166Z",
+    "submit_sent": "2026-10-22T08:34:33.166Z",
+    "submit_received": "2026-10-22T08:34:35.423Z",
+    "submit_date_header": "2026-10-22T08:34:35.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "debug_me_if_you_can.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1269.369113,
+      "total_ms": 1518.0847509999999,
+      "done_at_ms": 2549.1638070000004,
+      "analyse_ms": 0.046762
+    }
+  ]
+}

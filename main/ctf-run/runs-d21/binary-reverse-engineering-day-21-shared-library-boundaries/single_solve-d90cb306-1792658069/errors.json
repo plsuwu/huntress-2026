@@ -1,0 +1,6 @@
+{
+  "d21_analysis_config_campaign": "d21--sample-loader.elf: config has no \"campaign\"",
+  "d21_analysis_config_domain": "d21--sample-loader.elf: config has no \"domain\"",
+  "d21_analysis_config_mutex": "d21--sample-loader.elf: config has no \"mutex\"",
+  "d21_analysis_config_url": "d21--sample-loader.elf: config has no \"url\""
+}
