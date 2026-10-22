@@ -805,11 +805,12 @@ def latest_correct(run_root, mode):
         if not d.startswith(mode + "-"):
             continue
         try:
-            ok = (
-                json.load(open(os.path.join(run_root, d, "result.json"))).get("result")
-                == "CORRECT"
-            )
-        except (OSError, ValueError):
+            res = json.load(open(os.path.join(run_root, d, "result.json")))
+            # result.json is a list of submit records ({"label", "ms", "response"}); the last one is the verdict.
+            if isinstance(res, list):
+                res = (res[-1].get("response") or {}) if res else {}
+            ok = res.get("result") == "CORRECT"
+        except (OSError, ValueError, AttributeError):
             continue
         if ok and (best is None or d.rsplit("-", 1)[-1] > best.rsplit("-", 1)[-1]):
             best = d
