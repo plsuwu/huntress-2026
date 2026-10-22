@@ -111,3 +111,7 @@ here after every release night.
   list of submit records; fixed in `2963edf`.
 - **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
 - **Merge and deploy:** `merge.sh 21`, 64 tests, replay 329/329 clean. Deployed `a54f4932` through the ssh socket.
+- **Day 21 HoF campaign** (`plan-d21.json`, 10 routes, budget 3; 2 on the 16-attempt pool), started about 19:00 AEST:
+  23 runs, all CORRECT, **#1 on 6 of 10**. Binary TT and mastery: #3. Mobile TT and warmups TT: #2.
+- **Playbooks:** event-independent `playbooks/solver-runner.md` and `playbooks/orchestrator.md`, linked from this
+  README.

@@ -21,3 +21,8 @@ Related docs elsewhere in the repo:
 - `ctf-run/PLAN.md`: the solver's design, measurements and engineering progress log.
 - `utils/LANE_PATTERNS.md`: how each lane evolves day to day, with predictions.
 - `utils/solver_py_scripts/day-NN-<lane>/<slug>/NOTES.md`: per-challenge notes.
+
+Event-independent versions of this knowledge (no lane, day or host names), for starting over elsewhere:
+
+- `../playbooks/solver-runner.md`: building, extending, benchmarking and deploying a compiled solver binary.
+- `../playbooks/orchestrator.md`: the coordinator's job, covering the lane registry, release flow, agents, campaigns and monitoring.
