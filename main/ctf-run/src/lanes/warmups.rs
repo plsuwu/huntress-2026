@@ -107,6 +107,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         19 => T::Hex, // "Little Things": hex of UTF-16LE (+ BOM); `T::Hex` falls back to UTF-16
         20 => T::Hex, // "Big Entrance": hex of UTF-16BE (+ `feff` BOM)
         21 => T::Gz, // "Under Pressure": base64 of gzip ("a familiar wrapper, something compressed inside")
+        22 => T::Gz, // "Deflated Ego": base64 of zlib (`78 9c`/`78 da`, "needs a little inflation"); `decompress` takes zlib
         _ => return None,
     })
 }
