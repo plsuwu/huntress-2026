@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-22-main-character-energy/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "51176900-751d-4fd3-95d9-281ea07d56d2",
+  "started_at": "2026-10-22T15:03:05.461Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2446.7275339999997,
+  "start_ttfb_ms": 2446.140089,
+  "clock": {
+    "start_sent": "2026-10-22T15:03:03.203Z",
+    "start_received": "2026-10-22T15:03:05.650Z",
+    "start_date_header": "2026-10-22T15:03:05.000Z",
+    "last_delivery": "2026-10-22T15:03:07.403Z",
+    "submit_sent": "2026-10-22T15:03:07.405Z",
+    "submit_received": "2026-10-22T15:03:09.668Z",
+    "submit_date_header": "2026-10-22T15:03:09.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 633935,
+      "wire": 633935,
+      "ttfb_ms": 1467.797219,
+      "total_ms": 1744.9334520000002,
+      "done_at_ms": 4192.084436,
+      "analyse_ms": 7.802009
+    }
+  ]
+}

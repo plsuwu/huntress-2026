@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-22-main-character-energy/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "e4fac3c2-e596-4bdd-b31c-c266e6f67c91",
+  "started_at": "2026-10-22T15:03:17.564Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2641.6383520000004,
+  "start_ttfb_ms": 2639.941243,
+  "clock": {
+    "start_sent": "2026-10-22T15:03:15.134Z",
+    "start_received": "2026-10-22T15:03:17.775Z",
+    "start_date_header": "2026-10-22T15:03:17.000Z",
+    "last_delivery": "2026-10-22T15:03:20.124Z",
+    "submit_sent": "2026-10-22T15:03:20.125Z",
+    "submit_received": "2026-10-22T15:03:21.787Z",
+    "submit_date_header": "2026-10-22T15:03:21.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-22-main-character-energy-mastery.zip",
+      "bytes": 3804046,
+      "wire": 3804046,
+      "ttfb_ms": 1563.934702,
+      "total_ms": 2322.17677,
+      "done_at_ms": 4964.167337,
+      "analyse_ms": 25.746376
+    }
+  ]
+}

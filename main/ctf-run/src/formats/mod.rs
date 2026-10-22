@@ -9,6 +9,7 @@ pub mod elf;
 pub mod email;
 pub mod hcfg;
 pub mod inflate;
+pub mod jar;
 pub mod jvm;
 pub mod lnk;
 pub mod macho;

@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, dotnet, elf, email, lnk, macho, media, ooxml, pe, video, zip};
+use crate::formats::{apk, audio, cfb, dotnet, elf, email, jar, lnk, macho, media, ooxml, pe, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -417,6 +417,57 @@ fn apk_facts(a: &apk::Apk) -> String {
     format!("apk binary_manifest {} members {:?} manifest {els:?} arsc {} certs {certs:?}", a.binary_manifest, a.members, a.arsc.is_some())
 }
 
+/// `...-jar-<field>` -> a Java archive field. d22 graded `main-class`: the manifest's `Main-Class`,
+/// verbatim, `none` when the attribute is absent. The named class must exist in the archive and declare
+/// `public static void main(String[])`; a manifest that disagrees with its classes is an error (the graded
+/// rule for that case is unknown). Other fields are unverified; a field named like a manifest attribute
+/// (`implementation-version`) answers that attribute.
+fn jar_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-jar-")?;
+    let want = &key[i + 5..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("jar-").unwrap_or(want);
+    let want = want.strip_prefix("manifest-").unwrap_or(want);
+    let Some(j) = jar::Jar::parse(b) else { return Some(Err(format!("not a Java archive; {}", facts("jar", b)))) };
+    let launcher = |attr: &str| -> Result<String, String> {
+        match j.attr(attr) {
+            None => Ok(none()),
+            Some(v) => match j.class(v) {
+                Some(c) if c.has_main => Ok(v.trim().to_string()),
+                _ => Err(format!("{attr} {v:?} has no launchable class in the archive; {}", jar_facts(&j))),
+            },
+        }
+    };
+    Some(match want {
+        "main-class" | "entry-point" | "main" => launcher("Main-Class"),
+        "start-class" => launcher("Start-Class"),
+        "is-runnable" | "runnable" | "is-executable" | "executable" => {
+            j.attr("Main-Class").map_or(Ok(false.to_string()), |v| match j.class(v) {
+                Some(c) if c.has_main => Ok(true.to_string()),
+                _ => Err(format!("Main-Class {v:?} has no launchable class; {}", jar_facts(&j))),
+            })
+        }
+        "class-count" => Ok(j.classes.len().to_string()),
+        "nested-jars" | "nested-jar-names" | "nested-dependencies" | "dependencies" => {
+            let mut v: Vec<String> = j.nested.iter().map(|n| n.0.clone()).collect();
+            v.sort();
+            Ok(compact_json(&v))
+        }
+        other => match j.manifest.as_ref().and_then(|m| m.main.iter().find(|a| a.0.eq_ignore_ascii_case(other) || a.0.replace('_', "-").eq_ignore_ascii_case(&other.replace('_', "-")))) {
+            Some(a) => Ok(a.1.trim().to_string()),
+            None => Err(format!("unknown JAR field {other:?}; {}", jar_facts(&j))),
+        },
+    })
+}
+
+fn jar_facts(j: &jar::Jar) -> String {
+    let cls: Vec<String> = j.classes.iter().map(|c| format!("{}{}{}", c.path, c.this_class.as_ref().filter(|t| format!("{t}.class") != c.path).map(|t| format!(" (this {t})")).unwrap_or_default(), if c.has_main { " +main" } else { "" })).collect();
+    let nested: Vec<String> = j.nested.iter().map(|(n, s)| format!("{n}: [{}]", jar_facts(s))).collect();
+    format!("jar manifest {:?} sections {} classes {cls:?} members {:?} nested {nested:?}", j.manifest.as_ref().map(|m| &m.main), j.manifest.as_ref().map_or(0, |m| m.sections.len()), j.members)
+}
+
 /// `...-lnk-<field>` -> the parsed shell-link field (graded formats unknown until first seen).
 fn lnk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     let i = key.rfind("lnk-")?;
@@ -517,6 +568,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(a) = apk::Apk::parse(b) {
         f.push(apk_facts(&a));
     }
+    if let Some(j) = jar::Jar::parse(b).filter(|j| j.manifest.is_some() || !j.classes.is_empty()) {
+        f.push(jar_facts(&j));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -611,6 +665,9 @@ impl Lane for Metadata {
         if let Some(r) = apk_answer(&key, data) {
             return r;
         }
+        if let Some(r) = jar_answer(&key, data) {
+            return r;
+        }
         for (suffix, h) in HANDLERS {
             if key.ends_with(suffix) {
                 return h(data).ok_or_else(|| format!("{suffix}: not derivable; {}", facts(member, data)));
@@ -690,5 +747,18 @@ mod tests {
         assert_eq!(a("d21-apk-001-apk-app-label").unwrap(), "Huntress Evidence 08281778");
         eprintln!("{}", a("d21-apk-001-apk-dump-facts").unwrap_err());
         assert!(apk_answer("d21-apk-001-sha256", &b).is_none());
+    }
+
+    #[test]
+    fn jar_fields() {
+        let b = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/testdata/d22-application-001.jar")).unwrap();
+        let a = |k: &str| jar_answer(k, &b).unwrap();
+        assert_eq!(a("d22-jar-001-jar-main-class").unwrap(), "arena.evidence.ArtifactMain");
+        assert_eq!(a("d22-jar-001-jar-created-by").unwrap(), "Huntress Artifact Assembly Line");
+        assert_eq!(a("d22-jar-001-jar-start-class").unwrap(), "none");
+        assert!(jar_answer("d22-jar-001-sha256", &b).is_none());
+        let m = jar::Manifest::parse(b"Manifest-Version: 1.0\r\nMain-Class: a.b\r\n .C\r\n\r\nName: x\r\nK: v\r\n");
+        assert_eq!(m.get("main-class"), Some("a.b.C"));
+        assert_eq!(m.sections.len(), 1);
     }
 }
