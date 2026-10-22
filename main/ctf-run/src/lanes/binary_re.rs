@@ -489,6 +489,15 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
         }
         "analysis_format" => container_label(s, q)?,
         "analysis_machine" if q.format_kind.as_deref() == Some("integer") => need(s.machine_num.map(|n| n.to_string()), "machine number")?,
+        // A PE i386 image under the generic "file, readelf, and objdump labels" syntax is graded `i386` (d22; `x86` and
+        // `0x14c` were incorrect there). d03's PE-specific "IMAGE_FILE_MACHINE labels" syntax keeps `x86`.
+        "analysis_machine"
+            if s.container == Some(Container::Pe)
+                && s.machine_num == Some(0x14c)
+                && !q.format_syntax.as_deref().unwrap_or("").contains("IMAGE_FILE_MACHINE") =>
+        {
+            "i386".into()
+        }
         "analysis_machine" | "analysis_architecture" => need(s.machine.map(str::to_string), "machine")?,
         "analysis_elf_class" => {
             let c = need(s.elf_class.map(|c| c.to_string()), "ELF class")?;
