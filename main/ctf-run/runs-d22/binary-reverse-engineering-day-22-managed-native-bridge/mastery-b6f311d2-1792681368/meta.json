@@ -1,0 +1,82 @@
+{
+  "challenge": "binary-reverse-engineering-day-22-managed-native-bridge/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "b6f311d2-520a-4e33-9b75-1cb97160e9f7",
+  "started_at": "2026-10-22T15:02:51.024Z",
+  "deadline": null,
+  "shape": "artifacts[6]+downloads[6]",
+  "start_ms": 2849.8247,
+  "start_ttfb_ms": 2843.8646639999997,
+  "clock": {
+    "start_sent": "2026-10-22T15:02:48.465Z",
+    "start_received": "2026-10-22T15:02:51.315Z",
+    "start_date_header": "2026-10-22T15:02:51.000Z",
+    "last_delivery": "2026-10-22T15:03:24.682Z",
+    "submit_sent": "2026-10-22T15:03:24.683Z",
+    "submit_received": "2026-10-22T15:03:29.846Z",
+    "submit_date_header": "2026-10-22T15:03:29.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35671064,
+      "wire": 35671064,
+      "ttfb_ms": 1512.7707930000001,
+      "total_ms": 18949.310268,
+      "done_at_ms": 21799.241983999997,
+      "analyse_ms": 103.615298
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 35671133,
+      "wire": 35671133,
+      "ttfb_ms": 1543.3906419999998,
+      "total_ms": 28280.94953,
+      "done_at_ms": 31130.910895,
+      "analyse_ms": 97.543489
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 35671097,
+      "wire": 35671097,
+      "ttfb_ms": 1412.096469,
+      "total_ms": 28928.867903000002,
+      "done_at_ms": 31778.888884,
+      "analyse_ms": 99.35305
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 35671672,
+      "wire": 35671672,
+      "ttfb_ms": 1543.4769660000002,
+      "total_ms": 32794.528242,
+      "done_at_ms": 35644.560476,
+      "analyse_ms": 116.92089
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 35777977,
+      "wire": 35777977,
+      "ttfb_ms": 1822.70238,
+      "total_ms": 32983.295376,
+      "done_at_ms": 35833.260392,
+      "analyse_ms": 98.580933
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 35777934,
+      "wire": 35777934,
+      "ttfb_ms": 1728.647437,
+      "total_ms": 33250.986421,
+      "done_at_ms": 36100.925478,
+      "analyse_ms": 115.40353400000001
+    }
+  ]
+}
