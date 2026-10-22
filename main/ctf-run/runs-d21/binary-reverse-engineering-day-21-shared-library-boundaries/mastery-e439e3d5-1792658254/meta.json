@@ -1,0 +1,72 @@
+{
+  "challenge": "binary-reverse-engineering-day-21-shared-library-boundaries/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "e439e3d5-7c8e-4e9c-8907-989933961285",
+  "started_at": "2026-10-22T08:37:37.556Z",
+  "deadline": null,
+  "shape": "artifacts[5]+downloads[5]",
+  "start_ms": 3134.05365,
+  "start_ttfb_ms": 3123.583086,
+  "clock": {
+    "start_sent": "2026-10-22T08:37:34.905Z",
+    "start_received": "2026-10-22T08:37:38.039Z",
+    "start_date_header": "2026-10-22T08:37:38.000Z",
+    "last_delivery": "2026-10-22T08:38:45.678Z",
+    "submit_sent": "2026-10-22T08:38:45.678Z",
+    "submit_received": "2026-10-22T08:38:51.437Z",
+    "submit_date_header": "2026-10-22T08:38:51.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 33583120,
+      "wire": 33583120,
+      "ttfb_ms": 1409.775233,
+      "total_ms": 59334.06540299999,
+      "done_at_ms": 62468.27548800001,
+      "analyse_ms": 103.483332
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 33583130,
+      "wire": 33583130,
+      "ttfb_ms": 1409.8427199999999,
+      "total_ms": 65474.86077000001,
+      "done_at_ms": 68609.042828,
+      "analyse_ms": 120.976107
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 33476254,
+      "wire": 33476254,
+      "ttfb_ms": 1552.501868,
+      "total_ms": 65582.472374,
+      "done_at_ms": 68716.685382,
+      "analyse_ms": 106.268612
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 33476264,
+      "wire": 33476264,
+      "ttfb_ms": 1968.575301,
+      "total_ms": 67328.451877,
+      "done_at_ms": 70462.639711,
+      "analyse_ms": 119.69175
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 33476280,
+      "wire": 33476280,
+      "ttfb_ms": 1958.836697,
+      "total_ms": 67534.666509,
+      "done_at_ms": 70668.831146,
+      "analyse_ms": 103.281098
+    }
+  ]
+}

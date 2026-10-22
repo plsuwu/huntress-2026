@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-21-shared-library-boundaries",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d90cb306-a4f8-447a-872b-cd2f27f0043d",
+  "started_at": "2026-10-22T08:34:30.603Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 957.844192,
+  "start_ttfb_ms": 953.159072,
+  "clock": {
+    "start_sent": "2026-10-22T08:36:26.849Z",
+    "start_received": "2026-10-22T08:36:27.807Z",
+    "start_date_header": "2026-10-22T08:36:27.000Z",
+    "last_delivery": "2026-10-22T08:36:48.078Z",
+    "submit_sent": "2026-10-22T08:36:48.078Z",
+    "submit_received": "2026-10-22T08:36:51.014Z",
+    "submit_date_header": "2026-10-22T08:36:50.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 33476800,
+      "wire": 33476800,
+      "ttfb_ms": 1214.8656959999998,
+      "total_ms": 20164.615688,
+      "done_at_ms": 21122.686217,
+      "analyse_ms": 106.134746
+    }
+  ]
+}

@@ -350,6 +350,30 @@ fn day_of(name: &str) -> Option<&str> {
     (d.len() == 3 && d.starts_with('d') && d[1..].bytes().all(|c| c.is_ascii_digit())).then_some(d)
 }
 
+/// The member a question names: "Use the [unique] dNN-- member whose basename ends X." or "Use the dNN-- X member".
+fn named_member(text: &str, day: &str) -> Option<String> {
+    let token = |s: &str| s.split_whitespace().next().map(|t| t.trim_end_matches(['.', ';', ',']).to_string()).filter(|t| !t.is_empty());
+    for lead in ["Use the unique ", "Use the "] {
+        let Some(rest) = text.split_once(&format!("{lead}{day}-- ")).map(|(_, r)| r) else { continue };
+        if let Some(r) = rest.strip_prefix("member whose basename ends ") {
+            return token(r);
+        }
+        let mut w = rest.split_whitespace();
+        if let (Some(t), Some(m)) = (w.next(), w.next()) {
+            if m.trim_end_matches([';', ',', '.']) == "member" {
+                return token(t);
+            }
+        }
+    }
+    None
+}
+
+/// `d21--sample-plugin.cmxs` matches `plugin.cmxs` (whole basename suffix) and `plugin` (extensionless stem suffix).
+fn member_matches(name: &str, m: &str) -> bool {
+    let stem = name.rsplit_once('.').map_or(name, |(a, _)| a);
+    name.ends_with(m) || stem.ends_with(m)
+}
+
 fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
     // Group members by day in central-directory order: `artifact_sha256_N` is the day's Nth member
     // (graded on d15: `-symbolized` precedes `-stripped` there), and the primary specimen is the
@@ -610,6 +634,14 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 if let Some(f) = rest.strip_prefix(tag).and_then(|f| f.strip_prefix('_')) {
                     return answer_spec(&format!("analysis_{f}"), s, &[], q);
                 }
+            }
+            // An untagged field whose text names another member (d21: `config_*` "Use the d21-- plugin.cmxs member;
+            // the loader has no scored HCFG config") is answered from that member.
+            if let Some(s) = named_member(&q.question, day).and_then(|m| {
+                let hits: Vec<&Spec> = std::iter::once(spec).chain(others).filter(|s| member_matches(&s.name, &m)).collect();
+                (hits.len() == 1).then(|| hits[0])
+            }) {
+                return answer_spec(field, s, &[], q);
             }
         }
         answer_spec(field, spec, side, q)
