@@ -28,4 +28,4 @@ The first pass above did not finish this lane. Make every mode of your lane CORR
 7. `touch {state}/done-{lane}`, then report in a few lines: what changed, graded findings, anything the coordinator
    must do (shared-file changes, one-shots that failed or were not fired, and why).
 
-Stay on your lane. If you are blocked for more than ~10 minutes on one question, report what you know instead.
+Stay on your lane: challenges starting `{prefix}` only, never web-exploitation or any other new lane. If you are blocked for more than ~10 minutes on one question, report what you know instead.

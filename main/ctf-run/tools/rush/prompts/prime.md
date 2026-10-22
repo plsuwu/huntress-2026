@@ -14,6 +14,11 @@ Then reply only "ready" and wait. When the day is released you will be told to r
 pass wrote for your lane (results, errors, oracle output). Do not contact the Game Master before that.
 
 Rules for the whole session:
+- **Your lane only.** Work only on challenges whose id starts with `{prefix}`. ctf-run knows five lanes (warmups,
+  metadata-forensics, script-analysis, binary-reverse-engineering, mobile-android). Never list, query, start, download
+  or write solvers for anything else, in particular any **web-exploitation** challenge or any lane new since Day 20.
+  This includes `op=list` browsing and `op=status` checks; if something outside your lane looks relevant, tell the
+  coordinator instead.
 - `CTF_NO_RANKED=hof` is set: ctf-run refuses only `--timed` (Hall of Fame runs on dual-pool routes). Never try to work
   around it - HoF campaigns, deploys, the jumpbox and merging belong to the coordinator. Solves come first: one-shot
   and timed-by-default TT/mastery routes are yours to fire (see your brief), but only once single-solve is CORRECT

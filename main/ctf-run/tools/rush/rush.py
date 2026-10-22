@@ -660,6 +660,7 @@ def brief(day, report):
             state=state_dir(day),
             fix=LANES[lane][2],
             src=LANES[lane][1],
+            prefix=LANES[lane][0],
         )
     )
     path = os.path.join(state_dir(day), f"brief-{lane}.md")
