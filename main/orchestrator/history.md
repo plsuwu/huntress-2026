@@ -115,3 +115,16 @@ here after every release night.
   20 runs, all CORRECT, **#1 on 6 of 10**. Binary TT and mastery: #3. Mobile TT and warmups TT: #2.
 - **Playbooks:** event-independent `playbooks/solver-runner.md` and `playbooks/orchestrator.md`, linked from this
   README.
+
+## 2026-10-23: Day 22 (rush started late, ~2 h after release)
+
+- **Start:** `rush.py all --day 22 --rehearse` at 00:57 AEST. Agents online at 00:59:42; first pass done at 01:00:43.
+- **New lanes:** web-exploitation d09/d10 listed in `op=list&day=22`; left alone.
+- **First pass:** warmups, script and mobile: all three modes CORRECT with no lane code change (warmups: base64 of zlib,
+  mastery row pinned to `T::Gz`; script: NSIS polyglot; mobile: base64 codec).
+  - metadata: new kind `d22-jar-001-jar-main-class`; new `formats/jar.rs` (manifest `Main-Class` + launcher check).
+  - binary: single-solve incorrect; PE i386 machine is graded as `i386` under the generic label syntax.
+- **Agents:** all five done by 01:04:53, no takeovers.
+- **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
+- **Merge:** `merge.sh 22` in two batches (warmups/script/mobile, then metadata/binary); 65 tests, replay 344/344 clean.
+  Not yet deployed; no campaign run.
