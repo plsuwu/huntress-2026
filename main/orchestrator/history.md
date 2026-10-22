@@ -95,3 +95,19 @@ here after every release night.
 - **Survey tool:** `hof_survey.py` had queried status for the web-exploitation routes (read-only; they returned 409).
   It now skips lanes outside the five known ones.
 
+
+## 2026-10-22: Day 21 (rush started late, after the HoF pass)
+
+- **Start:** `rush.py all --day 21 --rehearse` at 18:31, since the day had been released the night before. The stale
+  Day 20 tmux session was killed first. Lane prompts now forbid any challenge outside the agent's own lane prefix
+  (web-exploitation in particular).
+- **First pass** (18:34):
+  - mobile and script: all three modes CORRECT with no code change.
+  - warmups: base64 of gzip (`H4sI...`) blob.
+  - metadata: new `apk-package-name` family of kinds (AXML manifest, arsc refs, signer certs).
+  - binary: untagged config fields routed to the member the question names (OCaml loader plus `.cmxs` plugin).
+- **Agents:** binary and metadata were done by 18:40. The warmups agent was blocked by the permission classifier on its
+  untimed `-t` run, so the coordinator finished it with `rush.py takeover`. Takeover crashed on `result.json` being a
+  list of submit records; fixed in `2963edf`.
+- **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
+- **Merge and deploy:** `merge.sh 21`, 64 tests, replay 329/329 clean. Deployed `a54f4932` through the ssh socket.
