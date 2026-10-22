@@ -1,0 +1,122 @@
+# Orchestration config: the one place event-, host- and lane-specific values live.
+# Copy to `config.toml` at the repo root (or set ORCH_CONFIG=<path>). Every tool under tools/ reads it via
+# tools/orchcfg.py; shell scripts query it with `python3 tools/orchcfg.py get <dotted.key>`.
+# String values may use {day}, {day:02d}, {lane}, {prefix}, {mode}, {slug}, {repo}, {solver} placeholders where noted.
+
+[event]
+name = "example-ctf"
+api = "https://ctf.example.com"           # Game Master base URL (https; the token is never sent over plain http)
+token_env = "GM_TOKEN"                     # bearer token env var (also read from <repo>/.env as NAME=value)
+url_env = "GM_URL"                         # env var the solver reads for the API base
+team = "our-team"                          # team_name on the leaderboard
+tz_offset_hours = 10                       # timezone of the release schedule (fixed offset, no DST handling)
+release = "23:00"                          # local release time; day N = that date's day of the month
+first_day = 1
+last_day = 31
+
+[api]
+# Paths/queries relative to event.api. {id} is URL-quoted by the tools.
+status = "/?op=status&challenge={id}"
+list_day = "/?op=list&day={day}&all=true"
+search = "/?op=list&day={day}&search={q}"
+submit = "/"                               # POST {"op":"submit","challenge":id,"answers":{...}}
+# Leaderboard (optional; leave scoreboard empty to disable survey/campaign rank checks).
+scoreboard = "/api/speed-scoreboard?mode={mode}&view=rankings&limit=200&offset=0&sort=elapsed_ms&direction=asc&challenge={base}"
+scoreboard_rows = "rows"                   # list key in the scoreboard response
+scoreboard_team = "team_name"
+scoreboard_rank = "rank"
+scoreboard_time = "elapsed_ms"
+# Status/list error bodies that mean "not released yet" (release detection).
+unreleased_error = "challenge_unavailable"
+
+[modes]
+single = "single_solve"                    # the untimed learning mode (route id = base id)
+# Timed modes, in run order: route id = "<base>/<name>", solver flag selects the mode.
+timed = [
+  { name = "time_trial", flag = "-t" },
+  { name = "mastery",    flag = "-m" },
+]
+
+[solver]
+dir = "solver"                             # solver checkout, relative to the repo root
+bin = "target/release/solver"              # relative to solver.dir
+build = ["cargo", "build", "--release", "--features", "tls"]
+test = ["cargo", "test", "--release"]
+route_cache = "~/.cache/solver/routes.json"   # {"challenges":[...op=list rows...]}
+runs_dir = "runs-d{day:02d}"               # per-day run output, relative to solver.dir
+fixtures_dir = "fixtures"                  # relative to solver.dir; one subdir per lane (lanes.fixtures)
+# Where graded artifacts are archived for fixtures, relative to the repo root.
+artifacts_dir = "notes/day-{day:02d}-{lane}/{slug}/artifacts/{mode}"
+notes_file = "notes/day-{day:02d}-{lane}/{slug}/NOTES.md"
+no_ranked_env = "NO_RANKED"                # the solver refuses ranked starts when this is set...
+no_ranked_value = "hof"                    # ...to this value (agents and automation always run with it)
+
+[solver.flags]                             # how the solver spells its options
+out = "-o"
+url = "-u"
+retry = "--retry"
+timed = "--timed"                          # ranked attempt on a dual-pool route
+practice = "--practice"
+one_shot_ok = "--one-shot-ok"
+hedge = "--hedge"
+no_preflight = "--no-preflight"
+
+[solver.result]                            # parsing the solver's stderr/stdout
+submit_re = 'submit +(CORRECT|incorrect|accepted|REFUSED|already_solved)'
+saved_re = '\] saved +(\S+)'
+error_contains = ["] error "]               # stderr lines containing any of these are errors...
+error_prefixes = ["error"]                  # ...and so are lines starting with any of these
+
+[agents]
+command = "claude"
+model = "claude-opus-5-5"
+effort = "high"
+permission_mode = "auto"
+tmux_socket = "ctf"                        # tmux -L <socket>
+session = "rush"
+worktree_root = "../wt"                    # relative to the repo root; one worktree per lane
+branch = "day{day:02d}/{lane}"
+stall_grace_s = 180
+monitor_minutes = 90
+# Extra dirs agents may read (relative to the repo root). Never the repo root itself if it holds run-host keys.
+add_dirs = ["{solver}", "notes"]
+# Shared, git-ignored paths symlinked from the main checkout into each worktree.
+shared_links = ["{solver}/fixtures", ".env"]
+
+[run_host]                                 # where ranked campaigns run (optional)
+host = "user@10.0.0.1"
+key = "run-host-id_ed25519"                # relative to the repo root
+dir = "~/solver"                           # solver install dir on the host
+control_path = "/tmp/orch-ssh"             # ssh multiplexing socket (keep it short: 108-byte limit)
+static_build = ["nix", "build", ".#solver"]   # produces result/bin/<bin name>; run from the repo root
+static_result = "result/bin/solver"
+
+[campaign]
+gap_s = 8                                  # pause between ranked runs
+patience = 3                               # stop a route after this many runs without a better time
+default_budget = 3
+small_pool_budget = 2                      # for ranked pools <= small_pool
+small_pool = 16
+
+# ---------------------------------------------------------------- lane registry
+# A lane = a challenge-id prefix + a solver module + a fixtures dir. Tools iterate this list and nothing else:
+# challenges whose ids match no prefix here are never listed, queried, started or solved.
+
+[[lanes]]
+name = "alpha"                             # short name: worktree, tmux window, marker files
+prefix = "alpha-day-"                      # challenge-id prefix; day routes are "<prefix><NN>[-slug][/mode]"
+source = "src/lanes/alpha.rs"              # lane module (relative to solver.dir), named in the agent prompt
+fixtures = "alpha"                         # fixtures/<fixtures>/
+hedge = true                               # small downloads: duplicate them on ranked runs
+release_probe = true                       # its day route id "<prefix><NN>" is predictable: use it to detect release
+slug = "title"                             # fixture slug from the route "title" ("id" = from the id's -<slug> tail)
+# sequential = ["time_trial", "mastery"]   # modes that must run one after another (server prerequisite)
+
+[[lanes]]
+name = "beta"
+prefix = "beta-day-"
+source = "src/lanes/beta.rs"
+fixtures = "beta"
+hedge = false
+slug = "id"
+sequential = ["time_trial", "mastery"]

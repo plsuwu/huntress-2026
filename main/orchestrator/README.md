@@ -24,5 +24,5 @@ Related docs elsewhere in the repo:
 
 Event-independent versions of this knowledge (no lane, day or host names), for starting over elsewhere:
 
-- `../playbooks/solver-runner.md`: building, extending, benchmarking and deploying a compiled solver binary.
-- `../playbooks/orchestrator.md`: the coordinator's job, covering the lane registry, release flow, agents, campaigns and monitoring.
+- `../template/playbooks/solver-runner.md`: building, extending, benchmarking and deploying a compiled solver binary.
+- `../template/playbooks/orchestrator.md`: the coordinator's job, covering the lane registry, release flow, agents, campaigns and monitoring.
