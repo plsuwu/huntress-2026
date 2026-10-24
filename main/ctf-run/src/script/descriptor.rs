@@ -133,21 +133,41 @@ pub fn value_answer(key: &str, plan: &Plan, tables: &[&[(&str, &[&str])]], self_
     None
 }
 
-/// Polyglot/host literals: `.`-fragmented, then hex / base64 layers (up to 4) until `v=`.
+/// Polyglot/host literals: layers of hex / base64 / base32 / reversal, `.`-fragmented at any layer
+/// (Day 23 `LYR-<encode order>` recipes, e.g. `hex_rev_hex`, `b64_b32_frag`), until `v=`. The layer
+/// order is searched (depth 6), not read from the recipe, so a bare literal decodes too.
 pub fn decode_literal(lit: &str) -> Result<BTreeMap<String, String>, String> {
-    let mut raw: Vec<u8> = lit.replace('.', "").into_bytes();
-    for _ in 0..4 {
+    fn go(raw: &[u8], depth: u8, after_rev: bool) -> Option<String> {
         if raw.starts_with(b"v=") {
-            return Ok(fields(&String::from_utf8_lossy(&raw)));
+            return std::str::from_utf8(raw).ok().map(str::to_string);
         }
-        let s = String::from_utf8_lossy(&raw).into_owned();
-        raw = if !s.is_empty() && s.len() % 2 == 0 && s.bytes().all(|b| b.is_ascii_hexdigit()) {
-            crate::codec::hex(&s).ok_or("bad hex")?
-        } else {
-            crate::codec::base64(&s).ok_or_else(|| format!("descriptor did not decode: {:?}", lit.chars().take(40).collect::<String>()))?
-        };
+        let raw: Vec<u8> = raw.iter().copied().filter(|&b| b != b'.').collect();
+        if raw.starts_with(b"v=") {
+            return std::str::from_utf8(&raw).ok().map(str::to_string);
+        }
+        if depth == 0 || raw.is_empty() || !raw.is_ascii() {
+            return None;
+        }
+        let s = std::str::from_utf8(&raw).ok()?;
+        let hexy = s.len() % 2 == 0 && s.bytes().all(|b| b.is_ascii_hexdigit());
+        let mut cands: Vec<Vec<u8>> = Vec::new();
+        if hexy {
+            cands.extend(crate::codec::hex(s));
+        }
+        cands.extend(crate::codec::base32(s));
+        cands.extend(crate::codec::base64(s));
+        for c in cands {
+            if let Some(t) = go(&c, depth - 1, false) {
+                return Some(t);
+            }
+        }
+        if !after_rev {
+            let r: Vec<u8> = raw.iter().rev().copied().collect();
+            return go(&r, depth - 1, true);
+        }
+        None
     }
-    Err(format!("descriptor did not decode: {:?}", lit.chars().take(40).collect::<String>()))
+    go(lit.as_bytes(), 6, false).map(|t| fields(&t)).ok_or_else(|| format!("descriptor did not decode: {:?}", lit.chars().take(40).collect::<String>()))
 }
 
 #[cfg(test)]
