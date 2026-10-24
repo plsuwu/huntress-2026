@@ -128,3 +128,21 @@ here after every release night.
 - **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
 - **Merge:** `merge.sh 22` in two batches (warmups/script/mobile, then metadata/binary); 65 tests, replay 344/344 clean.
   Not yet deployed; no campaign run.
+
+## 2026-10-24: Day 23 (rush started late, ~18.5 h after release)
+
+- **Start:** committed the Day 22 run state (`0fed2fe`), then `rush.py all --day 23 --rehearse` at 17:24 AEST. Agents
+  online at 17:26:49; first pass done at 17:28:12.
+- **New lanes:** web-exploitation d11/d12/d13 listed in `op=list&day=23`; left alone.
+- **First pass:**
+  - binary: all three modes CORRECT with no code change.
+  - warmups: single-solve refused; new Ascii85 (`<~...~>`) layer, plus per-row number bases in mastery.
+  - metadata: single-solve incorrect; new `d23-sqlite` kind (SQLite header fields); zip CD names are graded sorted.
+  - script: TT refused; layered `LYR` literals in PowerShell, plus composite JScript/PowerShell TT/mastery kinds.
+  - mobile: TT refused; new v2 `analysis` codec, which needed DEX plus JNI x86-64 interpretation.
+- **Agents:** all five done by 17:49:02, no takeovers.
+- **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
+- **Merge:** `merge.sh 23` in four batches as lanes finished; 71 tests, replay 365/365 clean. Not yet deployed; no
+  campaign run.
+- **Coordinator gotcha:** a Monitor script polling `rush/done-*` died at once under zsh (`no matches found`). Wrap
+  marker polls in `bash -c` with `shopt -s nullglob`.

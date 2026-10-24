@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-23-hook-line-and-signal",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "50c73dae-ebf9-484f-b83a-402a57bff2ff",
+  "started_at": "2026-10-24T07:26:55.203Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1765.6456039999998,
+  "start_ttfb_ms": 1764.9628590000002,
+  "clock": {
+    "start_sent": "2026-10-24T07:26:54.344Z",
+    "start_received": "2026-10-24T07:26:56.109Z",
+    "start_date_header": "2026-10-24T07:26:56.000Z",
+    "last_delivery": "2026-10-24T07:26:57.629Z",
+    "submit_sent": "2026-10-24T07:26:57.629Z",
+    "submit_received": "2026-10-24T07:27:00.121Z",
+    "submit_date_header": "2026-10-24T07:27:00.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "hook_line_and_signal.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1271.037401,
+      "total_ms": 1519.3326599999998,
+      "done_at_ms": 3285.3476229999997,
+      "analyse_ms": 0.017124
+    }
+  ]
+}

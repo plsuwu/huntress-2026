@@ -1,0 +1,92 @@
+{
+  "challenge": "binary-reverse-engineering-day-23-anti-analysis-recognition/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a1a5a1a1-b68f-483b-b21a-66c243aeaf19",
+  "started_at": "2026-10-24T07:27:22.235Z",
+  "deadline": null,
+  "shape": "artifacts[7]+downloads[7]",
+  "start_ms": 2950.920515,
+  "start_ttfb_ms": 2932.1115139999997,
+  "clock": {
+    "start_sent": "2026-10-24T07:27:19.828Z",
+    "start_received": "2026-10-24T07:27:22.779Z",
+    "start_date_header": "2026-10-24T07:27:22.000Z",
+    "last_delivery": "2026-10-24T07:28:10.325Z",
+    "submit_sent": "2026-10-24T07:28:10.327Z",
+    "submit_received": "2026-10-24T07:28:12.349Z",
+    "submit_date_header": "2026-10-24T07:28:12.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 35676885,
+      "wire": 35676885,
+      "ttfb_ms": 1498.1996419999998,
+      "total_ms": 40270.372908,
+      "done_at_ms": 43221.40851,
+      "analyse_ms": 97.245856
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35676965,
+      "wire": 35676965,
+      "ttfb_ms": 1621.44991,
+      "total_ms": 44205.538023,
+      "done_at_ms": 47156.549874,
+      "analyse_ms": 105.293717
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 35754895,
+      "wire": 35754895,
+      "ttfb_ms": 1618.3524120000002,
+      "total_ms": 44895.675853999994,
+      "done_at_ms": 47846.729195,
+      "analyse_ms": 95.98478200000001
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 35783871,
+      "wire": 35783871,
+      "ttfb_ms": 1992.4371170000002,
+      "total_ms": 46190.686344,
+      "done_at_ms": 49141.698563,
+      "analyse_ms": 101.31196100000001
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 35650268,
+      "wire": 35650268,
+      "ttfb_ms": 2100.125646,
+      "total_ms": 46335.39576,
+      "done_at_ms": 49286.44262,
+      "analyse_ms": 93.80267
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 35810283,
+      "wire": 35810283,
+      "ttfb_ms": 1618.092739,
+      "total_ms": 47292.861996,
+      "done_at_ms": 50243.884526,
+      "analyse_ms": 97.943162
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 35650808,
+      "wire": 35650808,
+      "ttfb_ms": 2041.888121,
+      "total_ms": 47453.275443000006,
+      "done_at_ms": 50404.316826,
+      "analyse_ms": 92.727485
+    }
+  ]
+}

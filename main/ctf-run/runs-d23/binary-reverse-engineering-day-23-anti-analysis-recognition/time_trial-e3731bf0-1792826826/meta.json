@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-23-anti-analysis-recognition/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "e3731bf0-cf71-4b07-9370-70b267763876",
+  "started_at": "2026-10-24T07:27:08.927Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2387.343456,
+  "start_ttfb_ms": 2384.988187,
+  "clock": {
+    "start_sent": "2026-10-24T07:27:06.776Z",
+    "start_received": "2026-10-24T07:27:09.163Z",
+    "start_date_header": "2026-10-24T07:27:09.000Z",
+    "last_delivery": "2026-10-24T07:27:16.466Z",
+    "submit_sent": "2026-10-24T07:27:16.466Z",
+    "submit_received": "2026-10-24T07:27:18.059Z",
+    "submit_date_header": "2026-10-24T07:27:18.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35781007,
+      "wire": 35781007,
+      "ttfb_ms": 1514.4306379999998,
+      "total_ms": 7201.111045000001,
+      "done_at_ms": 9588.867757,
+      "analyse_ms": 101.194125
+    }
+  ]
+}

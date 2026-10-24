@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-23-game-resource-loader",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7a0dedeb-e7b9-4304-8193-3a8a5eb04898",
+  "started_at": "2026-10-24T07:26:55.428Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1641.685246,
+  "start_ttfb_ms": 1625.3448449999999,
+  "clock": {
+    "start_sent": "2026-10-24T07:26:54.560Z",
+    "start_received": "2026-10-24T07:26:56.202Z",
+    "start_date_header": "2026-10-24T07:26:56.000Z",
+    "last_delivery": "2026-10-24T07:26:57.788Z",
+    "submit_sent": "2026-10-24T07:26:57.797Z",
+    "submit_received": "2026-10-24T07:27:00.334Z",
+    "submit_date_header": "2026-10-24T07:27:00.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 139343,
+      "wire": 139343,
+      "ttfb_ms": 1296.1510569999998,
+      "total_ms": 1546.597072,
+      "done_at_ms": 3188.621193,
+      "analyse_ms": 39.358852
+    }
+  ]
+}
