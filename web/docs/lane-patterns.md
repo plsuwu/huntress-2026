@@ -35,6 +35,31 @@ for this review.
 - Gotchas: ...
 - Prediction for the next day: ... -->
 
-## Day N outcome (YYYY-MM-DD)
+## Day 24 outcome (2026-10-24)
 
-<!-- | lane | the day's twist | what the solver needed | -->
+- Rush-shaped `web_rush.py all --day 24 --workers 3 --model claude-sonnet-5`
+  (one-off model override, per user request — pipeline default is
+  `claude-opus-5-5`). Day 24 was already past its 23:00 AEST release when the
+  driver started, so release detection fired on the first poll.
+- Only 2 web-exploitation families released
+  (`day-14-the-api-has-opinions`, `day-15-fetch-quest`): 2 of 3 pre-warmed
+  slots got a challenge, slot 3 stood down automatically (fewer challenges
+  than slots, as designed). Both finished single_solve, time_trial and
+  mastery CORRECT in one uninterrupted session each, no takeovers.
+- Two new bug classes this family introduced (now in
+  `recovery_lib.py`/`rec_ssrf`, `rec_field_action_bypass` — see
+  `web-worker-lessons.md`): SSRF via a fetch proxy reaching an internal-only
+  route over loopback, and a field/action authorization-check grid that
+  leaks a protected field under one action (`export`) but not another
+  (`view`). Both mastery sets were cumulative as expected (backup exposure +
+  IDOR in both, plus day-19's SQLi for `fetch-quest`'s mastery).
+- The driver's background stall-monitor exited within ~25s of dispatch for
+  an unexplained reason (dispatch itself, including the stand-down of slot
+  3, completed correctly first) — no stdout was captured since the tmux pane
+  closed with the process. Not reproduced or root-caused; worth capturing to
+  a log file (not just the tmux pane) next time so a recurrence is
+  diagnosable instead of just worked around by manual `status` polling.
+- **Prediction:** with only 2 of the day's families seen (curriculum days
+  14-15), expect the next web release to continue sequentially from
+  curriculum day 16; no new structural twist observed in list/status
+  metadata beyond the two bug classes above.

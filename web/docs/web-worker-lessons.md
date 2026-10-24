@@ -1,7 +1,7 @@
 # Web worker lessons from restored solutions
 
-These are historical, graded observations from the release Day 19/20/21/22 notes
-and source in `solver_py_scripts/`. They are reference methods, never current
+These are historical, graded observations from the release Day 19/20/21/22/24
+notes and source in `solver_py_scripts/`. They are reference methods, never current
 proofs, target assignments or permission grants. Read this before investigating
 a new target. Do not infer that a new challenge uses an earlier bug.
 
@@ -17,7 +17,13 @@ reflected-XSS-callback, stored-XSS or session-fixation bug. Day 22 mastery
 mixed backup exposure **and** IDOR (a day-19/day-21 class) with that family's
 own CSRF or upload-bypass bug — mastery pulls from the whole curriculum
 history, not just the current release day. A worker owning one challenge
-family therefore needs earlier families' methods for its mastery.
+family therefore needs earlier families' methods for its mastery. Day 24
+mastery (two families, three/four targets each) stayed consistent with this:
+`the-api-has-opinions` mixed backup exposure and IDOR with that family's own
+field/action authorization bypass; `fetch-quest` mixed backup exposure, IDOR
+**and** day-19's group-closing SQLi (the exact `') OR ('1'='1` payload, reused
+verbatim — comment-based and plain `' OR '1'='1` payloads did not work against
+that app) with that family's own SSRF.
 
 Join `questions[].artifact` to `targets[].id` (for example `Target 2`) to find
 the correct URL. Do not rely on array order, curriculum number or title. Preserve
@@ -50,6 +56,8 @@ classes must remain unknown until supported by the page, behavior and question.
 | CSRF (state-changing GET) | `/api/clues` gives feature_route; the real state change is a plain GET with a cosmetic, never-checked csrf_token. Forging that GET with cross-site Origin/Referer/Sec-Fetch-Site headers while riding the already-established session flips the server's own cross-site-change flag and releases the proof. | `recovery_lib.py`, `rec_csrf`; `day-22-web-exploitation/NOTES.md` |
 | Upload content-type/extension bypass | `/api/clues` gives feature_route (upload) and render_route (preview). The stated extension/content-type policy is never enforced server-side; uploading a filename with a different extension (e.g. `.html`) routes to a preview path that evaluates a template placeholder, disclosing the proof. | `recovery_lib.py`, `rec_upload_bypass`; `day-22-web-exploitation/NOTES.md` |
 | Second-order SQLi (blind, no oracle) | `/api/clues` gives feature_route (POST; accepts any JSON object body, always `201`) and secondary_route (GET; a static-looking `{"rows":[...]}` body). The POST field that matters is not a content word (`question`/`note`/`text`, ...) but an SQL-clause-themed name (here `filter`); the payload must actually break out of quoting (`' OR 1=1-- `), not just submit an inert placeholder string like `"1=1"`. There is no error, reflection or timing signal distinguishing a correct field+payload pair from an incorrect one — only the GET route's row count changes once the right combination is stored and re-queried. | `day-12-ask-again-later/single_solve/NOTES.md` |
+| SSRF via a fetch proxy | `/api/clues` gives feature_route (fetches an absolute `url` query param server-side) and secondary_route (an "internal_only" route, gated by source IP, that refuses direct external requests). Pointing feature_route at `http://127.0.0.1:<port><secondary_route>` makes the fetch originate from the server's own loopback, satisfying the internal-only check. Only the internal port is unknown; a short port list (8080 confirmed every time so far) finds it fast. | `recovery_lib.py`, `rec_ssrf`; `day-24-web-exploitation/fetch-quest/NOTES.md` |
+| Field/action authorization bypass | `/api/clues` gives feature_route + inventory_route + protected_reference (a generic "execute" endpoint). `inventory_route` discloses the exact fields/actions/query-parameter-name grid — no guessing needed. Authorization is checked per `(field, action)` pair inconsistently: one action (seen: `export`) is not gated the same way as another (seen: `view`) for the restricted field, and leaks it. Brute-force the small disclosed grid, not a wordlist. | `recovery_lib.py`, `rec_field_action_bypass`; `day-24-web-exploitation/the-api-has-opinions/NOTES.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -96,17 +104,28 @@ every plausible value on the other axis, not just independently.
   Later live metadata in this checkout distinguishes release `day` from
   `curriculum_day`. Discovery belongs to the coordinator; those old “list all”
   suggestions do not authorize workers to query GM or other lanes.
+- GM `op=start`/`op=submit` calls intermittently hit a bare socket read
+  timeout (`TimeoutError` deep in `urllib`/`ssl`) with no HTTP response at
+  all — retry `wk.py begin <mode>`/`submit`; it is not state-corrupting
+  (`begin` is idempotent and reconnects to the same attempt). Day 24.
+- Once a mode's attempt is submitted CORRECT, its live target is torn down
+  fast: re-requesting it afterward returns HTTP 410 `{"state":"completed"}`.
+  Capture evidence *before* submitting, not after. Day 24.
 
 ## Reuse source, not the old execution workflow
 
 The most complete reference is now `solver_py_scripts/recovery_lib.py`: one
 shared, stdlib-only module folding every class above (`rec_backup`, `rec_idor`,
 `rec_session_fixation`, `rec_reflect_callback`, `rec_stored_xss_bot`, `rec_csrf`,
-`rec_upload_bypass`) plus the `Target` HTTP client and `classify_and_recover`
-dispatcher behind it, shared by `day-21-web-exploitation/solve.py` and
-`day-22-web-exploitation/solve.py`. It is verified against local HTTP fixtures
-for every class it recovers (not just read for plausibility), but a fixture is
-not a live target: still read it before trusting it against your assignment.
+`rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`) plus the `Target`
+HTTP client and `classify_and_recover` dispatcher behind it, shared by
+`day-21-web-exploitation/solve.py` and `day-22-web-exploitation/solve.py` (the
+day-24 family solvers ported their own two classes directly rather than
+importing this module, per the rule below — `recovery_lib.py` itself folded
+them in afterward, from the graded evidence). It is verified against local
+HTTP fixtures for every class it recovers (not just read for plausibility),
+but a fixture is not a live target: still read it before trusting it against
+your assignment.
 Earlier still: `day-20-web-exploitation/common.py` (`sniff`, `rec_sqli`, `rec_lfi`,
 `rec_admin`) and `day-19-web-exploitation/solve_lane.py` (the earlier
 three-family dispatcher). Every `NOTES.md` (including the new day-21/day-22

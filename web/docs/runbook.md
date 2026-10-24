@@ -107,6 +107,12 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
 - Evidence lives in `workers/web/<base-id>/<mode>/` (`start.json`, `targets.json`,
   `provisioning.json`, recon dumps, `answers.json`, `results.json`, `NOTES.md`,
   `solve.py`). All of `workers/web/` is git-ignored; keep it for future reference.
+- **Shared scratch tmpfs can fill under concurrent slots.** Day 24 saw every Bash
+  call (even `echo`) fail with ENOSPC on one worker's scratch tmpfs partway
+  through a run with multiple slots active, then recover on its own after a
+  pause with no code change. Non-Bash tools (Read/Write to project paths) kept
+  working throughout. This is sandbox/infra contention, not a challenge or
+  solver bug — if it recurs, wait and retry rather than debugging the solve.py.
 
 ## 4. After the night: merge the notes
 

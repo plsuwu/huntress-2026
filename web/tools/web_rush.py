@@ -7,7 +7,8 @@
   web_rush.py watch   [--day N] [--rehearse] [--no-agents]  wait for the release, first pass per challenge, dispatch briefs
   web_rush.py status  [--day N]                             first-pass results, challenge done-markers, stalled agents
   web_rush.py takeover --challenges a[,b] [--day N]         coordinator: fresh worker window + brief for a stalled challenge
-Options: --workers N (pre-warmed slots, default 3), --no-agents (watch: first pass + briefs only, no tmux dispatch).
+Options: --workers N (pre-warmed slots, default 3), --no-agents (watch: first pass + briefs only, no tmux dispatch),
+         --model NAME (worker Claude model, default claude-opus-5-5).
 
 Release: 23:00 Australia/Brisbane; Day N = that date's day of the month. Work items are the day's web-exploitation
 challenges, discovered at release (op=list&day=N&lane=web-exploitation, grouped into base challenges). Pre-warmed slot i
@@ -53,6 +54,7 @@ SESSION = "web"
 LANE = "web-exploitation"
 LANE_PREFIX = "web-exploitation-"
 WORKER_SLOTS = 3
+WORKER_MODEL = "claude-opus-5-5"
 NO_AGENTS = False
 STALL_GRACE_S = 180  # an agent waiting on a background recovery also ends its turn with no tool activity
 
@@ -351,7 +353,7 @@ def launcher_script(day, name, prompt_file, settings_file):
         # --add-dir and --allowedTools are variadic: -n must follow them so the prompt stays
         # positional. The wk.py rule covers the worker's only GM path so the auto-mode
         # classifier cannot stall a submit (the Day 16 lesson).
-        f"exec claude --model claude-opus-5-5 --effort high --permission-mode auto {adddir} "
+        f"exec claude --model {WORKER_MODEL} --effort high --permission-mode auto {adddir} "
         f"--allowedTools {allow} --settings {shlex.quote(settings_file)} "
         f'-n "web-d{day:02d}-{name}" "$(cat {shlex.quote(prompt_file)})"\n'
     )
@@ -916,8 +918,10 @@ def main():
     rehearse = "--rehearse" in a
     n_workers = int(a[a.index("--workers") + 1]) if "--workers" in a else WORKER_SLOTS
     challenges = a[a.index("--challenges") + 1].split(",") if "--challenges" in a else None
-    global NO_AGENTS
+    global NO_AGENTS, WORKER_MODEL
     NO_AGENTS = "--no-agents" in a
+    if "--model" in a:
+        WORKER_MODEL = a[a.index("--model") + 1]
     if not (1 <= day <= 31):
         sys.exit(f"day {day} outside the event")
     log(f"web_rush {cmd}: day {day}{' (rehearsal)' if rehearse else ''}")

