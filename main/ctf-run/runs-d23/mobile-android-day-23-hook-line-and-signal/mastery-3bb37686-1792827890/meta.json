@@ -1,0 +1,92 @@
+{
+  "challenge": "mobile-android-day-23-hook-line-and-signal/mastery",
+  "op": "retry",
+  "run_for_time": false,
+  "attempt_id": "3bb37686-ef28-4df9-8ceb-35b8f45fdfb4",
+  "started_at": "2026-10-24T07:44:54.184Z",
+  "deadline": null,
+  "shape": "artifacts[7]+downloads[7]",
+  "start_ms": 3673.350657,
+  "start_ttfb_ms": 3673.069396,
+  "clock": {
+    "start_sent": "2026-10-24T07:44:50.891Z",
+    "start_received": "2026-10-24T07:44:54.564Z",
+    "start_date_header": "2026-10-24T07:44:54.000Z",
+    "last_delivery": "2026-10-24T07:44:56.664Z",
+    "submit_sent": "2026-10-24T07:44:56.664Z",
+    "submit_received": "2026-10-24T07:44:58.493Z",
+    "submit_date_header": "2026-10-24T07:44:58.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 7,
+      "name": "hook_line_and_signal_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1436.468716,
+      "total_ms": 1677.962204,
+      "done_at_ms": 5351.6726690000005,
+      "analyse_ms": 5.285444
+    },
+    {
+      "delivery": 4,
+      "name": "hook_line_and_signal_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1456.714933,
+      "total_ms": 1697.310065,
+      "done_at_ms": 5370.973628,
+      "analyse_ms": 0.329459
+    },
+    {
+      "delivery": 6,
+      "name": "hook_line_and_signal_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1457.917774,
+      "total_ms": 1697.282336,
+      "done_at_ms": 5370.9901039999995,
+      "analyse_ms": 0.757476
+    },
+    {
+      "delivery": 5,
+      "name": "hook_line_and_signal_mastery_05.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1461.1877650000001,
+      "total_ms": 1708.061365,
+      "done_at_ms": 5381.73182,
+      "analyse_ms": 0.394077
+    },
+    {
+      "delivery": 3,
+      "name": "hook_line_and_signal_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1490.453146,
+      "total_ms": 1747.942815,
+      "done_at_ms": 5421.607344,
+      "analyse_ms": 5.248710999999999
+    },
+    {
+      "delivery": 1,
+      "name": "hook_line_and_signal_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1530.696533,
+      "total_ms": 1771.7234760000001,
+      "done_at_ms": 5445.330822,
+      "analyse_ms": 1.892878
+    },
+    {
+      "delivery": 2,
+      "name": "hook_line_and_signal_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1848.627497,
+      "total_ms": 2096.59881,
+      "done_at_ms": 5770.217223,
+      "analyse_ms": 3.209409
+    }
+  ]
+}
