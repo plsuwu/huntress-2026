@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-24-jsp-webshell-source/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "92b0f8c0-86bd-4326-9916-1f1eee93a788",
+  "started_at": "2026-10-24T13:40:14.561Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3241.605305,
+  "start_ttfb_ms": 3210.529211,
+  "clock": {
+    "start_sent": "2026-10-24T13:40:12.369Z",
+    "start_received": "2026-10-24T13:40:15.611Z",
+    "start_date_header": "2026-10-24T13:40:15.000Z",
+    "last_delivery": "2026-10-24T13:40:17.893Z",
+    "submit_sent": "2026-10-24T13:40:18.054Z",
+    "submit_received": "2026-10-24T13:40:22.036Z",
+    "submit_date_header": "2026-10-24T13:40:21.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-24-jsp-webshell-source-mastery.zip",
+      "bytes": 1276978,
+      "wire": 1276978,
+      "ttfb_ms": 1319.068793,
+      "total_ms": 2140.574095,
+      "done_at_ms": 5382.320203,
+      "analyse_ms": 142.107895
+    }
+  ]
+}

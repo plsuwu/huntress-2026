@@ -11,6 +11,10 @@ relative to the repo root unless they start with `ctf-run/`.
   the jumpbox has been powered off: it gets shut down automatically after long uptime. Ask the user to bring it up.
   The lanes don't need it, but ranked runs do.
 
+- Check free disk: `df -h /`. Agent scratchpads (`/tmp/nix-shell.*`), five worktree `target/` dirs and run dirs all
+  live on the root disk. On Day 24 it filled up mid-rush (ENOSPC), which crashed the driver, broke merges and blinded
+  every shell. Want 20 GB+ free before starting.
+
 ## 1. Start rush (manually: the systemd timer was removed on 2026-10-20)
 
 ```sh

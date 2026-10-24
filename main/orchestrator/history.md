@@ -146,3 +146,23 @@ here after every release night.
   campaign run.
 - **Coordinator gotcha:** a Monitor script polling `rush/done-*` died at once under zsh (`no matches found`). Wrap
   marker polls in `bash -c` with `shopt -s nullglob`.
+
+## 2026-10-24: Day 24 (rush started 40 min after release)
+
+- **Start:** the first `rush.py all --day 24 --rehearse` (23:37) found the Day 23 `rush` session still alive and kept
+  its agents ("not relaunching"): `--rehearse` skips the kill. Stopped the driver, killed the session and the five
+  old `claude` pids, then relaunched at 23:39:48. Agents online at 23:39:51; first pass done at 23:41:27.
+- **New lanes:** web-exploitation d14/d15 listed in `op=list&day=24`; left alone.
+- **First pass:**
+  - script, binary and mobile: all three modes CORRECT with no code change.
+  - warmups: single-solve refused; new run-length `count:char` codec.
+  - metadata: single-solve refused; new `d24-evtx-001-evtx-record-count` kind (`formats/evtx.rs`, walked records).
+- **Disk full (~23:43):** the metadata agent unpacked the TT/mastery evidence zips into its scratchpad under
+  `/tmp/nix-shell.*`, on the root disk, which already had only a few GB free. Root hit ENOSPC. That broke the
+  warmups merge (`.git/ORIG_HEAD.lock`), crashed the rush driver, stalled metadata (`stalled-metadata.md`), and left
+  no Bash output in the coordinator or agent sessions. The user cleared space; the root disk was still only ~2.4 GB free afterwards.
+- **Recovery:** metadata had all three modes CORRECT but nothing committed. The coordinator ran `fixtures_from_runs.py`,
+  replayed 64/64, wrote `NOTES.md` and committed it on `day24/metadata` (`14f0fcf`).
+- **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
+- **Merge:** `merge.sh 24` in four batches (mobile, script, binary, then warmups+metadata); 74 tests, replay 380/380
+  clean. Not yet deployed; no campaign run. Rush tmux server and driver killed afterwards.

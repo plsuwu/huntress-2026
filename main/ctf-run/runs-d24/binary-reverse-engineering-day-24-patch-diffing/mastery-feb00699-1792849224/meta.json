@@ -1,0 +1,102 @@
+{
+  "challenge": "binary-reverse-engineering-day-24-patch-diffing/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "feb00699-eb08-47a4-a636-c746b2a33321",
+  "started_at": "2026-10-24T13:40:26.510Z",
+  "deadline": null,
+  "shape": "artifacts[8]+downloads[8]",
+  "start_ms": 2633.382817,
+  "start_ttfb_ms": 2611.90266,
+  "clock": {
+    "start_sent": "2026-10-24T13:40:24.203Z",
+    "start_received": "2026-10-24T13:40:26.837Z",
+    "start_date_header": "2026-10-24T13:40:26.000Z",
+    "last_delivery": "2026-10-24T13:41:24.578Z",
+    "submit_sent": "2026-10-24T13:41:24.580Z",
+    "submit_received": "2026-10-24T13:41:27.400Z",
+    "submit_date_header": "2026-10-24T13:41:27.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 35714971,
+      "wire": 35714971,
+      "ttfb_ms": 1930.3640799999998,
+      "total_ms": 51338.937635999995,
+      "done_at_ms": 53972.765871999996,
+      "analyse_ms": 140.250946
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 35685167,
+      "wire": 35685167,
+      "ttfb_ms": 1882.946157,
+      "total_ms": 51763.754630999996,
+      "done_at_ms": 54397.638364000006,
+      "analyse_ms": 129.38280999999998
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35714746,
+      "wire": 35714746,
+      "ttfb_ms": 1457.8181049999998,
+      "total_ms": 52868.69834,
+      "done_at_ms": 55502.366654,
+      "analyse_ms": 120.02607
+    },
+    {
+      "delivery": 8,
+      "name": "evidence.zip",
+      "bytes": 35714081,
+      "wire": 35714081,
+      "ttfb_ms": 1466.941215,
+      "total_ms": 55311.043586,
+      "done_at_ms": 57944.957228,
+      "analyse_ms": 113.638198
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 35714644,
+      "wire": 35714644,
+      "ttfb_ms": 1619.142033,
+      "total_ms": 56472.887115,
+      "done_at_ms": 59106.626967,
+      "analyse_ms": 114.81382599999999
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 35818940,
+      "wire": 35818940,
+      "ttfb_ms": 2018.361664,
+      "total_ms": 56912.955193,
+      "done_at_ms": 59546.679994,
+      "analyse_ms": 104.677062
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 35685144,
+      "wire": 35685144,
+      "ttfb_ms": 1456.930933,
+      "total_ms": 57003.973775,
+      "done_at_ms": 59637.818418,
+      "analyse_ms": 108.95731599999999
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 35685081,
+      "wire": 35685081,
+      "ttfb_ms": 2047.6572150000002,
+      "total_ms": 57638.294346,
+      "done_at_ms": 60272.193850999996,
+      "analyse_ms": 102.582993
+    }
+  ]
+}

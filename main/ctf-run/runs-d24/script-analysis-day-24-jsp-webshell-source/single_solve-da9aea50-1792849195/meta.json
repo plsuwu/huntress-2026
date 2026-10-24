@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-24-jsp-webshell-source",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "da9aea50-4512-4040-afb0-b7eb7ba48899",
+  "started_at": "2026-10-24T13:39:57.034Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1448.030967,
+  "start_ttfb_ms": 1440.2809590000002,
+  "clock": {
+    "start_sent": "2026-10-24T13:39:55.870Z",
+    "start_received": "2026-10-24T13:39:57.318Z",
+    "start_date_header": "2026-10-24T13:39:57.000Z",
+    "last_delivery": "2026-10-24T13:39:58.864Z",
+    "submit_sent": "2026-10-24T13:39:58.871Z",
+    "submit_received": "2026-10-24T13:40:00.990Z",
+    "submit_date_header": "2026-10-24T13:40:00.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 144836,
+      "wire": 144836,
+      "ttfb_ms": 1290.835739,
+      "total_ms": 1522.919906,
+      "done_at_ms": 2971.084102,
+      "analyse_ms": 23.698406000000002
+    }
+  ]
+}

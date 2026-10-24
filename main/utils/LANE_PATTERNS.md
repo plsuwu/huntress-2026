@@ -1,4 +1,4 @@
-# Lane patterns & per-day "gimmick" predictions (as of Day 23, 2026-10-24)
+# Lane patterns & per-day "gimmick" predictions (as of Day 24, 2026-10-24)
 
 Derived from every `utils/solver_py_scripts/day-*/**/NOTES.md` (days 2-13) plus the GM `op=list` route metadata.
 Read this before starting a new day: most of the day's "gimmick" is predictable, and the real risk is usually the
@@ -240,6 +240,31 @@ untimed, with no ranked attempts spent. Details in `solver_py_scripts/day-23-*/*
 | script | `polyglot-gdscript-*` (single); new TT/mastery schema | hex-id files, layered `LYR-<recipe>-` literals (bounded decode search), composite kinds; PowerShell collection `-secondary` = first collected file, not the `stage-*.zip` |
 | binary-RE | VB.NET anti-analysis predicates (net8.0 PE32 `.dll`) | nothing; the predicates/trace JSON are not scored, raw CRC-valid HCFG |
 | mobile | schema v2 `codec:"analysis"` (TT + all mastery) | DEX interpreter + x86-64 JNI emulator; days 7 and 8 not yet seen as v2 |
+
+## Day 24 outcome (2026-10-24)
+
+Dual-pool. The rush started 40 min after release. Script, binary and mobile passed the first pass with no code
+change. Warmups and metadata were fixed by their agents. Metadata's agent filled the disk before it could commit, so the
+coordinator wrote its fixtures and notes and made the commit. All 15 routes were CORRECT untimed, with no ranked attempts
+spent. Details in `solver_py_scripts/day-24-*/*/NOTES.md`; run log in `orchestrator/history.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **run-length `count:char` pairs** ("String Theory") | new `codec::run_length`; the encoded char can be `,` `:` or space, so pairs are read by position, not split; all counts seen are 1. Mastery row 24 = `T::Rle` |
+| metadata | `d24-evtx-001-evtx-record-count` (EVTX) | graded = **walked** complete records (size copy matches), not header claims. New `formats/evtx.rs`; other `evtx_answer` fields are ungraded guesses |
+| script | `polyglot-jsp-*` + `host-jsp-webshell-jsp` | nothing; `DESCRIPTOR_<HEX>` JSP declaration matches the existing pattern. TT/mastery = Day 23 schema, mastery 8 sets |
+| binary-RE | Scala patch-diffing JAR pair (vulnerable/corrected) | nothing; the diff is not scored. Untagged config fields are read from the first member (vulnerable.jar). This assumes both configs are equal, which they were |
+| mobile | v1 `split` (single), v2 `analysis` (TT + 8 mastery APKs) | nothing; emulator checks are plain arithmetic. Days 7 and 8 still not seen as v2 |
+
+## Day 25 predictions
+
+- Warmups: another simple text codec (run-length with counts > 1, Baudot/Bacon, morse, base-N); mastery row 25 joins the
+  fixed rows.
+- Metadata: a follow-up `evtx-*` field (distinct/duplicate record count, truncated flag, first/last timestamp) or a new
+  container. `evtx_answer` already answers those as **ungraded guesses**.
+- Script: one more polyglot family (another server-side webshell language: ASPX/PHP/CFM?) on the Day 23 TT schema.
+- Binary-RE: likely nothing; if a two-member pair ships unequal configs, untagged fields need an explicit equality check.
+- Mobile: a new v2 mechanism; days 7 and 8 may finally appear as v2.
 
 ## Day 24 predictions
 

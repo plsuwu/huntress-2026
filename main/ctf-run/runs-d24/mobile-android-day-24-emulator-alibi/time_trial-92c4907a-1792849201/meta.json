@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-24-emulator-alibi/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "92c4907a-6a4c-44e0-a45d-03387dfc8c8d",
+  "started_at": "2026-10-24T13:40:03.616Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2210.297868,
+  "start_ttfb_ms": 2209.9887919999996,
+  "clock": {
+    "start_sent": "2026-10-24T13:40:01.629Z",
+    "start_received": "2026-10-24T13:40:03.839Z",
+    "start_date_header": "2026-10-24T13:40:03.000Z",
+    "last_delivery": "2026-10-24T13:40:05.351Z",
+    "submit_sent": "2026-10-24T13:40:05.351Z",
+    "submit_received": "2026-10-24T13:40:07.547Z",
+    "submit_date_header": "2026-10-24T13:40:07.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "emulator_alibi_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1240.001747,
+      "total_ms": 1508.582595,
+      "done_at_ms": 3719.22423,
+      "analyse_ms": 2.309068
+    }
+  ]
+}

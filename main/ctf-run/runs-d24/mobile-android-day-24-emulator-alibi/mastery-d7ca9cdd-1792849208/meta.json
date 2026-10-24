@@ -1,0 +1,102 @@
+{
+  "challenge": "mobile-android-day-24-emulator-alibi/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d7ca9cdd-e92f-4a35-9d9f-a6c2f995aee6",
+  "started_at": "2026-10-24T13:40:10.110Z",
+  "deadline": null,
+  "shape": "artifacts[8]+downloads[8]",
+  "start_ms": 1458.284997,
+  "start_ttfb_ms": 1457.159919,
+  "clock": {
+    "start_sent": "2026-10-24T13:40:08.837Z",
+    "start_received": "2026-10-24T13:40:10.295Z",
+    "start_date_header": "2026-10-24T13:40:10.000Z",
+    "last_delivery": "2026-10-24T13:40:12.227Z",
+    "submit_sent": "2026-10-24T13:40:12.227Z",
+    "submit_received": "2026-10-24T13:40:13.774Z",
+    "submit_date_header": "2026-10-24T13:40:13.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "emulator_alibi_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1224.514107,
+      "total_ms": 1478.783846,
+      "done_at_ms": 2937.4510689999997,
+      "analyse_ms": 0.11768300000000001
+    },
+    {
+      "delivery": 7,
+      "name": "emulator_alibi_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1246.825802,
+      "total_ms": 1487.9002639999999,
+      "done_at_ms": 2946.791748,
+      "analyse_ms": 1.726703
+    },
+    {
+      "delivery": 5,
+      "name": "emulator_alibi_mastery_05.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1276.4643709999998,
+      "total_ms": 1492.334119,
+      "done_at_ms": 2951.16428,
+      "analyse_ms": 0.270595
+    },
+    {
+      "delivery": 4,
+      "name": "emulator_alibi_mastery_04.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1292.405922,
+      "total_ms": 1512.656666,
+      "done_at_ms": 2971.4341539999996,
+      "analyse_ms": 3.8627689999999997
+    },
+    {
+      "delivery": 1,
+      "name": "emulator_alibi_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1540.0263060000002,
+      "total_ms": 1791.787696,
+      "done_at_ms": 3250.369935,
+      "analyse_ms": 1.8423829999999999
+    },
+    {
+      "delivery": 8,
+      "name": "emulator_alibi_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1583.908476,
+      "total_ms": 1818.822341,
+      "done_at_ms": 3277.744175,
+      "analyse_ms": 2.225617
+    },
+    {
+      "delivery": 6,
+      "name": "emulator_alibi_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1615.8065399999998,
+      "total_ms": 1872.5920879999999,
+      "done_at_ms": 3331.419246,
+      "analyse_ms": 0.171368
+    },
+    {
+      "delivery": 3,
+      "name": "emulator_alibi_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1672.764401,
+      "total_ms": 1928.1186269999998,
+      "done_at_ms": 3386.775322,
+      "analyse_ms": 3.4961480000000003
+    }
+  ]
+}

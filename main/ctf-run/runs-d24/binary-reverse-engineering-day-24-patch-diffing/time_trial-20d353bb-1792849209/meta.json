@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-24-patch-diffing/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "20d353bb-119d-4f95-ba33-4fd345d25963",
+  "started_at": "2026-10-24T13:40:11.032Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2236.153385,
+  "start_ttfb_ms": 2234.733356,
+  "clock": {
+    "start_sent": "2026-10-24T13:40:09.007Z",
+    "start_received": "2026-10-24T13:40:11.243Z",
+    "start_date_header": "2026-10-24T13:40:11.000Z",
+    "last_delivery": "2026-10-24T13:40:20.586Z",
+    "submit_sent": "2026-10-24T13:40:20.587Z",
+    "submit_received": "2026-10-24T13:40:22.436Z",
+    "submit_date_header": "2026-10-24T13:40:22.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35792454,
+      "wire": 35792454,
+      "ttfb_ms": 1459.210638,
+      "total_ms": 9230.214871999999,
+      "done_at_ms": 11466.646728,
+      "analyse_ms": 112.89018100000001
+    }
+  ]
+}
