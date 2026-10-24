@@ -1,0 +1,12 @@
+.direnv/
+__pycache__/
+*.py[cod]
+
+# Local secrets and runtime configuration
+.env
+*-id_ed25519
+*.ovpn
+
+# Per-route downloaded challenge material, logs, and state
+workers/web/
+.pytest_cache/
