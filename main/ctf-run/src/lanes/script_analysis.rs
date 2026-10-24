@@ -217,7 +217,63 @@ fn common(key: &str, plan: &Plan, lang: &str) -> Option<Result<String, String>> 
     None
 }
 
-fn answer_spec(key: &str, spec: &Spec, ctx: &RunCtx) -> Result<String, String> {
+fn plan_of(spec: &Spec) -> Option<&Plan> {
+    match spec {
+        Spec::Labelled(p) | Spec::Vbs(p, ..) => Some(p),
+        Spec::Batch(b) => Some(&b.plan),
+        Spec::Js(j) => Some(&j.plan),
+        _ => None,
+    }
+}
+
+/// Day 23 primary indicator: the first descriptor value present in the question's order (URL, upload
+/// URL, next-stage file, file path, schedule path, recovery-note name, host id).
+const INDICATOR_ORDER: &[&[&str]] = &[&["url"], &["upload_url"], &["next_stage"], &["file_path"], &["schedule_path", "cron_path", "task_path"], &["note_name"], &["host_id"]];
+
+/// Day 23 composite questions, built from the existing per-field answers.
+fn composite(key: &str, text: &str, spec: &Spec, ctx: &RunCtx) -> Option<Result<String, String>> {
+    // Python TT/mastery: `-carrier` / `-obfuscation` ask for label pairs (single solve: one label each).
+    if let (Spec::Labelled(_), true) = (spec, key.starts_with("python-") && text.contains("joined by |")) {
+        let pair: Option<[&str; 2]> = if key.ends_with("-carrier") && text.contains("execution-chain") {
+            Some(["carrier", "windows-chain"])
+        } else if key.ends_with("-obfuscation") && text.contains("syntax profile") {
+            Some(["syntax", "obfuscation"])
+        } else {
+            None
+        };
+        if let Some(pair) = pair {
+            let base = &key[..key.rfind('-').unwrap()];
+            return Some(pair.iter().map(|p| answer_spec(&format!("{base}-{p}"), "", spec, ctx)).collect::<Result<Vec<_>, _>>().map(|v| v.join("|")));
+        }
+    }
+    if let Some(base) = key.strip_suffix("-campaign-token") {
+        return Some(answer_spec(&format!("{base}-campaign"), "", spec, ctx).and_then(|c| c.split_once('-').map(|(_, t)| t.to_string()).ok_or_else(|| format!("{key}: campaign {c:?} has no hyphen"))));
+    }
+    if let Some(base) = key.strip_suffix("-style").filter(|b| !["-function", "-invocation", "-property"].iter().any(|p| b.ends_with(p))) {
+        let parts: &[&str] = match spec {
+            Spec::Js(_) => &["function-style", "invocation-style", "property-style"],
+            Spec::Vbs(..) => &["representation", "transform", "control"],
+            Spec::Batch(_) => &["graph", "control", "expansion"],
+            _ => return Some(Err(format!("{key}: no style triple for this family"))),
+        };
+        return Some(parts.iter().map(|p| answer_spec(&format!("{base}-{p}"), "", spec, ctx)).collect::<Result<Vec<_>, _>>().map(|v| v.join("|")));
+    }
+    let plan = plan_of(spec)?;
+    if key.ends_with("-indicator") {
+        let hit = INDICATOR_ORDER.iter().flat_map(|ks| ks.iter()).find_map(|k| plan.values.get(*k).filter(|v| !v.is_empty()));
+        return Some(hit.cloned().ok_or_else(|| format!("{key}: no indicator in {:?}", plan.values.keys().collect::<Vec<_>>())));
+    }
+    if key.ends_with("-steps") {
+        return Some(Ok(plan.steps.join(">")));
+    }
+    None
+}
+
+/// `text` is the question text (empty for derived sub-questions).
+fn answer_spec(key: &str, text: &str, spec: &Spec, ctx: &RunCtx) -> Result<String, String> {
+    if let Some(r) = composite(key, text, spec, ctx) {
+        return r;
+    }
     match spec {
         Spec::Literal(d) => families::answer_literal(key, d),
         Spec::Adv(f) => families::answer_adv(key, f),
@@ -380,7 +436,7 @@ impl Lane for ScriptAnalysis {
             }
         };
         match spec.as_ref() {
-            Ok(s) => answer_spec(&q.key, s, ctx),
+            Ok(s) => answer_spec(&q.key, &q.question, s, ctx),
             Err(e) => Err(e.clone()),
         }
     }

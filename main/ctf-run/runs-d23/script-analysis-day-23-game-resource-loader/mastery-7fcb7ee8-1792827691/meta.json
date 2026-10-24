@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-23-game-resource-loader/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7fcb7ee8-669c-439c-a767-30bd130f2bf4",
+  "started_at": "2026-10-24T07:41:33.590Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2939.488656,
+  "start_ttfb_ms": 2884.426971,
+  "clock": {
+    "start_sent": "2026-10-24T07:41:31.605Z",
+    "start_received": "2026-10-24T07:41:34.544Z",
+    "start_date_header": "2026-10-24T07:41:34.000Z",
+    "last_delivery": "2026-10-24T07:41:36.445Z",
+    "submit_sent": "2026-10-24T07:41:36.564Z",
+    "submit_received": "2026-10-24T07:41:39.803Z",
+    "submit_date_header": "2026-10-24T07:41:39.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-23-game-resource-loader-mastery.zip",
+      "bytes": 1086009,
+      "wire": 1086009,
+      "ttfb_ms": 1418.615868,
+      "total_ms": 1731.190127,
+      "done_at_ms": 4670.8589790000005,
+      "analyse_ms": 169.512147
+    }
+  ]
+}

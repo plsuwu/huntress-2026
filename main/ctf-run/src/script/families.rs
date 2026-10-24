@@ -70,6 +70,24 @@ pub fn answer_ps1(key: &str, a: &Ps1) -> Result<String, String> {
     if key.ends_with("-file") {
         return a.files.first().cloned().ok_or_else(|| "no files".into());
     }
+    // Day 23: scenario-dependent indicator slots.
+    let slot = |order: [&str; 3]| -> Result<String, String> {
+        match a.fields.get("scenario").map(String::as_str) {
+            Some("resource_hijacking") => a.fields.get(order[0]).cloned(),
+            // Graded (Day 23 TT oracle): the staged file is the first collected file, not the `stage-*.zip`.
+            Some("synthetic_collection") if order[1] == "file" => a.files.first().cloned(),
+            Some("synthetic_collection") => a.fields.get(order[1]).cloned(),
+            Some("synthetic_impact") => a.fields.get(order[2]).cloned(),
+            _ => None,
+        }
+        .ok_or_else(|| format!("{key}: slot missing for {:?}", a.fields.get("scenario")))
+    };
+    if key.ends_with("-secondary") {
+        return slot(["wallet", "file", "note"]);
+    }
+    if key.ends_with("-tertiary") {
+        return slot(["mutex", "user_agent", "extension"]);
+    }
     for (suffix, k) in [("-scenario", "scenario"), ("-attack", "attack"), ("-url", "url"), ("-wallet", "wallet"), ("-mutex", "mutex"), ("-user-agent", "user_agent"), ("-extension", "extension"), ("-note", "note")] {
         if key.ends_with(suffix) {
             return a.fields.get(k).cloned().ok_or_else(|| format!("{key}: {k} not in sample"));
@@ -253,7 +271,7 @@ pub fn analyse_literal(text: &str) -> Result<BTreeMap<String, String>, String> {
             }
         }
     }
-    if let Some(m) = re!(r"HUNTRESS_ANALYSIS_V1:[A-Za-z0-9_]+-([A-Za-z0-9+/=.]{8,})").search(text) {
+    if let Some(m) = re!(r"HUNTRESS_ANALYSIS_V1:(?:LYR-[a-z0-9_]+-|[A-Za-z0-9_]+-)([A-Za-z0-9+/=.]{8,})").search(text) {
         if let Ok(f) = decode_literal(m.g(1)) {
             if ok(&f) {
                 return Ok(f);
@@ -304,6 +322,12 @@ pub fn answer_literal(key: &str, d: &BTreeMap<String, String>) -> Result<String,
     if key.ends_with("-stage-count") {
         return Ok(get("stage_count")?.trim().parse::<i64>().map_err(|e| e.to_string())?.to_string());
     }
+    if key.ends_with("-url-host") {
+        return url_host(&get("url")?);
+    }
+    if key.ends_with("-path-leaf") {
+        return path_leaf(&get("file_path")?);
+    }
     let keymap: &[(&str, &[&str])] = &[
         ("campaign", &["campaign_id"]),
         ("obfuscation", &["obfuscation_profile"]),
@@ -324,6 +348,21 @@ pub fn answer_literal(key: &str, d: &BTreeMap<String, String>) -> Result<String,
         }
     }
     Err(format!("unrouted {key}"))
+}
+
+/// Host of a URL (no userinfo, no port).
+pub fn url_host(url: &str) -> Result<String, String> {
+    let rest = url.split_once("://").map(|(_, r)| r).ok_or_else(|| format!("not a URL: {url:?}"))?;
+    let auth = rest.split(['/', '?', '#']).next().unwrap_or("");
+    let host = auth.rsplit('@').next().unwrap_or(auth);
+    let host = if host.starts_with('[') { host.split_inclusive(']').next().unwrap_or(host) } else { host.split(':').next().unwrap_or(host) };
+    if host.is_empty() { Err(format!("no host in {url:?}")) } else { Ok(host.to_string()) }
+}
+
+/// Last segment of a `/` or `\\` path.
+pub fn path_leaf(path: &str) -> Result<String, String> {
+    let leaf = path.trim_end_matches(['/', '\\']).rsplit(['/', '\\']).next().unwrap_or("");
+    if leaf.is_empty() { Err(format!("no leaf in {path:?}")) } else { Ok(leaf.to_string()) }
 }
 
 #[cfg(test)]
@@ -355,6 +394,21 @@ mod tests {
         assert_eq!(f.get("file_path").map(String::as_str), Some("/tmp/huntress-google_apps_script/.58db6ebfbb172c43.stage"));
         let no_marker: String = text.lines().skip_while(|l| !l.starts_with("function")).map(|l| format!("{l}\n")).collect();
         assert_eq!(analyse_literal(&no_marker).unwrap(), f);
+    }
+
+    /// Day 23 `LYR-<encode order>` literals: hex / base32 / base64 / reversal / `.`-fragments in any order,
+    /// with or without the marker copy.
+    #[test]
+    fn layered_literal() {
+        for f in ["testdata/d23-polyglot-php-lyr-hex_rev_hex.php", "testdata/d23-polyglot-gd-lyr-b64_b32_frag.gd"] {
+            let text = std::fs::read_to_string(f).unwrap();
+            let want = analyse_literal(&text).unwrap();
+            assert!(want.contains_key("steps") && want.contains_key("campaign_id"), "{f}: {want:?}");
+            let no_marker: String = text.lines().filter(|l| !l.contains("HUNTRESS_ANALYSIS_V1")).map(|l| format!("{l}\n")).collect();
+            assert_eq!(analyse_literal(&no_marker).unwrap(), want);
+        }
+        assert_eq!(url_host("https://u@cdn-1.example.invalid:8443/a/b.bin?x").unwrap(), "cdn-1.example.invalid");
+        assert_eq!(path_leaf("C:\\Users\\Public\\x.dat").unwrap(), "x.dat");
     }
 
     /// Day 19 `.aspx` host embeds the C# script as one escaped string (`descriptor_x = \"..\"`); the
