@@ -9,6 +9,7 @@ pub mod dex;
 pub mod dotnet;
 pub mod elf;
 pub mod email;
+pub mod evtx;
 pub mod hcfg;
 pub mod inflate;
 pub mod jar;
