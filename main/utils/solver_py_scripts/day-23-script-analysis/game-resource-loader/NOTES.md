@@ -2,8 +2,9 @@
 
 All three modes CORRECT, untimed. The automated first pass got single-solve CORRECT with no change (1461 answers;
 new family `polyglot-gdscript-*` `.gd` files, `const DESCRIPTOR_<HEX>: String = "..."`, standard B64/HEX/HB64/FRAG
-markers). Time trial (1495) and mastery (10465 answers, **7 sets**) needed lane work. Runs: `ctf-run/runs-d23/...`
-(single in the main checkout's first-pass dir, TT/mastery in this worktree). Fixtures: `fixtures/script/d23-*.json`.
+markers). Time trial (1495) and mastery (10465 answers, **7 sets**) needed lane work. Runs (all merged):
+`ctf-run/runs-d23/script-analysis-day-23-game-resource-loader/` (`single_solve-7a0dedeb-*` first pass;
+`time_trial-af60e618-*`; `mastery-7fcb7ee8-1792827691`). Fixtures: `fixtures/script/d23-*.json`.
 Replay 69/69 clean.
 
 ## What was new in time trial / mastery (single solve is still the old schema)

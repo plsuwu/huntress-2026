@@ -1,4 +1,4 @@
-# Lane patterns & per-day "gimmick" predictions (as of Day 17, 2026-10-17)
+# Lane patterns & per-day "gimmick" predictions (as of Day 23, 2026-10-24)
 
 Derived from every `utils/solver_py_scripts/day-*/**/NOTES.md` (days 2-13) plus the GM `op=list` route metadata.
 Read this before starting a new day: most of the day's "gimmick" is predictable, and the real risk is usually the
@@ -55,6 +55,11 @@ oracle.
 - Since day 9 each day adds one `polyglot-<lang>-{benign-utility,downloader,launcher,staged-chain}` family
   (4 files x 11 answers) and occasionally 14 advanced-Bash answers. Days 11-13 needed only a one-line literal regex
   change (TS type annotation; AppleScript `property x : "..."`); day 12 needed nothing.
+- **Since d23, TT/mastery use a new schema** (single-solve still the old one): files are named by hex id (`10c7ec.php`),
+  question ids are `<family>-<hex>-<kind>`, literals may be layered (`HUNTRESS_ANALYSIS_V1:LYR-<recipe>-<payload>`,
+  1-3 of hex/b32/b64/rev/frag), and new composite kinds (`-campaign-token`, `-indicator`, `-style`, `-url-host`,
+  `-path-leaf`, PowerShell `-secondary`/`-tertiary`) are built from the descriptor fields. Details:
+  `solver_py_scripts/day-23-script-analysis/game-resource-loader/NOTES.md`.
 - Standing risk: `batch-*-expansion` labels (empirical rule in `day-13-script-analysis/stager_relationships.py::_classify_expansion`;
   single-solve grader disagreed with TT/mastery on 4 shapes).
 
@@ -67,13 +72,21 @@ oracle.
 - Gotchas: hex fields `0x`-prefixed lowercase; `format` casing differs per specimen (d11 `ELF`, d12/d13 `elf`);
   `hcfg_offset` = file offset of the base64 text (or of the validated raw magic); stripped d01 variants exist.
 - Bottleneck is bandwidth (31-32 MB AES zip per set because of the 67 MB d08 Swift ELF), not analysis.
+- Since d19: appended overlays validated by SHA-256 (`PK19` packed, `RS20` resource; `formats/overlay.rs`), multi-member
+  specimens (d21 loader + plugin, d22/d23 .NET assembly + support files) whose question text names the member to use,
+  and `format` is an enum (`elf`, `pe`, `pe_cli`, ...). A PE i386 `machine` is `i386` unless the syntax names
+  `IMAGE_FILE_MACHINE` (d03 keeps `x86`).
 
 ### Warmups - single = one layer, mastery = cumulative
 - Single/TT: the whole blob in the day's encoding, decoding to the fixed template; answer = slug `word-word-word-NN`.
 - Mastery: `NN<TAB>fragment` rows, raggedly sliced from the template; **row N uses day N's encoding**:
   01 base64, 02 rot13, 03 hex, 04 8-bit binary, 05 decimal, 06 octal, 07 %-hex, 08 `&#dec;`, 09 `"\uXXXX"`, 10 base32,
-  11 base64url (unpadded), 12 reversed (+ `-` right padding to 13 chars), 13 atbash, 14 caesar +7, 15 ROT47.
-- Mastery set count = **5N - 2** (23 on d5 ... 63 on d13; d14 route lists 68).
+  11 base64url (unpadded), 12 reversed (+ `-` right padding to 13 chars), 13 atbash, 14 caesar +7, 15 ROT47,
+  16 Morse of hex, 17 Bacon of hex, 19 hex of UTF-16LE + BOM, 20 hex of UTF-16BE + BOM (rows 19/20 carry a BOM on
+  every row), 21 base64 of gzip, 22 base64 of zlib, 23 Ascii85 (`<~...~>`).
+- Rows 04/05/06 (binary/decimal/octal) are **pinned by radix**: a digit-only fragment can parse as both decimal and
+  octal, and the score-based reader picked octal on a tie (latent since d5, first hit on d23 mastery).
+- Mastery set count = **5N - 2** (23 on d5 ... 63 on d13 ... 113 on d23).
 - Parse rows whitespace-faithfully (leading spaces matter), use the fixed index->codec mapping first, enumerate only as fallback.
 - **Submit exactly what the sentence says.** Since 2026-10-22, a set can end `...: word-word-word-NN-<digits>`. The whole
   string is the answer, despite the two-digit `answer_format`; truncating it was graded incorrect twice (`orchestrator/grading-lessons.md`).
@@ -83,6 +96,12 @@ oracle.
   version, zip EOCD total entries, zip CD names (compact JSON), PE COFF machine (`0x014c`), PE entry RVA (`0x%08x`),
   PE OriginalFilename (VS_VERSION_INFO), .NET MVID (lowercase bare GUID), MSI ProductCode (`{UPPER}` with braces),
   plus evidence-note filename/size/md5/sha1/sha256/magic16/utf8-bom and "synthesis order" (sha256-sorted JSON array).
+  Later: email Message-ID (d16), wav codec (d17), ELF `e_machine` (`0x%04x`, d19), Mach-O cpu-type set (JSON
+  `["0x0100000c"]`, d20), APK package (d21), JAR Main-Class (d22), SQLite header page size (d23).
+- Each new kind gets a `-<format>-<field>` dispatcher in `lanes/metadata.rs` that runs before HANDLERS. Field names
+  starting with a digit fall through to the hash handlers. Only the graded field is known; the others are guesses.
+- **JSON lists are graded sorted** unless proven otherwise: ooxml rel targets (d15) and zip CD member names (d23 TT;
+  every earlier fixture happened to be stored sorted) were both rejected in file order.
 - TT/mastery: days 8, 9, 13 (regular) asked the whole cumulative bundle (12 -> 18 questions); days 10-12 (ranked) asked
   only the day's kind. Build the solver to handle either. `-filename` suffix collides between kinds - match carefully.
 
@@ -90,8 +109,14 @@ oracle.
 - Same tiny hand-built APK every day; answer = `assets/huntress_puzzle.json` decoded, `ANS-` + 16 uppercase hex. The
   Android story (PendingIntent, providers, WebView, cleartext, trust, keystore) is pure decoration.
 - Codecs seen (by day): 4 xor, 5 split(parts/order), 6 hex, 7 caesar(key), 8 reverse, 9 base64, 10 split, 11 xor,
-  12 hex, 13 base64, 14 caesar (printable-ASCII shift, `key`), 15 native (plain `data` + `libarena.so`). Since d15 mastery mixes earlier
-  days' codecs (each APK has a `day` field). Per-APK keys differ - read them from the JSON. Mastery = N bare APKs, ids `setN.answer`.
+  12 hex, 13 base64, 14 caesar (printable-ASCII shift, `key`), 15 native (plain `data` + `libarena.so`), 17 indexed,
+  19 reflection (plain `data`), 20 dynamic (`data` = path to `assets/payload.dex` holding the code), 21 reverse,
+  22 base64. Since d15 mastery mixes earlier days' codecs (each APK has a `day` field). Per-APK keys differ - read
+  them from the JSON. Mastery = N bare APKs (5 on d19-d21, 6 on d22, 7 on d23), ids `setN.answer`.
+- **Since d23 TT/mastery, puzzle schema v2** (`huntress.mobile.puzzle.v2`, `codec:"analysis"`, no `data`): the answer is
+  computed by the app's own `Release.code()` in `classes.dex`. ctf-run interprets it (`formats/dex.rs`, `dalvik.rs`, JNI
+  leaves via `x64emu.rs`). v2 mastery rebuilds earlier days so that each day's token chain uses that day's mechanism
+  (d15/d16 JNI natives, d20 in-memory secondary DEX + reflection, d23 brute-force loops). Single-solve was still v1.
 
 ## Day 15 outcome (2026-10-15)
 
@@ -147,6 +172,86 @@ Ranked (one campaign after the last merge): see `ctf-run/PLAN.md`.
   a `[..].join("")` fragment array** (marker copy prefixed `FRAG-`/`B64-`). A lone fragment can decode to a
   truncated descriptor. Batch FOR-over-`h<N>` expansion is now `for_indirect` on single-solve too.
   Details: `solver_py_scripts/day-18-script-analysis/process-story/NOTES.md`.
+
+## Day 19 outcome (2026-10-19)
+
+Dual-pool, released 23:00. Mobile and script were CORRECT on the first pass with no code change; warmups, metadata
+and binary were fixed by their agents by +7 min. All 15 routes CORRECT untimed.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | hex of **UTF-16LE with a BOM** ("Little Things") | decoded bytes failed `printable` (NULs); `codec::text_any` picks UTF-8 or UTF-16 by BOM; mastery row 19 = hex |
+| metadata | `elf-e-machine-u16-hex` | `0x003e`, `0x%04x` lowercase; `elf_answer` reads the header only, byte order from EI_DATA |
+| script | `polyglot-csharp_script-*` + `host-aspx-inline-csharp` | nothing; the `.aspx` host's escaped `\"` literal relied on the marker (pattern hardened on d20) |
+| binary-RE | stripped ELF + **`PK19` packed overlay** | new `overlay_offset`/`overlay_size`; every old question reworded, `format` now an enum (`ELF` -> `elf`, .NET -> `pe_cli`) |
+| mobile | `codec:"reflection"` | nothing (`data` is the plain answer) |
+
+## Day 20 outcome (2026-10-20)
+
+Dual-pool, released 23:00. Warmups and script were CORRECT on the first pass; the other three were fixed by about
++5 min. All 15 routes CORRECT untimed. Web-exploitation appeared as a new lane and was left alone.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | hex of **UTF-16BE with a BOM** ("Big Entrance") | nothing (d19's `text_any`); row 20 pinned to `T::Hex` |
+| metadata | `macho-cpu-type-set` | compact JSON of `0x%08x` cputypes (`["0x0100000c"]`; names incorrect); new `macho::slices` (thin + fat); multi-slice order unverified |
+| script | `polyglot-groovy-*` + `host-jenkins-pipeline-groovy` + `host-classic-asp-vbscript` + 2 advanced-Bash files | nothing; classic ASP `attack` graded bare `T1059` |
+| binary-RE | ELF + **`RS20` resource overlay** | new `hcfg_resource_size`; `overlay.rs` tries both layouts, SHA-256 decides |
+| mobile | `codec:"dynamic"` (`data` = `assets/payload.dex`) | read the named member, accept one distinct `ANS-` code |
+
+## Day 21 outcome (2026-10-22)
+
+Dual-pool; the rush started the evening after release. Mobile and script passed the first pass with no code change;
+the warmups untimed runs were finished by the coordinator with `rush.py takeover`. All 15 routes CORRECT untimed.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **base64 of gzip** (`H4sI...`, "Under Pressure") | base64 gave binary; new `T::Gz` (`decompress` needs a gzip or valid zlib header); mastery row 21 = `T::Gz` |
+| metadata | `apk-package-name` | manifest `package` verbatim; new `formats/apk.rs` (AXML, arsc refs, signer certs; other fields guesses) |
+| script | `polyglot-github_actions-*` (`.yml`) | nothing; `HUNTRESS_DESCRIPTOR:` env value is found via the marker fallback |
+| binary-RE | OCaml loader + `.cmxs` plugin (HCFG only in the plugin) | untagged `config_*` answered from the member the question names (`named_member`) |
+| mobile | `codec:"reverse"` (old d8 codec) | nothing |
+
+## Day 22 outcome (2026-10-23)
+
+Dual-pool; the rush started ~2 h after release. Warmups, script and mobile passed the first pass with no lane code
+change; all five were done within 8 min. All 15 routes CORRECT untimed. Mastery went from 5 to 6 sets (script,
+binary, mobile, metadata).
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **base64 of zlib** (`eNo...`, "Deflated Ego") | nothing (d21's `decompress` takes zlib); row 22 pinned to `T::Gz` |
+| metadata | `jar-main-class` | manifest `Main-Class` verbatim; new `formats/jar.rs` (missing/launcher-less class is an error, rule ungraded) |
+| script | `polyglot-nsis-*` (`.nsi`, `StrCpy $0 "..."`) | nothing; marker fallback |
+| binary-RE | F# .NET `sample.dll` + runtimeconfig + `FSharp.Core.dll` (R2R) | `machine` for PE 0x14c graded **`i386`** (`x86` and `0x14c` incorrect despite the syntax) |
+| mobile | `codec:"base64"`; mastery first samples d1 `plain` | nothing |
+
+## Day 23 outcome (2026-10-24)
+
+Dual-pool. The rush started ~18.5 h after release. Binary passed the first pass with no code change; the other four
+lanes were fixed by their agents. All five were done 25 min after the rush started, and all 15 routes were CORRECT
+untimed, with no ranked attempts spent. Details in `solver_py_scripts/day-23-*/*/NOTES.md`; run log in
+`orchestrator/history.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **Ascii85** `<~...~>` ("Eighty-Five Alive") | peel Ascii85 before the escape/percent/entity peels (its alphabet has `\ % &`); mastery row 23 = Ascii85; pin rows 4-6 by radix (decimal/octal tie refused 20/113 sets) |
+| metadata | `sqlite-page-size-bytes` | header u16 @16 (`1` = 65536); the generic `-size-bytes` row answered the file length first. TT: zip CD names graded **sorted** |
+| script | `polyglot-gdscript-*` (single); new TT/mastery schema | hex-id files, layered `LYR-<recipe>-` literals (bounded decode search), composite kinds; PowerShell collection `-secondary` = first collected file, not the `stage-*.zip` |
+| binary-RE | VB.NET anti-analysis predicates (net8.0 PE32 `.dll`) | nothing; the predicates/trace JSON are not scored, raw CRC-valid HCFG |
+| mobile | schema v2 `codec:"analysis"` (TT + all mastery) | DEX interpreter + x86-64 JNI emulator; days 7 and 8 not yet seen as v2 |
+
+## Day 24 predictions
+
+- Warmups: another "bigger alphabet" (base58/62/91, Z85, base45, uuencode/xxencode) or undelimited Ascii85. Z85 overlaps
+  base64's alphabet: try it template-checked after the cheap peels. Mastery row 24 joins the fixed rows.
+- Metadata: another `sqlite-*` field (page count, text encoding, application id, truncation, embedded-header offset).
+  `sqlite_answer` already answers those as **ungraded guesses**; learn the format from single-solve. Expect sorted lists.
+- Script: one more polyglot family on single-solve; TT/mastery may add a new `LYR` layer or another composite kind.
+  The grouped oracle is per file under hex ids (~1500 submits, ~6 min): budget for it, or group by family+kind.
+- Binary-RE: likely nothing again; check the primary-member routing if the zip gains more members.
+- Mobile: a new v2 token-chain mechanism. `dex_code`'s error names the missing opcode/API; Android framework values
+  (`Build.*`, debugger/root checks), crypto APIs and arm64-only libs are not supported yet. Never invent framework values.
 
 ## Day 18 predictions
 

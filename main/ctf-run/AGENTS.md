@@ -31,9 +31,9 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/gm.rs` | Game Master protocol, response normalisation (bundle preference), route cache |
 | `src/net/` | keep-alive HTTP/1.1 (gzip for JSON, identity for downloads), connection pool, fetch workers |
 | `src/lanes/` | one file per lane + `probe` (answers nothing; pipeline testing) |
-| `src/formats/` | zip (AES/ZipCrypto/ZIP64), inflate (libdeflate), elf, pe, macho, jvm, dotnet, cfb/MSI, lnk, media (jpeg/png/pdf), hcfg, x86 (tiny), bytes |
+| `src/formats/` | zip (AES/ZipCrypto/ZIP64), inflate (libdeflate), elf, pe, macho, jvm, jar, dotnet, wasm, cfb/MSI, lnk, ooxml, email, media (jpeg/png/pdf), audio, video, sqlite, apk, overlay, hcfg, dex + dalvik (DEX interpreter), x86 (tiny) + x64emu (JNI leaf emulator), bytes |
 | `src/crypto/` | aes (AES-NI + portable; beats RustCrypto aes+ctr), sha1/hmac/pbkdf2 (8-lane AVX2 batch beats every crate), sha256 (ring), md5 (md-5), crc32 (crc32fast) |
-| `src/codec.rs` | text codecs (base64/32, hex, numbers, percent, entities, escapes, rot/atbash/reverse, English scoring) |
+| `src/codec.rs` | text codecs (base64/32, ascii85, hex, numbers (scored or fixed radix), percent, entities, escapes, rot/atbash/reverse, English scoring) |
 | `src/script/` | script-analysis toolkit: descriptor model + rubric, label-driven decode, cmd.exe model, JScript evaluator, families |
 | `src/evidence.rs` | nested-zip registry (`a.zip -> member` labels) |
 | `src/rx.rs` | Python-`re` semantics on fancy-regex (backrefs, lookaround; a syntax translator bridges `$`, `\Z`, `{,n}`, class `[`); ASCII subjects use a cheap ASCII-mode build; `re!()` and a global cache keep compiles to one per pattern |
@@ -55,6 +55,8 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
    - **warmups**: a new encoding -> `codec.rs` decoder + a `T` variant / `fixed_codec` row in `lanes/warmups.rs`
      (mastery row N = day N's encoding; unknown rows are searched and learned across sets).
    - **mobile**: a new `codec` name -> a branch in `lanes/mobile.rs::decode` (the bounded search usually finds it already).
+     v2 `codec:"analysis"` APKs (no `data`) run their own DEX in `lanes/mobile.rs::dex_code`; a new mechanism means
+     a builtin/opcode in `formats/dalvik.rs` or an instruction in `formats/x64emu.rs` (the error names what is missing).
    - **metadata**: a new `<format>-<field>` kind -> a `HANDLERS` row in `lanes/metadata.rs` (+ a parser in `formats/`);
      learn the graded format (casing, `0x` padding, braces) from single-solve.
    - **binary-RE**: usually nothing (`analyse_specimen` is generic). A new container -> `formats/` + `Container`; a new
@@ -74,7 +76,7 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
 
 ## Testing and performance
 
-- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 231 cases),
+- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 365 cases after Day 23),
   `cargo build --features tls` must stay green.
   The jumpbox runs the static musl binary from `nix build .#ctf-run` (repo flake), shipped by `tools/deploy.sh`; never
   compile on the burstable t3.small before ranked runs (`--remote-build` only if the flake is unavailable).

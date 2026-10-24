@@ -17,6 +17,9 @@ details live in `utils/solver_py_scripts/day-NN-<lane>/<slug>/NOTES.md`.
   (`<lang>-<family>`, or binary roll-ups grouped by day `d01`..`dNN`, about 17 submits). It then splits rejected groups
   by field. One wrong field kind is the usual failure mode. On Day 15 this found the single bad field among 5130
   script-mastery answers, where blind bisection (serial 2-6 s submits) was too slow.
+  - Caveat (Day 23): the grouping key is the first two id components. Script TT/mastery ids are now
+    `<family>-<hex>-<kind>`, so each file becomes a group: the TT oracle ran ~1500 submits (~6 min). Read the last
+    line's `remaining`. Don't pipe the tool through `tail`, because nothing shows until it exits.
 - **A wrong field masks the others in a partial submit,** so probe label vocabularies one field per submit.
 - **Single-solve resubmits are free.** Test an alternative format with one curl submit before encoding it.
 
@@ -106,6 +109,22 @@ The Day 17 binary roll-up (d01..d17 in one evidence.zip) rejected about 150 labe
   - MinGW PE (mastery sets): the first COFF symbol in file order, i.e. `.text$_ZNK...` / `.rdata$_ZTI...`.
   - The typeinfo class is the one that has a `_ZTV`; BehaviorEngine is the vtable-less base.
 - **Stripped d01:** `recover_code` = `none`.
+
+## List order
+
+`answer_format` text ("exact values and order") does not settle list order, and fixtures can hide the rule when every
+saved sample happens to be stored in sorted order. Check order with one partial submit on an untimed attempt.
+
+| Answer | Graded order | Seen |
+|---|---|---|
+| metadata ooxml external relationship targets | sorted by value (file order `rId9,rId10` incorrect) | Day 15 |
+| metadata zip central-directory member names | codepoint-sorted (stored CD order incorrect) | Day 23 TT, 8 unsorted members |
+| metadata "synthesis order" | sorted by full-file sha256 | Day 13 |
+| binary-RE `artifact_sha256_N` | central-directory order (name sort incorrect) | Day 15 |
+
+On Day 23 the zip-names handler had passed every fixture since the kind appeared on Day 7, because all of them were
+already stored sorted. The grouped oracle found it (`d07-zip/names` was the only wrong field). Details:
+`utils/solver_py_scripts/day-23-metadata-forensics/page-me-maybe/NOTES.md`.
 
 ## Environment
 

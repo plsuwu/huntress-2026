@@ -11,7 +11,7 @@ dated entries to `history.md`, rather than writing new notes elsewhere.
 | `runbook.md` | Release night, step by step: rush, monitoring, merge, deploy, ranked campaign, jumpbox |
 | `hall-of-fame.md` | Speed-scoreboard API, what `elapsed_ms` measures, campaign tooling, time-of-day latency |
 | `grading-lessons.md` | Game Master / grader behaviour that burned attempts, and how to work around it |
-| `history.md` | Dated log of each release night and campaign (Days 14-20) |
+| `history.md` | Dated log of each release night and campaign (Day 14 onward) |
 
 Related docs elsewhere in the repo:
 
@@ -22,7 +22,3 @@ Related docs elsewhere in the repo:
 - `utils/LANE_PATTERNS.md`: how each lane evolves day to day, with predictions.
 - `utils/solver_py_scripts/day-NN-<lane>/<slug>/NOTES.md`: per-challenge notes.
 
-Event-independent versions of this knowledge (no lane, day or host names), for starting over elsewhere:
-
-- `../template/playbooks/solver-runner.md`: building, extending, benchmarking and deploying a compiled solver binary.
-- `../template/playbooks/orchestrator.md`: the coordinator's job, covering the lane registry, release flow, agents, campaigns and monitoring.
