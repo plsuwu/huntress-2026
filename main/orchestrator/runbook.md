@@ -55,7 +55,10 @@ Launcher details that matter:
   (~1.5-3.5 s) and merges them into the route cache under a lock. The `lane=` filter rejects binary-RE.
 - **Takeover** chains modes the same way the first pass does, but it holds back a timed-by-default or one-shot route
   that already has an attempt.
-- **Relaunch:** `all` kills the previous day's tmux session before relaunching.
+- **Relaunch:** `all` kills the previous day's tmux session before relaunching, **but not with `--rehearse`**: a late
+  start then logs "tmux session already exists - not relaunching" and keeps yesterday's agents. Before a late start, run
+  `tmux -L huntress kill-session -t rush` (and check the old `claude` pids are gone). Never `pkill -f "rush.py ..."`
+  from the coordinator shell: the pattern matches the shell itself and kills it.
 
 ## 2. Watch the lanes
 
