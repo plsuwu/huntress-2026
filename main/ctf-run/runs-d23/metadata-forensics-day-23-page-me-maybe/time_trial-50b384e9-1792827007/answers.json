@@ -1,0 +1,32 @@
+{
+  "answers": {
+    "evidence-note-filename": "evidence-note.txt",
+    "roster-size-bytes": "48",
+    "roster-md5": "abe100109fa7ab54e9fdb8d24e47b93f",
+    "evidence-note-sha1": "a5195151255948ddc7c44a8bb2410d1822daf7fc",
+    "evidence-note-copy-sha256": "90f447475f1254a88a3de17b3201d33f9f34a1a9b91bc106daebda1ecc7c031d",
+    "roster-magic-prefix-hex-16": "656e64706f696e742c6c6162656c0a41",
+    "evidence-note-text-utf8-bom-present": "false",
+    "d04-jpeg-001-jpeg-sof-dimensions-pixels": "494x1161",
+    "d05-png-001-png-ihdr-dimensions-pixels": "775x760",
+    "d06-pdf-001-pdf-header-version": "1.0",
+    "d07-zip-001-zip-eocd-total-entries": "8",
+    "d07-zip-001-zip-central-directory-member-names": "[\"tray-02/item-6.txt\",\"cabinet-13/part-2.txt\",\"room-15/doc-8.log\",\"box-34/part-8.md\",\"box-16/item-2.md\",\"cabinet-07/item-3.txt\",\"room-08/entry-8.csv\",\"shelf-08/doc-7.txt\"]",
+    "d09-pe-001-pe-coff-machine-u16-hex": "0x0200",
+    "d09-pe-001-pe-address-of-entry-point-rva-hex": "0x000688ab",
+    "d09-pe-001-pe-version-original-filename": "g34pk6fc4sjhp.exe",
+    "d12-dotnet-001-dotnet-mvid-guid": "226a8cc6-a633-6b43-b7d4-7f371178a061",
+    "d13-msi-001-msi-product-code-guid": "{CC4845B6-CC4A-4648-82E1-AE325C0ADDFD}",
+    "d14-lnk-001-lnk-target-path-windows": "C:\\Tools\\Bin\\beacon\\svchost.exe",
+    "d15-ooxml-001-ooxml-external-relationship-targets": "[\"http://garnet-xenon.example.test/ref/b56e6af8aaf6e6\",\"https://marblevelvet.example.test/doc/856b01a3a\",\"https://tundra.island.example.net/doc/ea572974\"]",
+    "d16-email-001-email-message-id": "<b9f1cb47c9085a5ca8d5f@mail.example.test>",
+    "d17-audio-001-media-primary-audio-codec-name": "flac",
+    "d18-video-001-media-primary-video-dimensions": "416x462",
+    "d19-elf-001-elf-e-machine-u16-hex": "0x00f3",
+    "d20-macho-001-macho-cpu-type-set": "[\"0x00000007\"]",
+    "d21-apk-001-apk-package-name": "com.glacier.fathom.u9b1e",
+    "d22-jar-001-jar-main-class": "client.audit.core.Entry",
+    "d23-sqlite-001-sqlite-page-size-bytes": "32768",
+    "metadata-day-23-synthesis-sha256-order": "[\"database-001.sqlite\",\"video-001.mp4\",\"panel-001.png\",\"installer-001.msi\",\"evidence-note.txt\"]"
+  }
+}
