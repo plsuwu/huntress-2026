@@ -20,9 +20,11 @@
   receive the GM token and call the Game Master only through `tools/wk.py`, which
   validates scope, timing, prerequisites, exact
   answer keys, and current attempt identity before submission.
-- **Small endpoint load.** GM requests from every process are serial, separated by
-  0.5 seconds (a shared lock file), with finite timeouts. HTTP errors are recorded without automatic
-  replay. An ambiguous POST is reconciled through status on the next invocation.
+- **Small endpoint load, no gating (2026-10-24).** GM requests are direct — no shared
+  lock and no proactive pacing; workers are trusted not to flood the GM (solution
+  speed over gating). Finite timeouts; transient 429/5xx/network failures are retried
+  a bounded number of times with backoff, other HTTP errors are recorded as evidence.
+  Reintroduce a shared lock if rate limits are hit.
 - **Live target ownership.** Preparing targets are polled by status with a
   bounded wait. No worker may reset/retry/switch targets. A target-capacity
   conflict waits (bounded) for another family to finish; it never stops another family's site.

@@ -4,8 +4,8 @@ How to rebuild the web solution pipeline as an adaptation of the main solution p
 (`/home/please/Documents/huntress-ctfs/2026`), per `ADAPTATION-REQUIREMENTS.md`. The previous
 web automation (`tools/web.py`, `tools/wk.py`, `config.toml`, planners, tests, playbooks) was
 torn out as ineffective; this plan ignores it in favour of the main pipeline's proven
-`rush.py` design. Written 2026-10-24. Status: step 1 (prompt templates) done 2026-10-24;
-steps 2–5 pending.
+`rush.py` design. Written 2026-10-24. Status: steps 1–2 (prompt templates, `tools/wk.py`) done
+2026-10-24; steps 3–5 pending.
 
 ## 1. Core idea
 
@@ -53,7 +53,7 @@ release".
 | Worker GM helper | `ctf-run` binary | `tools/wk.py` |
 | Prompts | `ctf-run/tools/rush/prompts/*.md` | `tools/prompts/{prime,task,task-done}.md` |
 | Route cache | `~/.cache/ctf-run/routes.json` | `workers/web/routes-dNN.json` |
-| Lock/events | — | `workers/web/.lock`, `.events`, `.gm.lock`, `.gm.last` |
+| Events log | — | `workers/web/.events` (route-completion lines; no GM lock — section 8) |
 
 Scope guard, symmetric to rush's prime.md ("never web-exploitation"): **web workers only ever
 touch ids starting `web-exploitation-`**. The driver's route fetch uses
@@ -84,7 +84,7 @@ refuse web; web workers refuse everything else.
       prime-<slot>.md  settings-<slot>.json  launch-<slot>.sh
       brief-<chal>.md  firstpass-<chal>.json
       sent-<chal>  stopped-<chal>  active-<chal>  done-<chal>  stalled-<chal>.md
-    routes-dNN.json  .events  .lock  .gm.lock  .gm.last
+    routes-dNN.json  .events
   solver_py_scripts/
     recovery_lib.py                       # shared classifiers/recoverers — grows every day
     day-NN-web-exploitation/<slug>/{solve.py,NOTES.md}
@@ -192,9 +192,10 @@ recovers 10 bug classes. Per challenge, in a thread:
 Guards, mirroring rush's `CTF_NO_RANKED=hof`: the first pass **never** sends
 `run_for_time:true`, never `retry`/`practice`/`reset`/`switch_target`. All web TT/mastery
 routes observed so far are dual-pool (`run_for_time_supported:true`), so plain starts are
-free untimed regular attempts. GM calls go through one shared rate-limit lock
-(`workers/web/.gm.lock`, ≥0.5 s gap — both pipelines share the team identity, and the main
-rush may be polling concurrently).
+free untimed regular attempts. GM calls are direct — no lock, no proactive pacing
+(2026-10-24 decision: solution speed over gating; workers and the first pass are
+trusted not to flood the GM, and both back off reactively on 429/5xx — reintroduce a
+shared lock if rate limits appear).
 
 Run first passes **serially per challenge** (or bounded to 1–2 threads): 3 challenges × up to
 3 live targets each can hit the team target limit, and the 30-minute untimed-target idle
@@ -252,15 +253,25 @@ in the worker dir. Four commands, all guarded:
 - `wk.py submit [mode]` — submits `answers.json` with **exactly** the `answer_ids` from the
   current `start.json`, verified against the current `attempt_id`; bounded submission count;
   prints the GM verdict (`CORRECT` / `accepted`+`remaining` / `incorrect`).
-- `wk.py status [--live]` — GM `op=status` for the family's three routes (read-only).
-- `wk.py next` — first route not CORRECT.
+- `wk.py status` — local record per route (last verdict, attempt_id, target count);
+  `status --live` additionally runs GM `op=status` for the family's three routes
+  (read-only) and saves the raw response to `<mode>/status-gm.json`.
+- `wk.py next` — first route not CORRECT, read from the local `results.json`
+  (CORRECT is terminal, so the local record is authoritative; no GM calls).
 
 Hard guards (kept from the old pipeline — they were the good part): untimed only (refuse any
 `run_for_time`, `retry`, `practice`, `reset`, `switch_target` — there is no code path for
 them, plus an env check), own-family routes only (challenge id must match `family.json`'s
 base), token only from env, never printed, never sent to a target, artifact redirects
-rejected, all requests through the shared `.gm.lock` rate limiter with timeouts. Exit codes:
+rejected, no GM lock or proactive pacing (2026-10-24 decision — workers are trusted not to
+flood the GM; `wk.py` backs off reactively on 429/5xx, and a shared lock comes back if rate
+limits appear), bounded HTTP timeouts and retries. Exit codes:
 0 ok, 1 blocked (message on stderr — do not work around), 75 still waiting (run again).
+
+The GM machinery (`gm_request`, `route_status`) and the evidence shapes (`answers.json`
+`{"answers": {...}}`, `results.json` round list, `result.json`) are importable —
+`web_rush.py` does `import wk` so the first pass and the workers share one
+implementation. A CORRECT submit appends `<route> correct` to `workers/web/.events`.
 
 ## 9. Stall detection and monitoring — copy rush.py exactly
 
@@ -343,12 +354,21 @@ The loop that makes the pipeline compound:
 4. **git** (resolved 2026-10-24): the user initialized a repository in the web directory.
    Workers commit their own day directories to `master`; the coordinator commits shared-doc
    updates. See section 4.
+5. **GM rate limiting** (resolved 2026-10-24, user direction): no `.gm.lock`/`.gm.last`
+   gating in `wk.py` — solution speed over gating. Workers are trusted to use the
+   partial-submit oracle without flooding the GM; `wk.py` still retries transient
+   429/5xx/network failures with backoff. Reintroduce a shared lock if rate limits
+   are hit.
 
 ## 14. Implementation order
 
 1. `tools/prompts/prime.md`, `tools/prompts/task.md`, `tools/prompts/task-done.md` — done
    2026-10-24.
-2. `tools/wk.py` (guards first; it is the security boundary).
+2. `tools/wk.py` (guards first; it is the security boundary) — done 2026-10-24.
+   Four commands (`begin`/`submit`/`status [--live]`/`next`), untimed-only and
+   own-family guards, no GM lock per user direction (section 13 item 5), evidence
+   shapes importable for `web_rush.py`. Tested against the live GM (read-only paths)
+   and a synthetic worker dir (guards, validation, error paths).
 3. `tools/web_rush.py`: skeleton copied from `rush.py` (log/token/env/sh/Release/send/
    stall machinery), then `prep`/`launch`/`watch`/`status`/`takeover` adapted per sections
    5–6.

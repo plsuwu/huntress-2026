@@ -7,8 +7,9 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
    attempt, never starts a second one).
 2. Solve whatever is not CORRECT, in order: single_solve, then time_trial, then mastery.
    Submit with `python3 tools/wk.py submit <mode>` as soon as you have answers; on CORRECT,
-   begin the next mode at once. (`python3 tools/wk.py status` shows every route's GM state;
-   `python3 tools/wk.py next` names the first route that is not CORRECT.)
+   begin the next mode at once. (`python3 tools/wk.py status` shows the local record per
+   route, `status --live` the GM's current view; `python3 tools/wk.py next` names the
+   first route that is not CORRECT.)
 3. On `incorrect` or `accepted`: this is an untimed attempt, so partial submits are a free
    oracle - submit subsets of your answers and read `accepted_ids`/`remaining` to localise
    what is wrong. Re-derive each wrong answer from evidence; never cycle through guesses.
