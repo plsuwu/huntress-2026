@@ -132,6 +132,38 @@ pub fn is_ascii85(t: &str) -> bool {
     t.starts_with("<~") && t.ends_with("~>") && t.len() > 4
 }
 
+/// Run-length pairs `count:char,count:char,...` (Day 24 "String Theory"): each char is exactly one
+/// character (so `1:,,` is a comma and `1::,` a colon), the comma after the last pair is optional and
+/// trailing whitespace after it is ignored. `None` unless the whole text parses.
+pub fn run_length(s: &str) -> Option<String> {
+    let mut out = String::new();
+    let mut rest = s;
+    let mut pairs = 0usize;
+    loop {
+        if rest.trim().is_empty() && pairs > 0 {
+            return Some(out);
+        }
+        let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
+        if digits == 0 || digits > 6 {
+            return None;
+        }
+        let n: usize = rest[..digits].parse().ok()?;
+        rest = rest[digits..].strip_prefix(':')?;
+        let c = rest.chars().next()?;
+        rest = &rest[c.len_utf8()..];
+        if out.len() + n * c.len_utf8() > 1 << 24 {
+            return None;
+        }
+        out.extend(std::iter::repeat_n(c, n));
+        pairs += 1;
+        match rest.strip_prefix(',') {
+            Some(r) => rest = r,
+            None if rest.trim().is_empty() => return Some(out),
+            None => return None,
+        }
+    }
+}
+
 /// Hex pairs, whitespace ignored.
 pub fn hex(s: &str) -> Option<Vec<u8>> {
     let c = strip_ws(s);
