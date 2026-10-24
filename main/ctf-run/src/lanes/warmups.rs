@@ -42,6 +42,7 @@ pub enum T {
     Rail(u8),
     Gz,
     A85,
+    Rle,
 }
 
 impl T {
@@ -66,6 +67,8 @@ impl T {
             T::Rail(n) => Some(codec::rail_fence_decode(s, n as usize)),
             T::Gz => codec::text_any(&decompress(&codec::base64(t)?)?),
             T::A85 => codec::text_any(&codec::ascii85(t)?),
+            // Untrimmed: a pair's character may be a space.
+            T::Rle => codec::run_length(s.trim_start()),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -117,6 +120,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         21 => T::Gz, // "Under Pressure": base64 of gzip ("a familiar wrapper, something compressed inside")
         22 => T::Gz, // "Deflated Ego": base64 of zlib (`78 9c`/`78 da`, "needs a little inflation"); `decompress` takes zlib
         23 => T::A85, // "Eighty-Five Alive": Adobe Ascii85 (`<~ ... ~>`, "the alphabet got bigger")
+        24 => T::Rle, // "String Theory": run-length `count:char,` pairs ("the comma knows where to stop")
         _ => return None,
     })
 }
@@ -127,6 +131,10 @@ fn structured(frag: &str) -> Option<(T, String)> {
     let try_ = |t: T| t.apply(v).map(|s| (t, s));
     if codec::is_ascii85(v) {
         return try_(T::A85);
+    }
+    // Before the escape peels: a pair's character may be `\\`, `%` or `&`.
+    if let Some(r) = codec::run_length(frag.trim_start()) {
+        return Some((T::Rle, r));
     }
     if codec::is_morse(v) {
         return try_(T::Morse);
@@ -449,7 +457,8 @@ pub fn solve_blob(text: &str) -> Outcome {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
         // Delimited Ascii85 first: its alphabet holds `\\`, `%` and `&`, which other peels would eat.
-        let a85 = codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten();
+        // Run-length pairs likewise carry any character.
+        let a85 = T::Rle.apply(&t).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
         let next = a85.or_else(|| [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t)));
         if let Some(n) = next {
             t = n;
@@ -698,6 +707,16 @@ mod tests {
         let Outcome::Solved { slug, .. } = solve_rows(&b14, &none) else { panic!("{:?}", solve_rows(&b14, &none)) };
         assert_eq!(slug, "zesty-sunset-quartz-65");
     }
+    #[test]
+    fn run_length_blob() {
+        let sentence = format!("{PREFIX}jaunty-compass-mosaic-76");
+        let mut blob: String = sentence.chars().map(|c| format!("1:{c},")).collect();
+        blob = blob.replacen("1:o,1:o,", "2:o,", 1);
+        assert!(matches!(solve_blob(&blob), Outcome::Solved { slug, .. } if slug == "jaunty-compass-mosaic-76"));
+        assert_eq!(codec::run_length("1:,,2::,3: ,1:a").as_deref(), Some(",::   a"));
+        assert_eq!(codec::run_length("1:a,x"), None);
+    }
+
     #[test]
     fn gzip_blob() {
         // Day 21 "Under Pressure" single-solve: base64 of a gzip member.
