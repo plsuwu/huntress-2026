@@ -5,10 +5,19 @@
 //! Known codecs are decoded directly; an unknown one goes through a bounded search over byte
 //! transforms (reverse, hex, base64, base32, rot13, xor/sub with any key, seeded PRNG keystreams).
 //! Only a single `ANS-...` result is accepted.
+//!
+//! Since d23 (`schema` v2, `codec:"analysis"`, no `data`) the code is computed by the app itself:
+//! `Release.code(Context)` in `classes.dex` builds `ANS-` + hex of a long run through mixers, probes,
+//! JNI natives (`lib/x86_64/*.so`) and secondary DEX files loaded by reflection. `dex_code` runs every
+//! static `String` method of the primary DEX in `formats::dalvik` (with `formats::x64emu` for natives).
 
 use super::{Analysed, Analysis, Lane};
 use crate::codec;
+use crate::formats::dex::Dex;
 use crate::formats::zip::{self, Zip};
+use crate::formats::dalvik;
+use crate::formats::elf::Elf;
+use crate::formats::x64emu;
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -261,8 +270,49 @@ fn solve_apk(bytes: &[u8]) -> Result<String, String> {
     decode(&v).or_else(|e| {
         // Native libraries (d15/16 carried the code in `libarena.so` too).
         let libs: Vec<String> = z.files().filter(|f| f.name.starts_with("lib/") && f.name.ends_with(".so")).map(|f| f.name.clone()).collect();
-        unique_code(&z, libs.iter().map(String::as_str), "lib/*.so")?.ok_or(e)
+        if let Some(a) = unique_code(&z, libs.iter().map(String::as_str), "lib/*.so")? {
+            return Ok(a);
+        }
+        // d23 `analysis`: no data at all - the code is computed by `classes.dex` (`Release.code(Context)`
+        // through a chain of long mixers); interpret it.
+        dex_code(&z).map_err(|d| format!("{e}; dex: {d}"))
     })
+}
+
+/// The single `ANS-` code returned by the static `String` methods of the APK's DEX files, run in the interpreter.
+fn dex_code(z: &Zip) -> Result<String, String> {
+    let mut codes = std::collections::BTreeMap::<String, Vec<String>>::new();
+    let mut seen = Vec::new();
+    // d15 `analysis`: a `native` mixer in `lib/x86_64/libarena.so` (JNI symbol, straight-line arithmetic).
+    let mut libs: Vec<(Vec<u8>, Vec<(String, usize)>)> = Vec::new();
+    for f in z.files().filter(|f| f.name.starts_with("lib/x86_64/") && f.name.ends_with(".so")) {
+        let b = z.read(f, b"infected")?;
+        let Some(e) = Elf::parse(&b) else { continue };
+        let syms = e.symbols(&b, 11).unwrap_or_default().into_iter().filter(|s| s.value != 0).filter_map(|s| Some((s.name, e.vaddr_to_offset(s.value)?))).collect();
+        libs.push((b, syms));
+    }
+    let native = |sym: &str, args: &[u64]| -> Result<u64, String> {
+        let (b, off) = libs.iter().find_map(|(b, syms)| syms.iter().find(|(n, _)| n == sym).map(|(_, o)| (b, *o))).ok_or_else(|| format!("no x86_64 symbol {sym}"))?;
+        let mut full = vec![0, 0];
+        full.extend_from_slice(args);
+        x64emu::call(b, off, &full)
+    };
+    let files = |name: &str| z.read_name(name, b"infected").ok();
+    // Only the primary DEX files are entry points; others (assets/payload.dex) load through class loaders.
+    for f in z.files().filter(|f| f.name.ends_with(".dex") && !f.name.contains('/')) {
+        let dex = std::rc::Rc::new(Dex::parse(&z.read(f, b"infected")?).map_err(|e| format!("{}: {e}", f.name))?);
+        for (sig, r) in dalvik::run_string_methods(&dex, Some(&native), Some(&files)) {
+            match &r {
+                Ok(s) => ans_codes(s.as_bytes()).into_iter().for_each(|c| codes.entry(c).or_default().push(sig.clone())),
+                Err(e) => seen.push(format!("{sig}: {}", trunc(e))),
+            }
+        }
+    }
+    match codes.len() {
+        1 => Ok(codes.into_keys().next().unwrap()),
+        0 => Err(format!("no ANS- code from the static String methods; failures {seen:?}")),
+        _ => Err(format!("several candidates {codes:?}")),
+    }
 }
 
 fn collect(name: &str, bytes: &[u8], out: &mut Vec<(String, Result<String, String>)>, depth: u8) -> Result<(), String> {
@@ -364,6 +414,17 @@ mod tests {
         };
         assert_eq!(d(&format!(r#"{{"codec":"mystery","data":"{enc}"}}"#)).unwrap(), "ANS-123456789ABCDEF0");
         assert!(d(r#"{"codec":"mystery","data":"nothing"}"#).is_err());
+    }
+
+    #[test]
+    fn analysis_apks_run_their_dex() {
+        let apk = |n: &str| std::fs::read(format!("{}/testdata/{n}", env!("CARGO_MANIFEST_DIR"))).unwrap();
+        // d23: `Release.code` over long mixers and brute-force `Probe` loops (graded CORRECT, also checked by hand).
+        assert_eq!(solve_apk(&apk("d23-mobile-tt.apk")).unwrap(), "ANS-E4F679E90A7D1CAE");
+        // v2 d16: guarded JNI `nativeShare(JI)J` in lib/x86_64/libarena.so (cmp/jcc/movzx).
+        assert_eq!(solve_apk(&apk("d23-mobile-v2-d16.apk")).unwrap(), "ANS-7BF9CD9FEB8E911F");
+        // v2 d20: assets/payload.dex through InMemoryDexClassLoader + reflection.
+        assert_eq!(solve_apk(&apk("d23-mobile-v2-d20.apk")).unwrap(), "ANS-02D5DB6B306ACAF5");
     }
 
     #[test]

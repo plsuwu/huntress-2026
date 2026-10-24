@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-23-hook-line-and-signal/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0c5b626a-a2a1-455a-85a3-09deadde54fa",
+  "started_at": "2026-10-24T07:27:03.464Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2100.15,
+  "start_ttfb_ms": 2099.253997,
+  "clock": {
+    "start_sent": "2026-10-24T07:35:14.280Z",
+    "start_received": "2026-10-24T07:35:16.380Z",
+    "start_date_header": "2026-10-24T07:35:16.000Z",
+    "last_delivery": "2026-10-24T07:35:17.855Z",
+    "submit_sent": "2026-10-24T07:35:17.856Z",
+    "submit_received": "2026-10-24T07:35:19.346Z",
+    "submit_date_header": "2026-10-24T07:35:19.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "hook_line_and_signal_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1222.503058,
+      "total_ms": 1468.133196,
+      "done_at_ms": 3568.5559060000005,
+      "analyse_ms": 6.950367
+    }
+  ]
+}
