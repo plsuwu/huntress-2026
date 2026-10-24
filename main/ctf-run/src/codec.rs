@@ -88,6 +88,50 @@ pub fn base32(s: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
+/// Ascii85 (Adobe `<~ ... ~>` delimiters optional; `z` = four zero bytes), whitespace ignored.
+pub fn ascii85(s: &str) -> Option<Vec<u8>> {
+    let c = strip_ws(s);
+    let c = c.strip_prefix("<~").unwrap_or(&c);
+    let c = c.strip_suffix("~>").unwrap_or(c);
+    if c.is_empty() {
+        return None;
+    }
+    let mut out = Vec::with_capacity(c.len() * 4 / 5);
+    let mut group = [0u8; 5];
+    let mut n = 0;
+    for b in c.bytes() {
+        match b {
+            b'z' if n == 0 => out.extend_from_slice(&[0; 4]),
+            b'!'..=b'u' => {
+                group[n] = b - b'!';
+                n += 1;
+                if n == 5 {
+                    let v = group.iter().try_fold(0u32, |a, &d| a.checked_mul(85)?.checked_add(d as u32))?;
+                    out.extend_from_slice(&v.to_be_bytes());
+                    n = 0;
+                }
+            }
+            _ => return None,
+        }
+    }
+    match n {
+        0 => {}
+        1 => return None,
+        _ => {
+            group[n..].fill(84);
+            let v = group.iter().try_fold(0u32, |a, &d| a.checked_mul(85)?.checked_add(d as u32))?;
+            out.extend_from_slice(&v.to_be_bytes()[..n - 1]);
+        }
+    }
+    Some(out)
+}
+
+/// Adobe-delimited Ascii85 (`<~` ... `~>`)?
+pub fn is_ascii85(t: &str) -> bool {
+    let t = t.trim();
+    t.starts_with("<~") && t.ends_with("~>") && t.len() > 4
+}
+
 /// Hex pairs, whitespace ignored.
 pub fn hex(s: &str) -> Option<Vec<u8>> {
     let c = strip_ws(s);
@@ -135,6 +179,19 @@ pub fn numbers(text: &str) -> Option<String> {
         }
     }
     best.filter(|(s, _)| *s >= 0.9).map(|(_, t)| t)
+}
+
+/// Whitespace-separated numbers in one known base (2, 8, 10 or 16) -> printable ASCII text.
+pub fn numbers_radix(text: &str, base: u32) -> Option<String> {
+    let toks: Vec<&str> = text.split_whitespace().collect();
+    if toks.is_empty() {
+        return None;
+    }
+    let t: String = toks
+        .iter()
+        .map(|t| u32::from_str_radix(t, base).ok().filter(|&v| v > 0 && v < 128).map(|v| v as u8 as char))
+        .collect::<Option<String>>()?;
+    t.chars().all(|c| !c.is_control() || matches!(c, '\r' | '\n' | '\t')).then_some(t)
 }
 
 pub fn has_percent(t: &str) -> bool {

@@ -32,6 +32,7 @@ pub enum T {
     B32,
     Hex,
     Num,
+    NumBase(u8),
     Pct,
     Ent,
     Bs,
@@ -40,6 +41,7 @@ pub enum T {
     Bacon,
     Rail(u8),
     Gz,
+    A85,
 }
 
 impl T {
@@ -55,6 +57,7 @@ impl T {
             T::B32 => codec::text_any(&codec::base32(t)?),
             T::Hex => codec::text_any(&codec::hex(t)?),
             T::Num => codec::numbers(t),
+            T::NumBase(b) => codec::numbers_radix(t, b as u32),
             T::Pct => codec::has_percent(t).then(|| codec::percent_decode_all(t)),
             T::Ent => codec::has_entity(t).then(|| codec::html_unescape_all(t)),
             T::Bs => codec::has_backslash_escape(t).then(|| codec::backslash_unescape_all(t)),
@@ -62,6 +65,7 @@ impl T {
             T::Bacon => bacon_variants(t).into_iter().next(),
             T::Rail(n) => Some(codec::rail_fence_decode(s, n as usize)),
             T::Gz => codec::text_any(&decompress(&codec::base64(t)?)?),
+            T::A85 => codec::text_any(&codec::ascii85(t)?),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -91,7 +95,11 @@ fn fixed_codec(row: u32) -> Option<T> {
         1 => T::B64,
         2 => T::Rot(13),
         3 => T::Hex,
-        4 | 5 | 6 => T::Num,
+        // A decimal row of digits 0-7 only (`116 104 105 115` = "this") also reads as octal ("NDEM"),
+        // and `codec::numbers` prefers octal on a tie: pin each row's base (day-23 mastery hit it in 20 sets).
+        4 => T::NumBase(2),
+        5 => T::NumBase(10),
+        6 => T::NumBase(8),
         7 => T::Pct,
         8 => T::Ent,
         9 => T::Bs,
@@ -108,6 +116,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         20 => T::Hex, // "Big Entrance": hex of UTF-16BE (+ `feff` BOM)
         21 => T::Gz, // "Under Pressure": base64 of gzip ("a familiar wrapper, something compressed inside")
         22 => T::Gz, // "Deflated Ego": base64 of zlib (`78 9c`/`78 da`, "needs a little inflation"); `decompress` takes zlib
+        23 => T::A85, // "Eighty-Five Alive": Adobe Ascii85 (`<~ ... ~>`, "the alphabet got bigger")
         _ => return None,
     })
 }
@@ -116,6 +125,9 @@ fn fixed_codec(row: u32) -> Option<T> {
 fn structured(frag: &str) -> Option<(T, String)> {
     let v = frag.trim();
     let try_ = |t: T| t.apply(v).map(|s| (t, s));
+    if codec::is_ascii85(v) {
+        return try_(T::A85);
+    }
     if codec::is_morse(v) {
         return try_(T::Morse);
     }
@@ -436,7 +448,9 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = rails.into_iter().find_map(|c| match_template(&c)) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
-        let next = [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t));
+        // Delimited Ascii85 first: its alphabet holds `\\`, `%` and `&`, which other peels would eat.
+        let a85 = codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten();
+        let next = a85.or_else(|| [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t)));
         if let Some(n) = next {
             t = n;
             continue;
