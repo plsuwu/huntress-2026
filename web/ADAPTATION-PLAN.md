@@ -4,8 +4,8 @@ How to rebuild the web solution pipeline as an adaptation of the main solution p
 (`/home/please/Documents/huntress-ctfs/2026`), per `ADAPTATION-REQUIREMENTS.md`. The previous
 web automation (`tools/web.py`, `tools/wk.py`, `config.toml`, planners, tests, playbooks) was
 torn out as ineffective; this plan ignores it in favour of the main pipeline's proven
-`rush.py` design. Written 2026-10-24. Status: steps 1–2 (prompt templates, `tools/wk.py`) done
-2026-10-24; steps 3–5 pending.
+`rush.py` design. Written 2026-10-24. Status: steps 1–3 (prompt templates, `tools/wk.py`,
+`tools/web_rush.py`) done 2026-10-24; steps 4–5 pending.
 
 ## 1. Core idea
 
@@ -75,14 +75,13 @@ refuse web; web workers refuse everything else.
   workers/web/             # git-ignored runtime state (existing)
     <base-id>/
       family.json
-      single_solve/  start.json targets.json answers.json results.json NOTES.md solve.py <evidence>
+      single_solve/  start.json targets.json provisioning.json answers.json results.json NOTES.md solve.py <evidence>
       time_trial/    ...
       mastery/       ...
-      prompts/launch-001.md
-      tmux/          settings.json
     .rush-dNN/
-      prime-<slot>.md  settings-<slot>.json  launch-<slot>.sh
+      prime-<slot>.md  settings-<slot>.json  launch-<slot>.sh  slot-<slot>.chal
       brief-<chal>.md  firstpass-<chal>.json
+      assign-<chal>.md  settings-<chal>.json  launch-<chal>.sh  takeover-<chal>.md
       sent-<chal>  stopped-<chal>  active-<chal>  done-<chal>  stalled-<chal>.md
     routes-dNN.json  .events
   solver_py_scripts/
@@ -109,8 +108,10 @@ index lock). The coordinator commits the shared-doc updates (section 10).
 ## 5. The driver: `tools/web_rush.py`
 
 Copy rush.py's skeleton nearly verbatim — `log()`, `token()` (env or `.env`), `env()`,
-`sh()`, `state_dir()`, the `Release` class, `merge_routes()`, `send()` with the **Escape-first
-picker dismissal**, `mtime()`/`stall_since()`/`monitor()`, `slugify()`, and the `main()`
+`sh()` (with GM-token redaction in its error messages — the tmux argv carries the token),
+`state_dir()`, the `Release` class, `send()` with the **Escape-first
+picker dismissal**, `mtime()`/`stall_since()`/`monitor()`, the route-cache helpers
+(`cached_rows()`/`group_challenges()`), `short_name()`/`bare_slug()`, and the `main()`
 subcommand dispatch. Then adapt:
 
 - **`LANES` table → nothing.** Work items are discovered at release:
@@ -278,7 +279,11 @@ implementation. A CORRECT submit appends `<route> correct` to `workers/web/.even
 Per-worker `settings-<slot>.json` with the same three hooks (`Stop` → `touch stopped-<chal>`;
 `PostToolUse(*)` + `UserPromptSubmit` → `touch active-<chal>`), the `sent-<chal>` marker
 written when the brief is dispatched, `STALL_GRACE_S = 180`, `monitor()` escalating to
-`stalled-<chal>.md` with the pane tail and the takeover command. `send()` keeps the
+`stalled-<chal>.md` with the pane tail and the takeover command. Pre-warmed slots do not
+know their challenge until the release, so every hook's marker name resolves through
+`slot-<slot>.chal` (it contains `slot-<slot>` at launch and is rewritten with the
+challenge's short name at assignment) — the prime turn's stops can never start a stall
+clock, and all markers stay consistent per challenge. `send()` keeps the
 Escape-first picker dismissal (the Day 17 "Teach auto mode" picker ate typed messages). The
 coordinator watches via `tmux -L huntress-web attach -t web` and
 `python3 tools/web_rush.py status --day N` — human oversight stays intuitive through tmux.
@@ -371,7 +376,19 @@ The loop that makes the pipeline compound:
    and a synthetic worker dir (guards, validation, error paths).
 3. `tools/web_rush.py`: skeleton copied from `rush.py` (log/token/env/sh/Release/send/
    stall machinery), then `prep`/`launch`/`watch`/`status`/`takeover` adapted per sections
-   5–6.
+   5–6 — done 2026-10-24. Validated: `py_compile`; offline helper smoke (grouping,
+   naming, hook-marker indirection, launcher script); a read-only
+   `watch --day 23 --rehearse --no-agents` run (all 9 routes recognised CORRECT from GM
+   status via `op=status` alone, briefs written with task-done tails, no dispatch, no
+   mode-dir writes); `status --day 23` / `--day 24`; takeover brief + caught relaunch
+   failure with no tmux session. Two bugs found and fixed in testing: the first pass's
+   status pre-check passed `gm_request`'s `(http_status, parsed)` tuple to
+   `wk.is_correct` (never fired — fixed to unpack, so solved routes are recognised with
+   zero `op=start` POSTs); `sh()`'s error message printed the tmux argv including the GM
+   token (fixed with redaction). A stale `web` session left on the `huntress-web` socket
+   by the old pipeline was killed; `all` also kills the previous session before
+   relaunching. `launch`/dispatch itself is first exercised for real at the day-24
+   release (23:00 AEST).
 4. Rehearse with `--rehearse` against already-released days (routes reconnect via status;
    solved routes are recognised from GM status without launching a worker).
 5. Rewrite `docs/runbook.md`, `docs/policies.md`, `README.md`; delete references to the old
