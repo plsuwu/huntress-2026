@@ -19,11 +19,12 @@ API/IDOR signs; a form alone is insufficient to classify a new target as SQLi.
 
 The web lane uses assigned live sites in targets[], with no downloadable
 artifacts. Workers must document observed formats and exploit families in each
-job's NOTES.md; summarize reusable patterns here after genuine grading evidence.
-Mode names do not establish timing: all non-single modes require an advertised
-untimed pool, and existing timed attempts are held. See docs/api-contract.md for
-the live catalog/status contracts and the restored historical ready-response
-shape (active; targets have id/url). No new targets were started for this review.
+challenge's NOTES.md; summarize reusable patterns here after genuine grading evidence.
+Mode names do not establish timing: all non-single modes are dual-pool and are
+played untimed only; this pipeline has no timed path at all. See
+docs/live-web-catalog.md for the live catalog/status contracts and the observed
+ready-response shape (active; targets have id/url). No new targets were started
+for this review.
 
 ## Per-lane summary
 

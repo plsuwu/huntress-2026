@@ -4,8 +4,8 @@ How to rebuild the web solution pipeline as an adaptation of the main solution p
 (`/home/please/Documents/huntress-ctfs/2026`), per `ADAPTATION-REQUIREMENTS.md`. The previous
 web automation (`tools/web.py`, `tools/wk.py`, `config.toml`, planners, tests, playbooks) was
 torn out as ineffective; this plan ignores it in favour of the main pipeline's proven
-`rush.py` design. Written 2026-10-24. Status: steps 1–3 (prompt templates, `tools/wk.py`,
-`tools/web_rush.py`) done 2026-10-24; steps 4–5 pending.
+`rush.py` design. Written 2026-10-24. Status: steps 1–5 done 2026-10-24 (step 4's
+rehearsal is the step-3 validation run against day 23).
 
 ## 1. Core idea
 
@@ -316,16 +316,20 @@ The loop that makes the pipeline compound:
   `.env`, `python3 tools/web_rush.py status --day N-1` sanity), start
   `tmux new -d -s web-driver "python3 -u tools/web_rush.py all --day N"` at ~22:45, watch /
   attach / nudge / takeover commands, notes-merging checklist. Remove the old
-  `fresh-session.md` / `api-contract.md` / playbook references.
-- `docs/policies.md` — update: web-exploitation scope only; untimed only (no timed/ranked
-  override — HoF campaigns for web stay a coordinator decision using the main pipeline's
-  jumpbox tooling, out of scope for workers); workers hold the token via `wk.py`; no
-  sub-agents (warm tmux workers, per the main pipeline's standing policy); GM endpoint-load
-  discipline (shared lock, bounded concurrency, back off on 429, record 5xx as evidence);
-  30-min target idle + capacity-wait rules.
-- `docs/history.md`, `docs/lane-patterns.md` — keep, append per day.
+  `fresh-session.md` / `api-contract.md` / playbook references. — done 2026-10-24.
+- `docs/policies.md` — update for the rush-shaped pipeline: web-exploitation scope only;
+  untimed only (no timed/ranked override — HoF campaigns for web stay a coordinator
+  decision, out of scope for workers); workers hold the token via `wk.py`; no sub-agents
+  (warm tmux workers); no-gating endpoint discipline (2026-10-24 user decision: direct
+  calls, reactive backoff, lock returns if rate limits appear); 30-min target idle +
+  capacity-wait rules; plus a new architecture bullet. — done 2026-10-24.
+- `docs/history.md`, `docs/lane-patterns.md` — keep, append per day. — `lane-patterns.md`'s
+  dangling `api-contract.md` reference fixed 2026-10-24; the day-24 rebuild entry appended
+  to `history.md`.
 - `README.md` — rewrite to describe the rush-shaped pipeline (the current README describes
-  the torn-out one and should not survive as-is).
+  the torn-out one and should not survive as-is). — done 2026-10-24.
+- Also swept 2026-10-24: `docs/live-web-catalog.md` (stale `web.py plan` command and
+  removed-fixture references).
 
 ## 12. What deliberately does *not* carry over from the old web pipeline
 
@@ -390,6 +394,10 @@ The loop that makes the pipeline compound:
    relaunching. `launch`/dispatch itself is first exercised for real at the day-24
    release (23:00 AEST).
 4. Rehearse with `--rehearse` against already-released days (routes reconnect via status;
-   solved routes are recognised from GM status without launching a worker).
+   solved routes are recognised from GM status without launching a worker) — done
+   2026-10-24: the step-3 validation run against day 23 (`watch --day 23 --rehearse
+   --no-agents`) is this rehearsal.
 5. Rewrite `docs/runbook.md`, `docs/policies.md`, `README.md`; delete references to the old
-   tooling.
+   tooling — done 2026-10-24 (plus the stale references in `docs/lane-patterns.md` and
+   `docs/live-web-catalog.md`, and a dated `docs/history.md` entry). Day 24 is live; the
+   pipeline is held for the user's sign-off before its first real run.

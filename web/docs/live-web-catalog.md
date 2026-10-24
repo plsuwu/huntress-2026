@@ -22,11 +22,10 @@ untimed play. Single rows explicitly declare single_solve and have no ranked
 pool. Proof flags and player identity were removed from the permanent fixture.
 Solved booleans remain as catalog metadata; they are never solver answers.
 
-The release day is not the curriculum day. For example,
-`python3 tools/web.py plan --day 21` returns nine routes in three families, whose
-ids contain 06, 07 and 08. `--challenge` selects the whole family and all its
-modes; `--route` selects exactly one mode. Multiple families may also share the
-same curriculum number with different slugs; the full base id remains the key.
+The release day is not the curriculum day. For example, a lane-filtered
+`op=list&day=21&lane=web-exploitation` returns nine routes in three families,
+whose ids contain 06, 07 and 08. Multiple families may also share the same
+curriculum number with different slugs; the full base id remains the key.
 
 Live statuses confirmed a solved response with attempt_id, answer_ids,
 accepted_ids, questions, deadline=null and artifacts=[], and an HTTP 409
@@ -42,7 +41,7 @@ switch_target and reset, both excluded here to protect other workers' targets.
 We did not issue any POST, start a target, inspect target pages, submit answers,
 or run a real model worker during this validation.
 
-Fixtures: tests/fixtures/live-web-catalog.json,
-live-web-status-start-required.json and live-web-status-correct.json. They are
-sanitized read-only captures; synthetic tests cover preparing/target-ready
-responses and multi-worker behavior that remains untested against new live starts.
+This page is a dated observation record. The live catalog refreshes through the
+driver's route cache (`workers/web/routes-dNN.json`); the sanitized captures and
+the test suite that consumed them were removed with the old pipeline on
+2026-10-24.

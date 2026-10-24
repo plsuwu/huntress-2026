@@ -92,6 +92,26 @@ grading-lessons.md, decisions to policies.md.
   command and the observed pane output) was not identified from local
   evidence alone.
 
+## 2026-10-24: pipeline rebuilt rush-style; day 24 held for sign-off
+
+- Tore out the old config-driven coordinator (`tools/web.py`, `orchcfg.py`,
+  `config.toml`, planners, playbooks, tests) and rebuilt the lane as an adaptation
+  of the main pipeline's `rush.py`: `tools/web_rush.py`
+  (all/prep/launch/watch/status/takeover) + `tools/wk.py` + prompt templates
+  (ADAPTATION-PLAN.md steps 1–3, committed).
+- The 2026-10-24 user decision stands: no GM lock or pacing anywhere — direct
+  calls, reactive 429/5xx backoff; reintroduce a shared lock if rate limits
+  appear.
+- Rehearsed read-only against day 23 (`watch --day 23 --rehearse --no-agents`):
+  all 9 routes recognised CORRECT from GM status with zero starts, briefs
+  written, no agents dispatched. Killed a stale old-pipeline `web` session left
+  on the `huntress-web` socket.
+- Docs rewritten for the new pipeline (`README.md`, `docs/runbook.md`,
+  `docs/policies.md`); stale old-tooling references removed from
+  `docs/lane-patterns.md` and `docs/live-web-catalog.md`.
+- Day 24 is live. The rebuilt pipeline has not run against it yet: held until
+  the user signs off on the pipeline state.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.
