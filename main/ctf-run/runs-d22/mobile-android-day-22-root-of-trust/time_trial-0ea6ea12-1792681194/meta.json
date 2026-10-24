@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-22-root-of-trust/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0ea6ea12-2b75-43be-9de3-6425e65f4484",
+  "started_at": "2026-10-22T14:59:56.123Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2096.521949,
+  "start_ttfb_ms": 2096.4378269999997,
+  "clock": {
+    "start_sent": "2026-10-22T14:59:54.229Z",
+    "start_received": "2026-10-22T14:59:56.325Z",
+    "start_date_header": "2026-10-22T14:59:56.000Z",
+    "last_delivery": "2026-10-22T14:59:58.136Z",
+    "submit_sent": "2026-10-22T14:59:58.136Z",
+    "submit_received": "2026-10-22T15:00:00.617Z",
+    "submit_date_header": "2026-10-22T15:00:00.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "root_of_trust_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1559.92774,
+      "total_ms": 1810.309085,
+      "done_at_ms": 3906.938633,
+      "analyse_ms": 0.015344
+    }
+  ]
+}

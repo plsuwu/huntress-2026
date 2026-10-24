@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-22-root-of-trust",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "b02bb428-b8b1-4749-a61f-17406086c557",
+  "started_at": "2026-10-22T14:59:48.744Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1369.89906,
+  "start_ttfb_ms": 1369.09759,
+  "clock": {
+    "start_sent": "2026-10-22T14:59:47.603Z",
+    "start_received": "2026-10-22T14:59:48.973Z",
+    "start_date_header": "2026-10-22T14:59:48.000Z",
+    "last_delivery": "2026-10-22T14:59:50.858Z",
+    "submit_sent": "2026-10-22T14:59:50.858Z",
+    "submit_received": "2026-10-22T14:59:52.529Z",
+    "submit_date_header": "2026-10-22T14:59:52.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "root_of_trust.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1256.284293,
+      "total_ms": 1884.741558,
+      "done_at_ms": 3254.731583,
+      "analyse_ms": 0.049608
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-22-installer-script-chain/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "1daac1c4-8af9-42fa-9d68-94a0e8524a1d",
+  "started_at": "2026-10-22T15:00:07.118Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2225.973636,
+  "start_ttfb_ms": 2201.605368,
+  "clock": {
+    "start_sent": "2026-10-22T15:00:05.786Z",
+    "start_received": "2026-10-22T15:00:08.012Z",
+    "start_date_header": "2026-10-22T15:00:07.000Z",
+    "last_delivery": "2026-10-22T15:00:10.154Z",
+    "submit_sent": "2026-10-22T15:00:10.222Z",
+    "submit_received": "2026-10-22T15:00:13.465Z",
+    "submit_date_header": "2026-10-22T15:00:13.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-22-installer-script-chain-mastery.zip",
+      "bytes": 819350,
+      "wire": 819350,
+      "ttfb_ms": 1675.835447,
+      "total_ms": 1997.19894,
+      "done_at_ms": 4223.525839999999,
+      "analyse_ms": 144.311138
+    }
+  ]
+}

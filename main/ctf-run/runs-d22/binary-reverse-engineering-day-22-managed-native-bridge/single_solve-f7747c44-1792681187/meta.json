@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-22-managed-native-bridge",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f7747c44-4cd0-4f66-bc0f-f0a595d7f135",
+  "started_at": "2026-10-22T14:59:48.807Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 1129.675373,
+  "start_ttfb_ms": 1127.1054080000001,
+  "clock": {
+    "start_sent": "2026-10-22T14:59:47.958Z",
+    "start_received": "2026-10-22T14:59:49.087Z",
+    "start_date_header": "2026-10-22T14:59:49.000Z",
+    "last_delivery": "2026-10-22T14:59:54.759Z",
+    "submit_sent": "2026-10-22T14:59:54.759Z",
+    "submit_received": "2026-10-22T14:59:56.322Z",
+    "submit_date_header": "2026-10-22T14:59:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35671617,
+      "wire": 35671617,
+      "ttfb_ms": 1278.1675500000001,
+      "total_ms": 5527.31423,
+      "done_at_ms": 6657.061599000001,
+      "analyse_ms": 143.852593
+    }
+  ]
+}

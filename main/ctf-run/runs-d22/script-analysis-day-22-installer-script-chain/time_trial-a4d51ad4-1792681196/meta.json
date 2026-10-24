@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-22-installer-script-chain/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a4d51ad4-e76a-4468-9be7-55e8d89e795e",
+  "started_at": "2026-10-22T14:59:58.907Z",
+  "deadline": null,
+  "shape": "download",
+  "start_ms": 2257.190324,
+  "start_ttfb_ms": 2244.4735800000003,
+  "clock": {
+    "start_sent": "2026-10-22T14:59:56.927Z",
+    "start_received": "2026-10-22T14:59:59.184Z",
+    "start_date_header": "2026-10-22T14:59:59.000Z",
+    "last_delivery": "2026-10-22T15:00:01.626Z",
+    "submit_sent": "2026-10-22T15:00:01.636Z",
+    "submit_received": "2026-10-22T15:00:04.156Z",
+    "submit_date_header": "2026-10-22T15:00:04.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 137516,
+      "wire": 137516,
+      "ttfb_ms": 1518.0377059999998,
+      "total_ms": 2398.28521,
+      "done_at_ms": 4655.828736,
+      "analyse_ms": 43.84743
+    }
+  ]
+}

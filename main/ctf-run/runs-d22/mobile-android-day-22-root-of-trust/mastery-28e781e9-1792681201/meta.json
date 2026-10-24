@@ -1,0 +1,82 @@
+{
+  "challenge": "mobile-android-day-22-root-of-trust/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "28e781e9-2e2b-427c-98a1-0cb435ab6cdb",
+  "started_at": "2026-10-22T15:00:02.835Z",
+  "deadline": null,
+  "shape": "artifacts[6]+downloads[6]",
+  "start_ms": 1573.108197,
+  "start_ttfb_ms": 1573.0055410000002,
+  "clock": {
+    "start_sent": "2026-10-22T15:00:01.702Z",
+    "start_received": "2026-10-22T15:00:03.275Z",
+    "start_date_header": "2026-10-22T15:00:03.000Z",
+    "last_delivery": "2026-10-22T15:00:05.871Z",
+    "submit_sent": "2026-10-22T15:00:05.871Z",
+    "submit_received": "2026-10-22T15:00:07.801Z",
+    "submit_date_header": "2026-10-22T15:00:07.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 5,
+      "name": "root_of_trust_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1331.96258,
+      "total_ms": 1580.5144360000002,
+      "done_at_ms": 3153.8440809999997,
+      "analyse_ms": 0.12881599999999999
+    },
+    {
+      "delivery": 2,
+      "name": "root_of_trust_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1336.0385919999999,
+      "total_ms": 1582.6355250000001,
+      "done_at_ms": 3155.8718240000003,
+      "analyse_ms": 0.0168
+    },
+    {
+      "delivery": 1,
+      "name": "root_of_trust_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1334.07502,
+      "total_ms": 1590.982165,
+      "done_at_ms": 3164.218441,
+      "analyse_ms": 0.040909
+    },
+    {
+      "delivery": 4,
+      "name": "root_of_trust_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1365.9135410000001,
+      "total_ms": 1675.492128,
+      "done_at_ms": 3248.7728190000003,
+      "analyse_ms": 0.028635
+    },
+    {
+      "delivery": 3,
+      "name": "root_of_trust_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1410.8858559999999,
+      "total_ms": 1711.6402979999998,
+      "done_at_ms": 3284.904242,
+      "analyse_ms": 0.021858
+    },
+    {
+      "delivery": 6,
+      "name": "root_of_trust_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 2043.9824259999998,
+      "total_ms": 2595.704691,
+      "done_at_ms": 4169.035962999999,
+      "analyse_ms": 0.01397
+    }
+  ]
+}
