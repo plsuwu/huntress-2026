@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-24-event-horizon/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "5829d1b4-29b5-49d9-8e42-3f22f2e17250",
+  "started_at": "2026-10-24T13:43:04.068Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2440.508106,
+  "start_ttfb_ms": 2440.089725,
+  "clock": {
+    "start_sent": "2026-10-24T13:43:01.791Z",
+    "start_received": "2026-10-24T13:43:04.231Z",
+    "start_date_header": "2026-10-24T13:43:04.000Z",
+    "last_delivery": "2026-10-24T13:43:05.998Z",
+    "submit_sent": "2026-10-24T13:43:06.000Z",
+    "submit_received": "2026-10-24T13:43:07.758Z",
+    "submit_date_header": "2026-10-24T13:43:07.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 639654,
+      "wire": 639654,
+      "ttfb_ms": 1431.6206980000002,
+      "total_ms": 1758.195752,
+      "done_at_ms": 4199.022625,
+      "analyse_ms": 8.068057999999999
+    }
+  ]
+}

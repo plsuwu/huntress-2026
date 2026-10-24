@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-24-event-horizon/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "8016523b-8ca3-4867-80cc-68f669508f5c",
+  "started_at": "2026-10-24T13:43:17.681Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2992.624711,
+  "start_ttfb_ms": 2991.162463,
+  "clock": {
+    "start_sent": "2026-10-24T13:43:15.264Z",
+    "start_received": "2026-10-24T13:43:18.257Z",
+    "start_date_header": "2026-10-24T13:43:18.000Z",
+    "last_delivery": "2026-10-24T13:43:20.853Z",
+    "submit_sent": "2026-10-24T13:43:20.857Z",
+    "submit_received": "2026-10-24T13:43:22.516Z",
+    "submit_date_header": "2026-10-24T13:43:22.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-24-event-horizon-mastery.zip",
+      "bytes": 5486310,
+      "wire": 5486310,
+      "ttfb_ms": 1491.733549,
+      "total_ms": 2565.615485,
+      "done_at_ms": 5558.664695,
+      "analyse_ms": 29.889988
+    }
+  ]
+}

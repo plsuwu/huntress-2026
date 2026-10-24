@@ -1,0 +1,33 @@
+{
+  "answers": {
+    "roster-filename": "roster-3b1f74.csv",
+    "evidence-note-size-bytes": "380",
+    "evidence-note-md5": "7cc30af09f74542e0bc723ccaf77df54",
+    "roster-sha1": "0e4c07d9533c87bb1704d6f6a7ffae40c11a2c77",
+    "roster-sha256": "9704634c227871da1c7dffebf75f841ddf662934ac44c70ed56e32c6ce695b24",
+    "roster-magic-prefix-hex-16": "686f73742c6c6162656c2c7469636b65",
+    "evidence-note-text-utf8-bom-present": "false",
+    "d04-jpeg-001-jpeg-sof-dimensions-pixels": "385x650",
+    "d05-png-001-png-ihdr-dimensions-pixels": "557x641",
+    "d06-pdf-001-pdf-header-version": "1.3",
+    "d07-zip-001-zip-eocd-total-entries": "11",
+    "d07-zip-001-zip-central-directory-member-names": "[\"cabinet-01/doc-6.log\",\"cabinet-03/entry-7.log\",\"cabinet-17/part-7.md\",\"cabinet-23/item-7.md\",\"cabinet-34/part-1.txt\",\"drop-12/entry-7.log\",\"drop-25/item-1.md\",\"room-03/item-8.csv\",\"shelf-01/doc-6.md\",\"shelf-11/item-9.txt\",\"shelf-34/part-2.md\"]",
+    "d09-pe-001-pe-coff-machine-u16-hex": "0x01c0",
+    "d09-pe-001-pe-address-of-entry-point-rva-hex": "0x0006e549",
+    "d09-pe-001-pe-version-original-filename": "8e69b5ch44c.exe",
+    "d12-dotnet-001-dotnet-mvid-guid": "2b3326e0-bb37-8e41-a404-46b2bc3cb8fe",
+    "d13-msi-001-msi-product-code-guid": "{7B7DA0B0-885F-4E00-9E9D-7B92B01C1C8C}",
+    "d14-lnk-001-lnk-target-path-windows": "C:\\Program Files\\Tools\\launcher.exe",
+    "d15-ooxml-001-ooxml-external-relationship-targets": "[\"http://copper.tundra.invalid/ref/cb5012e56797e\"]",
+    "d16-email-001-email-message-id": "<fe0c8d1bc14c6eb3594762ae@mail.example.test>",
+    "d17-audio-001-media-primary-audio-codec-name": "vorbis",
+    "d18-video-001-media-primary-video-dimensions": "382x394",
+    "d19-elf-001-elf-e-machine-u16-hex": "0x00b7",
+    "d20-macho-001-macho-cpu-type-set": "[\"0x0000000c\",\"0x0200000c\"]",
+    "d21-apk-001-apk-package-name": "com.drift.tools",
+    "d22-jar-001-jar-main-class": "audit.util.Main",
+    "d23-sqlite-001-sqlite-page-size-bytes": "1024",
+    "d24-evtx-001-evtx-record-count": "88",
+    "metadata-day-24-synthesis-sha256-order": "[\"evidence-note-9544ae.txt\",\"events-001.evtx\",\"shortcut-001.lnk\",\"collector-001.elf\",\"document-001.pdf\"]"
+  }
+}
