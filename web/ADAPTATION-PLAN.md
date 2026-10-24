@@ -4,7 +4,8 @@ How to rebuild the web solution pipeline as an adaptation of the main solution p
 (`/home/please/Documents/huntress-ctfs/2026`), per `ADAPTATION-REQUIREMENTS.md`. The previous
 web automation (`tools/web.py`, `tools/wk.py`, `config.toml`, planners, tests, playbooks) was
 torn out as ineffective; this plan ignores it in favour of the main pipeline's proven
-`rush.py` design. Written 2026-10-24; nothing here is implemented yet.
+`rush.py` design. Written 2026-10-24. Status: step 1 (prompt templates) done 2026-10-24;
+steps 2–5 pending.
 
 ## 1. Core idea
 
@@ -97,10 +98,13 @@ the merge source. What goes away is everything around it: `config.toml`, the pla
 `orchcfg.py`, `tests/`, `playbooks/`, `worker-session.json`/`challenge-state.json`
 bookkeeping, `rounds/` prompt logs.
 
-No git worktrees and no `merge.sh`: the web directory is not a git repository, there is no
-Rust codebase, and concurrent workers write disjoint per-challenge directories. If versioned
-NOTES/solve.py history is wanted later, `git init`, commit `solver_py_scripts/` and `docs/`,
-keep `workers/web/` ignored — nothing in the design requires it.
+No git worktrees and no `merge.sh`: there is no Rust codebase, and concurrent workers write
+disjoint per-challenge directories. The user initialized a git repository on 2026-10-24
+(initial commit on `master`; `workers/web/`, `.env`, the SSH key and the VPN config are
+git-ignored). Workers commit their own day directory
+(`solver_py_scripts/day-NN-web-exploitation/<slug>/`) directly to `master` — disjoint paths,
+so no branches or merge step are needed (retry once if another worker's commit holds the
+index lock). The coordinator commits the shared-doc updates (section 10).
 
 ## 5. The driver: `tools/web_rush.py`
 
@@ -229,8 +233,8 @@ tells the worker to finish whatever is not CORRECT, in mode order, reconnecting 
 `wk.py begin` (idempotent), submitting with `wk.py submit`, iterating on
 `accepted`/`remaining` feedback, writing
 `solver_py_scripts/day-NN-web-exploitation/<slug>/NOTES.md`, keeping `solve.py` generic
-(derive routes from `/api/clues`, never hard-code per-attempt answers), and touching the
-done marker.
+(derive routes from `/api/clues`, never hard-code per-attempt answers), committing the day
+directory, and touching the done marker.
 
 Prompt shape change from the main pipeline, per the requirements: workers are **not** told a
 lane — they are told a **challenge id** and told to drive all three modes. One worker = one
@@ -274,8 +278,8 @@ The loop that makes the pipeline compound:
 
 1. Each worker writes `solver_py_scripts/day-NN-web-exploitation/<slug>/NOTES.md` (existing
    convention) and keeps a generic `solve.py`.
-2. After the day (coordinator, human-driven, ~10 min — no merge.sh, there is no codebase to
-   merge):
+2. After the day (coordinator, human-driven, ~10 min — the workers have already committed
+   their own day directories; what remains is the shared documentation):
    - fold new bug-class methods into `docs/web-worker-lessons.md` (the recognized-families
      table);
    - fold the day's outcome + next-day prediction into `docs/lane-patterns.md`;
@@ -288,6 +292,7 @@ The loop that makes the pipeline compound:
 3. `docs/web-worker-lessons.md` is injected into every worker prompt (prime + brief), so each
    worker starts with the accumulated curriculum knowledge — including that mastery mixes
    earlier bug classes and every target must be classified independently.
+   The coordinator commits these shared-doc updates (one commit per day is fine).
 
 ## 11. Docs to write/update
 
@@ -335,12 +340,14 @@ The loop that makes the pipeline compound:
    answers (recommended — it is what makes rush fast), or only recon and leave all submits
    to the worker? Submitting costs nothing on untimed routes, and `accepted`/`remaining` is
    banked progress.
-4. **git**: the web directory is not a repository. Nothing in the design requires one; see
-   section 4 if versioned NOTES/solve.py history is wanted later.
+4. **git** (resolved 2026-10-24): the user initialized a repository in the web directory.
+   Workers commit their own day directories to `master`; the coordinator commits shared-doc
+   updates. See section 4.
 
 ## 14. Implementation order
 
-1. `tools/prompts/prime.md`, `tools/prompts/task.md`, `tools/prompts/task-done.md`.
+1. `tools/prompts/prime.md`, `tools/prompts/task.md`, `tools/prompts/task-done.md` — done
+   2026-10-24.
 2. `tools/wk.py` (guards first; it is the security boundary).
 3. `tools/web_rush.py`: skeleton copied from `rush.py` (log/token/env/sh/Release/send/
    stall machinery), then `prep`/`launch`/`watch`/`status`/`takeover` adapted per sections
