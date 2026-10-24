@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-23-page-me-maybe/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "abd5a872-3ba2-4d89-9763-b8c2f26303c7",
+  "started_at": "2026-10-24T07:31:57.697Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2549.8076859999996,
+  "start_ttfb_ms": 2549.536519,
+  "clock": {
+    "start_sent": "2026-10-24T07:31:55.328Z",
+    "start_received": "2026-10-24T07:31:57.877Z",
+    "start_date_header": "2026-10-24T07:31:57.000Z",
+    "last_delivery": "2026-10-24T07:32:00.740Z",
+    "submit_sent": "2026-10-24T07:32:00.742Z",
+    "submit_received": "2026-10-24T07:32:02.346Z",
+    "submit_date_header": "2026-10-24T07:32:02.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-23-page-me-maybe-mastery.zip",
+      "bytes": 4631091,
+      "wire": 4631091,
+      "ttfb_ms": 1706.2206469999999,
+      "total_ms": 2850.1844419999998,
+      "done_at_ms": 5400.115348,
+      "analyse_ms": 12.270961999999999
+    }
+  ]
+}

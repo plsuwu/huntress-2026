@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-23-page-me-maybe",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0c037e32-be20-4bc1-bd53-3eaf219ec1eb",
+  "started_at": "2026-10-24T07:26:55.430Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 943.81646,
+  "start_ttfb_ms": 943.608068,
+  "clock": {
+    "start_sent": "2026-10-24T07:29:52.854Z",
+    "start_received": "2026-10-24T07:29:53.797Z",
+    "start_date_header": "2026-10-24T07:29:53.000Z",
+    "last_delivery": "2026-10-24T07:29:55.281Z",
+    "submit_sent": "2026-10-24T07:29:55.282Z",
+    "submit_received": "2026-10-24T07:29:56.784Z",
+    "submit_date_header": "2026-10-24T07:29:56.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-23-evidence.zip",
+      "bytes": 536,
+      "wire": 536,
+      "ttfb_ms": 1253.412541,
+      "total_ms": 1483.4222590000002,
+      "done_at_ms": 2427.63257,
+      "analyse_ms": 0.073845
+    }
+  ]
+}
