@@ -63,3 +63,52 @@ for this review.
   14-15), expect the next web release to continue sequentially from
   curriculum day 16; no new structural twist observed in list/status
   metadata beyond the two bug classes above.
+
+## Day 25 outcome (2026-10-25)
+
+- **Prediction from Day 24 confirmed:** curriculum continued sequentially —
+  day-16-shell-company, day-17-reset-expectations, day-18-resolver-revolt (3
+  families, all 3 pre-warmed slots used, no stand-downs).
+- **Launcher bug found and fixed before release:** `web_rush.py`'s
+  `launcher_script()` built the `--add-dir` paths without the literal
+  `--add-dir` flag token, so Claude's own arg parser stopped reading flags at
+  the first bare path — the real prime prompt, `--allowedTools`, `--settings`
+  and `-n` never applied, and every worker came up asking "what's my task?"
+  instead of reading `prime.md`/replying "ready". Fixed at
+  `tools/web_rush.py` (prepend `"--add-dir "` to the joined path list) and
+  reconfirmed clean on a full relaunch — all 3 slots primed correctly and
+  replied "ready" before 23:00. **Lesson:** after any change to
+  `launcher_script`/`agent_settings`, a `--rehearse` or at least a `launch`
+  + manual pane check before the real release would have caught this without
+  burning the live release window — the first (broken) launch this night
+  used real wall-clock minutes before 23:00 that a rehearsal check could
+  have protected.
+- Three new bug classes this release (now in `recovery_lib.py` as
+  `rec_command_injection`, `rec_reset_account_confusion`,
+  `rec_graphql_field_bypass` — see `web-worker-lessons.md`): OS command
+  injection via an unescaped shell-concatenated path parameter (`;`-chaining
+  only, `$(...)` substitution is rejected server-side); password-reset
+  token/account-id confusion (request a token for your own self-service
+  account, redeem it against a different account id); GraphQL field-level
+  authorization bypass (list query hides the sensitive field, matching
+  single-object query does not check it at all).
+- **Striking cross-family consistency:** all 3 families' mastery sets were
+  *exactly* backup exposure + IDOR + day-19's group-closing SQLi (`')
+  OR ('1'='1`, working unmodified on first try every time, zero fallback
+  payloads needed) + that family's own novel class — the same 3 recurring
+  classes, in the same proportion, independently in all 3 families on the
+  same night. `rec_sqli_group_close` is now promoted into `recovery_lib.py`
+  on the strength of 5 independent confirmations across 3 release days.
+  Backup exposure + IDOR + group-closing SQLi should be treated as the
+  default expected first three mastery targets going forward.
+- All 3 families finished single_solve, time_trial and mastery CORRECT in
+  one uninterrupted worker session each, no takeovers, no stalls.
+- **Prediction:** curriculum days 16-18 seen; expect release day 26 to
+  continue sequentially from curriculum day 19 (verify against the actual
+  `curriculum_day`/family title in day-26 clues rather than assuming — don't
+  confuse curriculum-day numbering with release-day numbering, they are
+  different sequences). Expect mastery on any new family to again mix
+  backup exposure + IDOR + group-closing SQLi with one new class —
+  `recovery_lib.classify_and_recover` should now resolve 3 of any 4 mastery
+  targets automatically via the first pass, leaving the worker to focus on
+  classifying only the unrecognized one.

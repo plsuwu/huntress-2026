@@ -342,7 +342,7 @@ def agent_settings_direct(sd, name):
 
 def launcher_script(day, name, prompt_file, settings_file):
     allow = f'"Bash(python3 {os.path.join(ROOT, "tools", "wk.py")} *)"'
-    adddir = " ".join(f'"{p}"' for p in (os.path.join(ROOT, "docs"),
+    adddir = "--add-dir " + " ".join(f'"{p}"' for p in (os.path.join(ROOT, "docs"),
                                          os.path.join(ROOT, "solver_py_scripts"),
                                          os.path.join(ROOT, "tools")))
     return (

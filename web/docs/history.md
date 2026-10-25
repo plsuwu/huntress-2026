@@ -142,6 +142,45 @@ grading-lessons.md, decisions to policies.md.
   pass per `docs/runbook.md` step 4. Tmux session `web` (socket
   `huntress-web`) killed after confirming both `agent: done`.
 
+## 2026-10-25: Day 25 run; launcher `--add-dir` bug found and fixed pre-release; 3 families solved
+
+- Relaunching `web_rush.py all --day 25 --workers 3 --model claude-sonnet-5`
+  surfaced a real bug before release: `launcher_script()` built the
+  `--add-dir` path list without the literal `--add-dir` flag, so Claude's own
+  arg parser stopped reading flags at the first bare path — the real prime
+  prompt, `--allowedTools`, `--settings` and `-n` never applied. All 3 workers
+  came up confused ("what's my task?") instead of priming and replying
+  "ready". Fixed (prepend `"--add-dir "` to the joined path string), killed
+  the broken `web-driver`/`web` sessions, and relaunched cleanly with ~8
+  minutes to spare before the 23:00 AEST release; all 3 slots primed
+  correctly and replied "ready" on the second launch.
+- Day 25 released 3 web-exploitation families (`day-16-shell-company`,
+  `day-17-reset-expectations`, `day-18-resolver-revolt`, curriculum days
+  16-18), confirming Day 24's prediction of sequential curriculum continuation.
+  All 3 pre-warmed slots used, no stand-downs. All 3 completed
+  single_solve/time_trial/mastery CORRECT in one uninterrupted worker session
+  each, no takeovers, no stalls.
+- Three new bug classes graded CORRECT and folded into `recovery_lib.py`:
+  `rec_command_injection` (unescaped shell path parameter, `;`-chaining only
+  — `$(...)` substitution is rejected server-side), `rec_reset_account_confusion`
+  (password-reset token issued for a self-service account, redeemable against
+  a different account id), `rec_graphql_field_bypass` (GraphQL list query
+  hides a field by omission, matching single-object query does not check it
+  at all). Also promoted `rec_sqli_group_close` (day-19's `') OR ('1'='1`
+  payload) into the shared dispatcher on the strength of 5 independent
+  confirmations across 3 release days. Full detail in
+  `docs/web-worker-lessons.md` and the day's `NOTES.md` files.
+- Striking cross-family consistency: all 3 families' mastery sets were
+  independently exactly backup exposure + IDOR + group-closing SQLi + that
+  family's own novel class — same 3 recurring classes, same proportions,
+  all 3 families, same night. `recovery_lib.classify_and_recover` should now
+  resolve 3 of any 4 future mastery targets automatically.
+- Both the uncommitted `web_rush.py` fix and the doc/`recovery_lib.py` updates
+  above are this entry's coordinator after-action pass per `docs/runbook.md`
+  step 4, committed together. Tmux session `web` (socket `huntress-web`)
+  and `web-driver` killed after confirming all 3 `agent: done` and GM status
+  CORRECT on all 9 routes (3 families x 3 modes).
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

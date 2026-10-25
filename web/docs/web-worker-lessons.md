@@ -1,6 +1,6 @@
 # Web worker lessons from restored solutions
 
-These are historical, graded observations from the release Day 19/20/21/22/24
+These are historical, graded observations from the release Day 19/20/21/22/24/25
 notes and source in `solver_py_scripts/`. They are reference methods, never current
 proofs, target assignments or permission grants. Read this before investigating
 a new target. Do not infer that a new challenge uses an earlier bug.
@@ -23,7 +23,15 @@ mastery (two families, three/four targets each) stayed consistent with this:
 field/action authorization bypass; `fetch-quest` mixed backup exposure, IDOR
 **and** day-19's group-closing SQLi (the exact `') OR ('1'='1` payload, reused
 verbatim — comment-based and plain `' OR '1'='1` payloads did not work against
-that app) with that family's own SSRF.
+that app) with that family's own SSRF. Day 25 (three families, 4 targets each,
+12 total) stayed exactly on this same shape: **every** family's mastery was
+backup exposure + IDOR + day-19's group-closing SQLi + that family's own novel
+bug (command injection / reset-token confusion / GraphQL field bypass
+respectively) — the same three recurring classes plus one new one, every
+single time, across three independent families on the same release night. That
+is strong enough evidence to treat backup exposure + IDOR + group-closing SQLi
+as the *expected* first three mastery targets for any future family, with the
+fourth being whatever that family's own class turns out to be.
 
 Join `questions[].artifact` to `targets[].id` (for example `Target 2`) to find
 the correct URL. Do not rely on array order, curriculum number or title. Preserve
@@ -58,17 +66,25 @@ classes must remain unknown until supported by the page, behavior and question.
 | Second-order SQLi (blind, no oracle) | `/api/clues` gives feature_route (POST; accepts any JSON object body, always `201`) and secondary_route (GET; a static-looking `{"rows":[...]}` body). The POST field that matters is not a content word (`question`/`note`/`text`, ...) but an SQL-clause-themed name (here `filter`); the payload must actually break out of quoting (`' OR 1=1-- `), not just submit an inert placeholder string like `"1=1"`. There is no error, reflection or timing signal distinguishing a correct field+payload pair from an incorrect one — only the GET route's row count changes once the right combination is stored and re-queried. | `day-12-ask-again-later/single_solve/NOTES.md` |
 | SSRF via a fetch proxy | `/api/clues` gives feature_route (fetches an absolute `url` query param server-side) and secondary_route (an "internal_only" route, gated by source IP, that refuses direct external requests). Pointing feature_route at `http://127.0.0.1:<port><secondary_route>` makes the fetch originate from the server's own loopback, satisfying the internal-only check. Only the internal port is unknown; a short port list (8080 confirmed every time so far) finds it fast. | `recovery_lib.py`, `rec_ssrf`; `day-24-web-exploitation/fetch-quest/NOTES.md` |
 | Field/action authorization bypass | `/api/clues` gives feature_route + inventory_route + protected_reference (a generic "execute" endpoint). `inventory_route` discloses the exact fields/actions/query-parameter-name grid — no guessing needed. Authorization is checked per `(field, action)` pair inconsistently: one action (seen: `export`) is not gated the same way as another (seen: `view`) for the restricted field, and leaks it. Brute-force the small disclosed grid, not a wordlist. | `recovery_lib.py`, `rec_field_action_bypass`; `day-24-web-exploitation/the-api-has-opinions/NOTES.md` |
+| OS command injection (unescaped shell path) | `/api/clues` gives feature_route + input_parameter + example_path (a Gin app that shells out, unescaped, to build a directory listing from the raw parameter value). Appending `; <cmd>` to the value runs `<cmd>` as a second shell statement (plain `;`-chaining only — `$(...)` substitution is rejected server-side with `diagnostic_failed` on every target seen). The proof is never reflected directly; it has to be `cat`-ed from the file named by the container's own `OBJECTIVE_PATH` env var (itself only visible via an `env` injection). | `recovery_lib.py`, `rec_command_injection`; `day-25-web-exploitation/shell-company/NOTES.md` |
+| Password-reset token / account-id confusion | `/api/clues` gives feature_route (request a token) + secondary_route (redeem it) + recovery_guide_route (discloses account_parameter/token_parameter names and the self_service-flagged account ids — no guessing needed). feature_route refuses to issue a token for a non-self-service account, but secondary_route never binds the redeemed token to the account_id it is redeemed against: request a token for a self-service account, then redeem it while claiming a different, non-self-service account id. | `recovery_lib.py`, `rec_reset_account_confusion`; `day-25-web-exploitation/reset-expectations/NOTES.md` |
+| GraphQL field-level authorization bypass | `/api/clues` gives feature_route (a live GraphQL endpoint, POST `{"query": ...}`) + protected_reference (an id hidden from a list query's sensitive field). Authorization is enforced by omission on the list surface (e.g. `caseIndex`, which never returns the sensitive field at all) but the matching single-object surface (e.g. `case(id)`) has no field-level check whatsoever — query it directly for `protected_reference`. "Vary the protocol surface" means switch GraphQL *operation* (list → single-object), not HTTP method. Needs a browser-like User-Agent — a bare urllib UA gets 403'd by the edge WAF on this app. | `recovery_lib.py`, `rec_graphql_field_bypass`; `day-25-web-exploitation/resolver-revolt/NOTES.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
 Both admin and IDOR expose `/api/` links, so testing generic API signs first
 misclassifies the admin app. `recovery_lib.classify_and_recover` extends that
-same discipline for the five classes above: it always attempts `GET /api/clues`
+same discipline for the eight classes above: it always attempts `GET /api/clues`
 directly rather than gating on the root page literally containing that text (the
 day-07 app only discloses it via `/openapi.json`, never a root-page link — a
-text pre-filter silently misses it), tries each clues-driven class in turn, then
-IDOR, then backup exposure last. Extend this evidence hierarchy for new classes;
-do not blindly copy its form=SQLi or fallback=backup assumptions.
+text pre-filter silently misses it), tries each clues-driven class in turn (now
+including command injection, reset-token confusion, SSRF, field/action bypass
+and GraphQL field bypass — each distinguished by its own exact clue-key
+combination, since several share `feature_route`/`secondary_route` and only
+differ by which *other* key is or isn't present), then IDOR, then a
+`<form>`-based SQLi gate, then backup exposure last (with a `<form>`-present
+SQLi retry and a backup-exposure retry as final fallbacks). Extend this evidence hierarchy for
+new classes; do not blindly copy its form=SQLi or fallback=backup assumptions.
 
 When a target gives no error, reflection or timing oracle at all (day-12's
 second-order SQLi above), a one-variable-at-a-time sweep can look exhaustive
@@ -111,21 +127,35 @@ every plausible value on the other axis, not just independently.
 - Once a mode's attempt is submitted CORRECT, its live target is torn down
   fast: re-requesting it afterward returns HTTP 410 `{"state":"completed"}`.
   Capture evidence *before* submitting, not after. Day 24.
+- A bare `Python-urllib/*` default User-Agent gets 403'd outright by the edge
+  WAF/Cloudflare on at least one app (resolver-revolt's GraphQL endpoint,
+  day 25) with no body hint that it's a UA issue — every request, including
+  harmless probes, needs a browser-like `User-Agent` header. `recovery_lib.py`'s
+  `Target` client already sends one by default; a hand-rolled request client
+  must not drop it.
+- Some injection sinks reject command-substitution forms (`$(...)`) outright
+  with a generic server-side error (`{"error":"diagnostic_failed"}`, day 25's
+  shell-company) while accepting plain `;`-chained commands — if a shell
+  injection is suspected but `$()` gets rejected, retry with `;` before
+  concluding the sink isn't injectable.
 
 ## Reuse source, not the old execution workflow
 
 The most complete reference is now `solver_py_scripts/recovery_lib.py`: one
 shared, stdlib-only module folding every class above (`rec_backup`, `rec_idor`,
 `rec_session_fixation`, `rec_reflect_callback`, `rec_stored_xss_bot`, `rec_csrf`,
-`rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`) plus the `Target`
-HTTP client and `classify_and_recover` dispatcher behind it, shared by
+`rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`,
+`rec_command_injection`, `rec_reset_account_confusion`,
+`rec_graphql_field_bypass`, `rec_sqli_group_close`) plus the `Target` HTTP
+client and `classify_and_recover` dispatcher behind it, shared by
 `day-21-web-exploitation/solve.py` and `day-22-web-exploitation/solve.py` (the
-day-24 family solvers ported their own two classes directly rather than
+day-24 and day-25 family solvers ported their own classes directly rather than
 importing this module, per the rule below — `recovery_lib.py` itself folded
-them in afterward, from the graded evidence). It is verified against local
-HTTP fixtures for every class it recovers (not just read for plausibility),
-but a fixture is not a live target: still read it before trusting it against
-your assignment.
+them in afterward, from the graded evidence; `rec_sqli_group_close` folds in
+day-19's payload, now reconfirmed verbatim across five independent live apps).
+It is verified against local HTTP fixtures for every class it recovers (not
+just read for plausibility), but a fixture is not a live target: still read it
+before trusting it against your assignment.
 Earlier still: `day-20-web-exploitation/common.py` (`sniff`, `rec_sqli`, `rec_lfi`,
 `rec_admin`) and `day-19-web-exploitation/solve_lane.py` (the earlier
 three-family dispatcher). Every `NOTES.md` (including the new day-21/day-22

