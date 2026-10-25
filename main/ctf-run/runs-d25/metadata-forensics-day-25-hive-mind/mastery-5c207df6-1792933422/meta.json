@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-25-hive-mind/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "5c207df6-ffec-4332-9cac-548c6632ffdf",
+  "started_at": "2026-10-25T13:03:43.759Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1412.7418499999999,
+  "start_ttfb_ms": 1410.973979,
+  "clock": {
+    "start_sent": "2026-10-25T13:03:42.523Z",
+    "start_received": "2026-10-25T13:03:43.936Z",
+    "start_date_header": "2026-10-25T13:03:43.000Z",
+    "last_delivery": "2026-10-25T13:03:45.665Z",
+    "submit_sent": "2026-10-25T13:03:45.668Z",
+    "submit_received": "2026-10-25T13:03:47.216Z",
+    "submit_date_header": "2026-10-25T13:03:47.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-25-hive-mind-mastery.zip",
+      "bytes": 6054166,
+      "wire": 6054166,
+      "ttfb_ms": 1333.275811,
+      "total_ms": 1698.5609120000001,
+      "done_at_ms": 3111.679896,
+      "analyse_ms": 30.108653999999998
+    }
+  ]
+}
