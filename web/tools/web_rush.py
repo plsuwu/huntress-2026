@@ -502,7 +502,7 @@ def recover_answers(mdir, sj):
         t = recovery_lib.Target(tgt["url"],
                                 mdir / "evidence" / str(tid).replace(" ", "_"))
         try:
-            proof = recovery_lib.classify_and_recover(t, ev)
+            proof = recovery_lib.classify_and_recover(t, ev, sj.get("prompt", ""))
         except Exception as e:  # noqa: BLE001  one target's crash must not discard the others
             proof, ev["error"] = None, repr(e)
         evidence[qid] = {"target": tid, "url": tgt["url"], **ev}

