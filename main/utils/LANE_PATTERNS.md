@@ -256,6 +256,31 @@ spent. Details in `solver_py_scripts/day-24-*/*/NOTES.md`; run log in `orchestra
 | binary-RE | Scala patch-diffing JAR pair (vulnerable/corrected) | nothing; the diff is not scored. Untagged config fields are read from the first member (vulnerable.jar). This assumes both configs are equal, which they were |
 | mobile | v1 `split` (single), v2 `analysis` (TT + 8 mastery APKs) | nothing; emulator checks are plain arithmetic. Days 7 and 8 still not seen as v2 |
 
+## Day 25 outcome (2026-10-25)
+
+Dual-pool. The rush started on time; the release was detected at 23:00:01 and all five lanes were done by 23:04:52.
+Script, binary and mobile passed the first pass with no code change. Warmups and metadata were fixed by their
+agents. All 15 routes were CORRECT untimed, with no ranked attempts spent. Details in
+`solver_py_scripts/day-25-*/*/NOTES.md`; run log in `orchestrator/history.md`.
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **Unicode code points `U+XXXX`** ("You Have a Point") | new `codec::code_points` (`T::Cp`), peeled after run-length. Mastery row 25 = `T::Cp`; 123 mastery sets |
+| metadata | `d25-registry-001-registry-hive-root-name` (REGF hives) | graded = name of the `nk` that the base block's root offset (u32 @0x24, +0x1000) points at, **not** the embedded file name @0x30. New `formats/regf.rs`; the other `registry_answer` fields are ungraded guesses |
+| script | `polyglot-elixir-*` + `host-elixir-phoenix-elixir` (`.exs`) | nothing; `descriptor_<hex> = "..."` matches the existing pattern. Mastery now 9 sets |
+| binary-RE | Clojure JAR pair (vulnerable/corrected) | nothing; untagged configs answered from the first member again (configs equal). Mastery 9 sets |
+| mobile | v1 `hex` (single), v2 `analysis` (TT + 9 mastery APKs) | nothing; pure DEX arithmetic. **Day 7 seen as v2 for the first time**; day 8 still not seen as v2 |
+
+## Day 26 predictions
+
+- Warmups: another per-character notation (`&#x..;`, `\x4E`, `0x4E` tokens, quoted-printable `=4E`, `\N{...}`); QP and
+  `0x` tokens are not peeled yet. Mastery row 26 joins the fixed rows.
+- Metadata: a follow-up `registry-*` field ("regroup the systems": the `Marker` value; "planted hive": sequence
+  mismatch, bad checksum or timestamp outlier). `registry_answer` already answers those as **ungraded guesses**.
+- Script: one more polyglot language on the Day 23 TT schema; mastery 10 sets.
+- Binary-RE: likely nothing; another JVM-language JAR pair. Check config equality if a pair diverges.
+- Mobile: a new v2 mechanism; day 8 may finally appear as v2.
+
 ## Day 25 predictions
 
 - Warmups: another simple text codec (run-length with counts > 1, Baudot/Bacon, morse, base-N); mastery row 25 joins the
