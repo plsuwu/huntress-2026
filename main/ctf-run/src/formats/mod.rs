@@ -20,6 +20,7 @@ pub mod media;
 pub mod ooxml;
 pub mod overlay;
 pub mod pe;
+pub mod regf;
 pub mod sqlite;
 pub mod video;
 pub mod wasm;

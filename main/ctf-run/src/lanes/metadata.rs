@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pe, sqlite, video, zip};
+use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pe, regf, sqlite, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -518,6 +518,77 @@ fn evtx_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-registry-<field>` -> a registry hive (`regf`) field. d25 graded `hive-root-name`: the name of the `nk`
+/// cell the base block's root offset points at (the "true root", whatever the file is called). That cell
+/// must carry KEY_HIVE_ENTRY. Other fields are unverified guesses; a field named like one of the root key's
+/// values (`marker`) answers that value's data. An unknown field fails with a hive facts dump.
+fn registry_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-registry-")?;
+    let want = &key[i + 10..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("registry-").unwrap_or(want);
+    let Some(h) = regf::Hive::parse(b) else { return Some(Err(format!("no regf header; {}", facts("registry", b)))) };
+    let Some(root) = h.root() else { return Some(Err(format!("root cell is not an nk key; {}", registry_facts(&h)))) };
+    if root.flags & regf::KEY_HIVE_ENTRY == 0 {
+        return Some(Err(format!("root cell lacks KEY_HIVE_ENTRY; {}", registry_facts(&h))));
+    }
+    let base = &h.base;
+    let ts = |ft: u64| crate::formats::evtx::filetime_iso(ft);
+    let tree = || h.walk(&root);
+    let sorted = |mut v: Vec<String>| {
+        v.sort();
+        compact_json(&v)
+    };
+    let field = want.strip_prefix("hive-").unwrap_or(want);
+    Some(Ok(match field {
+        "root-name" | "root-key-name" | "root" => root.name.clone(),
+        "root-last-written" | "root-timestamp" | "root-last-write-time" => ts(root.last_written),
+        "root-subkey-count" => root.subkey_count.to_string(),
+        "root-value-count" => root.value_count.to_string(),
+        "root-subkey-names" | "root-subkeys" => sorted(h.subkeys(&root).into_iter().map(|k| k.name).collect()),
+        "root-value-names" | "root-values" => sorted(h.values(&root).into_iter().map(|v| v.name).collect()),
+        "file-name" | "embedded-file-name" | "base-block-file-name" | "internal-file-name" => base.file_name.clone(),
+        "last-written" | "timestamp" | "last-write-time" => ts(base.last_written),
+        "primary-sequence" | "primary-sequence-number" => base.primary_seq.to_string(),
+        "secondary-sequence" | "secondary-sequence-number" => base.secondary_seq.to_string(),
+        "dirty" | "is-dirty" | "sequence-mismatch" => (base.primary_seq != base.secondary_seq).to_string(),
+        "version" | "format-version" => format!("{}.{}", base.major, base.minor),
+        "checksum" | "checksum-hex" => format!("0x{:08x}", base.checksum),
+        "checksum-valid" | "checksum-ok" => base.checksum_ok.to_string(),
+        "root-cell-offset" | "root-cell-offset-hex" => format!("0x{:08x}", base.root_cell),
+        "bins-size" | "hive-bins-data-size" | "hive-bins-size" => base.hive_bins_size.to_string(),
+        "key-count" | "keys" => tree().len().to_string(),
+        "value-count" | "values" => tree().iter().map(|(_, k)| k.value_count as u64).sum::<u64>().to_string(),
+        "key-paths" => sorted(tree().into_iter().map(|(p, _)| p).collect()),
+        other => {
+            let flat = |s: &str| s.replace(['-', '_', ' '], "").to_ascii_lowercase();
+            let name = other.strip_prefix("root-").unwrap_or(other);
+            let name = name.strip_suffix("-value").unwrap_or(name);
+            match h.values(&root).into_iter().find(|v| flat(&v.name) == flat(name)) {
+                Some(v) => regf::value_text(&v),
+                None => return Some(Err(format!("unknown registry field {want:?}; {}", registry_facts(&h)))),
+            }
+        }
+    }))
+}
+
+fn registry_facts(h: &regf::Hive) -> String {
+    let entries: Vec<String> = h.hive_entry_keys().iter().map(|k| format!("{}@{:#x}", k.name, k.offset)).collect();
+    let tree: Vec<String> = h
+        .root()
+        .map(|r| {
+            h.walk(&r)
+                .into_iter()
+                .take(32)
+                .map(|(p, k)| format!("{p} {{{}}}", h.values(&k).iter().map(|v| format!("{}={:?}", v.name, regf::value_text(v))).collect::<Vec<_>>().join(", ")))
+                .collect()
+        })
+        .unwrap_or_default();
+    format!("regf len {} base {:?} bins {:?} hive_entry_keys {entries:?} tree {tree:?}", h.len, h.base, h.bins)
+}
+
 fn evtx_facts(e: &evtx::Evtx) -> String {
     let recs: Vec<String> = e.records.iter().take(64).map(|r| format!("{}@{:#x}+{} {}", r.id, r.offset, r.size, evtx::filetime_iso(r.filetime))).collect();
     format!(
@@ -695,6 +766,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(db) = sqlite::Db::parse(b) {
         f.push(sqlite_facts(&db));
     }
+    if let Some(h) = regf::Hive::parse(b) {
+        f.push(registry_facts(&h));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -796,6 +870,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = evtx_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = registry_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {

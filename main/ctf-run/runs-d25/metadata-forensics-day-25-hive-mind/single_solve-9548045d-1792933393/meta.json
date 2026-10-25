@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-25-hive-mind",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "9548045d-850f-4b14-89b5-d324492f7253",
+  "started_at": "2026-10-25T13:00:06.925Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1534.601107,
+  "start_ttfb_ms": 1534.407951,
+  "clock": {
+    "start_sent": "2026-10-25T13:03:13.901Z",
+    "start_received": "2026-10-25T13:03:15.436Z",
+    "start_date_header": "2026-10-25T13:03:15.000Z",
+    "last_delivery": "2026-10-25T13:03:18.131Z",
+    "submit_sent": "2026-10-25T13:03:18.131Z",
+    "submit_received": "2026-10-25T13:03:19.784Z",
+    "submit_date_header": "2026-10-25T13:03:19.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-25-evidence.zip",
+      "bytes": 657,
+      "wire": 657,
+      "ttfb_ms": 2460.540273,
+      "total_ms": 2694.725722,
+      "done_at_ms": 4229.694574,
+      "analyse_ms": 0.056753
+    }
+  ]
+}
