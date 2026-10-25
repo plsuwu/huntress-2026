@@ -186,3 +186,29 @@ here after every release night.
 - **Merge:** `merge.sh 25` in three batches (script/binary/mobile, warmups, metadata); 76 tests, replay 395/395
   clean. Not yet deployed; no campaign run.
 - **Coordinator gotchas:** see the runbook's shell section (tzdata missing, and `ls` under nullglob).
+
+## 2026-10-25/26: HoF campaigns after Day 25 (user-approved)
+
+- **Prep:** rush shut down (agents, `huntress` tmux server; the driver had already exited). Deployed `722b5abd` to
+  the jumpbox by hand: the binary there dated from Oct 22. Surveyed days 1-25 (`survey-d25.json`).
+- **New tool:** `ctf-run/tools/hof_plan.py` builds a plan from a survey with the Day 22 budget rules. It skips routes
+  that spent ranked attempts but never got a scoreboard row (binary d01/d02, metadata d01: not HoF-eligible, see
+  `ctf-run/PLAN.md`).
+- **Campaign A** (`plan-d22-25.json`, the 40 never-attempted routes on days 22-25, ~23:25-23:50 AEST): 71 runs, all
+  CORRECT. **28 of 40 went straight to #1**; 6 at #2, 4 at #3, one at #4 (binary d23 mastery), one at #6 (script d25 TT).
+- **Campaign B** (`plan-full-d25.json`, 208 routes on days 1-25 with attempts left, ~23:55-02:00): 417 runs, all
+  CORRECT.
+  - Budget: 3 runs (2 on 16-attempt pools) where not #1; 1 `past_first` run where already #1.
+  - Jumpbox disk full after 24 routes: ENOSPC crashed the campaign. Binary ranked run dirs had grown `runs-hof/` to
+    20 GB. With the user's approval, 573 old binary evidence zips (16.2 GB) were deleted, keeping the newest run per
+    route+mode and all JSON (`tools/prune_hof_runs.sh`). Resumed with the done-route list.
+  - Board across 250 routes, start of night -> after A -> after B: **#1 63 -> 91 -> 93**, top-3 126 -> 164 -> 168, on the
+    board 182 -> 222. B gave only 19 rank gains: most routes had already been re-rolled on Day 22, and these runs
+    were in the slow release-night latency window.
+  - #1 by lane: script 39/50, metadata 23/50, mobile 18/50, warmups 11/50, binary 2/50.
+- **Worst remaining:** metadata d11 mastery #51 and binary d09 TT #31 have no attempts left. Binary d10 TT is #7
+  (1580 ms vs 503 ms leader) with 239 left: an analysis-speed gap, so re-rolls won't close it.
+- **Coordinator gotchas:** the ssh master socket (`-M -fN`) does not survive between the coordinator's Bash calls
+  (the harness reaps it), so use plain keyed ssh with `ConnectTimeout=150+`. The launch ssh hung every time (exit
+  124) but the campaign started anyway. A monitor's `grep 503` matched leader times (`top [503, ...]`): match
+  `HTTP 503` instead.

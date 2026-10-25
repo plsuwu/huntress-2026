@@ -54,6 +54,8 @@ between `started_at` and the submit counts.
 |---|---|
 | `ctf-run/tools/hof_survey.py --days A-B [--json OUT]` | Route status x scoreboard: our rank and time vs the leaders. Routes come from the local `ctf-run routes` cache |
 | `ctf-run/tools/hof_campaign.py PLAN OUT.jsonl [DONE,...]` | Runs on the jumpbox and is resumable. Per route: up to `budget` runs; stops on #1, after 3 non-improving runs, on no attempts left, or on any non-CORRECT result. Backs off on 503 |
+| `ctf-run/tools/hof_plan.py SURVEY OUT [--days A-B] [--unattempted] [--exclude PLANS]` | Survey -> plan with the standard budgets; skips HoF-ineligible routes |
+| `ctf-run/tools/prune_hof_runs.sh [--do]` | Frees jumpbox disk: drops old binary-RE evidence zips from `runs-hof/` (run it via `ssh ... 'bash -s'`) |
 | `ctf-run/runs-hof/` | Plans, surveys and campaign logs/jsonl |
 
 Every campaign run is a real ranked attempt: `--retry --timed` on dual-pool routes, or `--retry --one-shot-ok` on
