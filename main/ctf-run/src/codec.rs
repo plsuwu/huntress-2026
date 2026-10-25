@@ -164,6 +164,27 @@ pub fn run_length(s: &str) -> Option<String> {
     }
 }
 
+/// Unicode code point notation `U+004E U+0069 ...` (Day 25 "You Have a Point"): each token is `U+`
+/// and 4-6 hex digits; whitespace or commas between tokens are optional. `None` unless the whole
+/// text parses.
+pub fn code_points(s: &str) -> Option<String> {
+    let c: String = s.chars().filter(|c| !c.is_whitespace() && *c != ',').collect();
+    // `U`/`u` is not a hex digit, so the markers delimit the tokens unambiguously.
+    let mut toks = c.split(['U', 'u']);
+    if toks.next() != Some("") {
+        return None;
+    }
+    let mut out = String::new();
+    for tok in toks {
+        let h = tok.strip_prefix('+')?;
+        if !(4..=6).contains(&h.len()) || !h.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return None;
+        }
+        out.push(char::from_u32(u32::from_str_radix(h, 16).ok()?)?);
+    }
+    (!out.is_empty()).then_some(out)
+}
+
 /// Hex pairs, whitespace ignored.
 pub fn hex(s: &str) -> Option<Vec<u8>> {
     let c = strip_ws(s);

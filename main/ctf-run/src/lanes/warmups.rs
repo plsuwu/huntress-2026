@@ -43,6 +43,7 @@ pub enum T {
     Gz,
     A85,
     Rle,
+    Cp,
 }
 
 impl T {
@@ -69,6 +70,7 @@ impl T {
             T::A85 => codec::text_any(&codec::ascii85(t)?),
             // Untrimmed: a pair's character may be a space.
             T::Rle => codec::run_length(s.trim_start()),
+            T::Cp => codec::code_points(t),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -121,6 +123,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         22 => T::Gz, // "Deflated Ego": base64 of zlib (`78 9c`/`78 da`, "needs a little inflation"); `decompress` takes zlib
         23 => T::A85, // "Eighty-Five Alive": Adobe Ascii85 (`<~ ... ~>`, "the alphabet got bigger")
         24 => T::Rle, // "String Theory": run-length `count:char,` pairs ("the comma knows where to stop")
+        25 => T::Cp, // "You Have a Point": Unicode code points `U+004E U+0069 ...` ("a code point, anyway")
         _ => return None,
     })
 }
@@ -131,6 +134,9 @@ fn structured(frag: &str) -> Option<(T, String)> {
     let try_ = |t: T| t.apply(v).map(|s| (t, s));
     if codec::is_ascii85(v) {
         return try_(T::A85);
+    }
+    if let Some(r) = codec::code_points(v) {
+        return Some((T::Cp, r));
     }
     // Before the escape peels: a pair's character may be `\\`, `%` or `&`.
     if let Some(r) = codec::run_length(frag.trim_start()) {
@@ -458,7 +464,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         }
         // Delimited Ascii85 first: its alphabet holds `\\`, `%` and `&`, which other peels would eat.
         // Run-length pairs likewise carry any character.
-        let a85 = T::Rle.apply(&t).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
+        let a85 = T::Rle.apply(&t).or_else(|| T::Cp.apply(&t)).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
         let next = a85.or_else(|| [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t)));
         if let Some(n) = next {
             t = n;
@@ -715,6 +721,19 @@ mod tests {
         assert!(matches!(solve_blob(&blob), Outcome::Solved { slug, .. } if slug == "jaunty-compass-mosaic-76"));
         assert_eq!(codec::run_length("1:,,2::,3: ,1:a").as_deref(), Some(",::   a"));
         assert_eq!(codec::run_length("1:a,x"), None);
+    }
+
+    #[test]
+    fn code_point_blob() {
+        // Day 25 "You Have a Point": `U+XXXX` tokens, space-separated.
+        let sentence = format!("{PREFIX}brave-beacon-wizard-34");
+        let blob = sentence.chars().map(|c| format!("U+{:04X}", c as u32)).collect::<Vec<_>>().join(" ") + "\n";
+        assert!(matches!(solve_blob(&blob), Outcome::Solved { slug, .. } if slug == "brave-beacon-wizard-34"));
+        let rows = format!("01\tTmljZSB3b3Jr\n25\t{}\n", sentence[9..].chars().map(|c| format!("U+{:04x}", c as u32)).collect::<String>());
+        assert!(matches!(solve_rows(&rows, &BTreeMap::new()), Outcome::Solved { slug, .. } if slug == "brave-beacon-wizard-34"));
+        assert_eq!(codec::code_points("U+1F600,U+0041").as_deref(), Some("\u{1F600}A"));
+        assert_eq!(codec::code_points("U+004 U+0041"), None);
+        assert_eq!(codec::code_points("x U+0041"), None);
     }
 
     #[test]
