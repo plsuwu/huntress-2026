@@ -95,6 +95,11 @@ cd ctf-run && tools/rush/merge.sh N --deploy   # ... and ships the static binary
 
 ## 4. Ranked campaign (only with approval; see `policies.md`)
 
+**Check jumpbox disk first** (`df -h ~` on the box): every ranked run saves its deliveries under `runs-hof/`, and a
+binary-RE run keeps up to ~32 MB per evidence zip. On 2026-10-25 a full pass filled the 38 GB disk after ~95 binary
+runs and the campaign died on ENOSPC. Want 8 GB+ free; otherwise prune with `ctf-run/tools/prune_hof_runs.sh` (keeps
+the newest run's zips per route and mode, and all JSON). Build plans with `ctf-run/tools/hof_plan.py`.
+
 ```sh
 H=HuntressCTF@10.1.181.90; K=huntress-id_ed25519
 ssh -i $K $H 'cd ~/ctf-run-v2 && ./target/release/ctf-run routes --refresh day-NN'   # jumpbox route cache
