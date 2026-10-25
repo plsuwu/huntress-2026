@@ -8,7 +8,7 @@
   web_rush.py status  [--day N]                             first-pass results, challenge done-markers, stalled agents
   web_rush.py takeover --challenges a[,b] [--day N]         coordinator: fresh worker window + brief for a stalled challenge
 Options: --workers N (pre-warmed slots, default 3), --no-agents (watch: first pass + briefs only, no tmux dispatch),
-         --model NAME (worker Claude model, default claude-opus-5-5).
+         --model NAME (worker Claude model, default claude-opus-4-8).
 
 Release: 23:00 Australia/Brisbane; Day N = that date's day of the month. Work items are the day's web-exploitation
 challenges, discovered at release (op=list&day=N&lane=web-exploitation, grouped into base challenges). Pre-warmed slot i
@@ -54,7 +54,7 @@ SESSION = "web"
 LANE = "web-exploitation"
 LANE_PREFIX = "web-exploitation-"
 WORKER_SLOTS = 3
-WORKER_MODEL = "claude-opus-5-5"
+WORKER_MODEL = "claude-opus-4-8"
 NO_AGENTS = False
 STALL_GRACE_S = 180  # an agent waiting on a background recovery also ends its turn with no tool activity
 

@@ -65,8 +65,8 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
 - Workers get `--allowedTools "Bash(python3 <root>/tools/wk.py *)"` so the auto-mode
   classifier cannot stall a submit (the Day 16 lesson). Everything else runs under
   `--permission-mode auto`.
-- Workers are pinned to `--model claude-opus-5-5 --effort high` (their cwd carries no
-  settings file to inherit from).
+- Workers are pinned to `--model claude-opus-4-8 --effort high` (their cwd carries no
+  settings file to inherit from; `--model` on `web_rush.py` overrides this per-run).
 - The GM token reaches a pane only through `tmux -e` (the session environment), and the
   worker uses it only through `tools/wk.py`. The driver redacts it from its own error
   messages.
