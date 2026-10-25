@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-25-phoenix-stage-chain",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d039d4e9-773b-4d4e-851d-87ccb2802dbc",
+  "started_at": "2026-10-25T13:00:07.815Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1826.2960320000002,
+  "start_ttfb_ms": 1813.4783400000001,
+  "clock": {
+    "start_sent": "2026-10-25T13:00:06.306Z",
+    "start_received": "2026-10-25T13:00:08.133Z",
+    "start_date_header": "2026-10-25T13:00:08.000Z",
+    "last_delivery": "2026-10-25T13:00:09.966Z",
+    "submit_sent": "2026-10-25T13:00:09.977Z",
+    "submit_received": "2026-10-25T13:00:12.883Z",
+    "submit_date_header": "2026-10-25T13:00:12.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 147501,
+      "wire": 147501,
+      "ttfb_ms": 1544.630204,
+      "total_ms": 1780.128391,
+      "done_at_ms": 3606.769002,
+      "analyse_ms": 53.033559000000004
+    }
+  ]
+}

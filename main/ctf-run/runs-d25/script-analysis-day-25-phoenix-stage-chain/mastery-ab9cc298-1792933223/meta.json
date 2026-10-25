@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-25-phoenix-stage-chain/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "ab9cc298-1a82-481a-a9f2-5b2c4cbbc66f",
+  "started_at": "2026-10-25T13:00:24.047Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1609.7725980000002,
+  "start_ttfb_ms": 1573.691281,
+  "clock": {
+    "start_sent": "2026-10-25T13:00:23.020Z",
+    "start_received": "2026-10-25T13:00:24.630Z",
+    "start_date_header": "2026-10-25T13:00:24.000Z",
+    "last_delivery": "2026-10-25T13:00:27.261Z",
+    "submit_sent": "2026-10-25T13:00:27.463Z",
+    "submit_received": "2026-10-25T13:00:32.281Z",
+    "submit_date_header": "2026-10-25T13:00:32.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-25-phoenix-stage-chain-mastery.zip",
+      "bytes": 1484114,
+      "wire": 1484114,
+      "ttfb_ms": 1952.622943,
+      "total_ms": 2466.159436,
+      "done_at_ms": 4076.0500620000003,
+      "analyse_ms": 164.92502000000002
+    }
+  ]
+}

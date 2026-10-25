@@ -1,0 +1,112 @@
+{
+  "challenge": "mobile-android-day-25-integrity-signals/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "706e73f7-9f92-4570-a9e0-8d4d2f600118",
+  "started_at": "2026-10-25T13:00:20.896Z",
+  "deadline": null,
+  "shape": "artifacts[9]+downloads[9]",
+  "start_ms": 1239.4678370000001,
+  "start_ttfb_ms": 1239.152151,
+  "clock": {
+    "start_sent": "2026-10-25T13:00:19.882Z",
+    "start_received": "2026-10-25T13:00:21.121Z",
+    "start_date_header": "2026-10-25T13:00:21.000Z",
+    "last_delivery": "2026-10-25T13:00:23.350Z",
+    "submit_sent": "2026-10-25T13:00:23.350Z",
+    "submit_received": "2026-10-25T13:00:26.344Z",
+    "submit_date_header": "2026-10-25T13:00:26.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 2,
+      "name": "integrity_signals_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1461.4096060000002,
+      "total_ms": 1755.914658,
+      "done_at_ms": 2995.853734,
+      "analyse_ms": 1.732057
+    },
+    {
+      "delivery": 3,
+      "name": "integrity_signals_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1428.074095,
+      "total_ms": 1755.8093110000002,
+      "done_at_ms": 2995.841688,
+      "analyse_ms": 1.7962570000000002
+    },
+    {
+      "delivery": 5,
+      "name": "integrity_signals_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1432.2980499999999,
+      "total_ms": 1755.710945,
+      "done_at_ms": 2995.8494689999998,
+      "analyse_ms": 1.914027
+    },
+    {
+      "delivery": 6,
+      "name": "integrity_signals_mastery_06.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1463.698931,
+      "total_ms": 1755.704088,
+      "done_at_ms": 2995.849454,
+      "analyse_ms": 2.5153100000000004
+    },
+    {
+      "delivery": 4,
+      "name": "integrity_signals_mastery_04.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1488.3021039999999,
+      "total_ms": 1812.414566,
+      "done_at_ms": 3052.4718740000003,
+      "analyse_ms": 4.175873
+    },
+    {
+      "delivery": 8,
+      "name": "integrity_signals_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1766.947786,
+      "total_ms": 2030.0783920000001,
+      "done_at_ms": 3270.284246,
+      "analyse_ms": 2.31616
+    },
+    {
+      "delivery": 9,
+      "name": "integrity_signals_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1778.7204860000002,
+      "total_ms": 2032.99992,
+      "done_at_ms": 3273.294208,
+      "analyse_ms": 0.9647119999999999
+    },
+    {
+      "delivery": 1,
+      "name": "integrity_signals_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1866.256316,
+      "total_ms": 2172.7284720000002,
+      "done_at_ms": 3412.630794,
+      "analyse_ms": 3.001421
+    },
+    {
+      "delivery": 7,
+      "name": "integrity_signals_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1971.4719120000002,
+      "total_ms": 2227.823178,
+      "done_at_ms": 3467.9891660000003,
+      "analyse_ms": 0.439514
+    }
+  ]
+}

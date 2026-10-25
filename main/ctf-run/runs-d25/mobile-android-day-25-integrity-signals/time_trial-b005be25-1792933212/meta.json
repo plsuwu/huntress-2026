@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-25-integrity-signals/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "b005be25-d957-4973-a4d1-eec2a32a2b3d",
+  "started_at": "2026-10-25T13:00:14.048Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1329.366342,
+  "start_ttfb_ms": 1329.016056,
+  "clock": {
+    "start_sent": "2026-10-25T13:00:12.891Z",
+    "start_received": "2026-10-25T13:00:14.220Z",
+    "start_date_header": "2026-10-25T13:00:14.000Z",
+    "last_delivery": "2026-10-25T13:00:16.390Z",
+    "submit_sent": "2026-10-25T13:00:16.390Z",
+    "submit_received": "2026-10-25T13:00:18.794Z",
+    "submit_date_header": "2026-10-25T13:00:18.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "integrity_signals_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1447.298949,
+      "total_ms": 2167.5583720000004,
+      "done_at_ms": 3497.244352,
+      "analyse_ms": 1.615474
+    }
+  ]
+}

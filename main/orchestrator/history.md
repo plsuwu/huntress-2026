@@ -166,3 +166,23 @@ here after every release night.
 - **Result:** all 15 routes CORRECT, untimed; no ranked attempts spent.
 - **Merge:** `merge.sh 24` in four batches (mobile, script, binary, then warmups+metadata); 74 tests, replay 380/380
   clean. Not yet deployed; no campaign run. Rush tmux server and driver killed afterwards.
+
+## 2026-10-25: Day 25 (rush on time)
+
+- **Start:** `rush.py all --day 25` at 22:45:54 AEST, inside tmux `rush-driver`, with output tee'd to
+  `/tmp/claude-1000/rush-d25.log`. Prep took ~2 min (about 26 s per worktree build). All five agents were launched at
+  22:48:10. The root disk had 805 GB free.
+- **Release:** detected at 23:00:01. Routes loaded per lane in 2.5-3.4 s. The first pass finished for every lane at
+  23:00:53.
+- **New lanes:** web-exploitation d16/d17/d18 listed in `op=list&day=25`; left alone.
+- **First pass:**
+  - mobile (24 s), script (30 s) and binary (51 s): all three modes CORRECT with no code change.
+  - warmups: single-solve refused. New `U+XXXX` Unicode code-point codec (`codec::code_points`, `T::Cp`).
+  - metadata: single-solve refused. New kind `d25-registry-001-registry-hive-root-name`, in a new
+    `formats/regf.rs`. The answer is the name of the root `nk` cell that the base block's root offset points at,
+    not the embedded file name.
+- **Agents:** all five done by 23:04:52 (binary/mobile/script 23:02:18, warmups 23:03:42); no takeovers.
+- **Result:** all 15 routes CORRECT on the GM, untimed. Every ranked pool is untouched, so no ranked attempts were spent.
+- **Merge:** `merge.sh 25` in three batches (script/binary/mobile, warmups, metadata); 76 tests, replay 395/395
+  clean. Not yet deployed; no campaign run.
+- **Coordinator gotchas:** see the runbook's shell section (tzdata missing, and `ls` under nullglob).

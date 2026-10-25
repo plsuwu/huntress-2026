@@ -129,3 +129,8 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
   then `ssh -S /tmp/claude-1000/jb/s $H ...` and `scp -o ControlPath=/tmp/claude-1000/jb/s ...` take under 1 s. Keep the socket
   path short: Unix sockets cap it at 108 bytes, and the session scratchpad path is too long. `deploy.sh` opens its own
   connections, so do its four steps by hand through the socket if it times out.
+- **No tzdata in the coordinator shell:** `TZ=Australia/Brisbane date` silently falls back to UTC, and so does
+  `TZ=Australia/Sydney`. On Day 25 this made a "sleep until 23:00 AEST" timer target 23:00 UTC. The machine's local
+  zone is already AEST, so use plain `date` (e.g. `date -d "today 23:00" +%s`).
+- **`ls glob | wc -l` under `shopt -s nullglob`:** with no matches, the glob vanishes and `ls` lists the cwd instead,
+  so a "5 done markers" check fired at once on Day 25. Count with an array: `m=($d/done-*); ${#m[@]}`.
