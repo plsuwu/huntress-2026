@@ -40,6 +40,9 @@ pub enum Obj {
     Assets,
     Stream(Vec<u8>, usize),
     Buffer(Vec<u8>),
+    /// `java.util.zip.ZipFile` (by path) and one of its `ZipEntry`s (name, uncompressed bytes).
+    ZipFile(String),
+    ZipEntry(String, Vec<u8>),
 }
 
 pub struct Vm<'a> {
@@ -54,11 +57,16 @@ pub struct Vm<'a> {
     depth: u32,
     /// Native method implementation: `(JNI symbol, integer arguments after env/class) -> result`.
     pub native: Option<&'a dyn Fn(&str, &[u64]) -> R<u64>>,
-    /// APK member reader (`assets/...`) for `AssetManager.open` and file-based class loaders.
+    /// APK member reader (`assets/...`) for `AssetManager.open` and file-based class loaders. Split APKs
+    /// (`ApplicationInfo.splitSourceDirs`): `SPLITS` lists their paths one per line, `<path>!/<member>`
+    /// reads a member of one.
     pub files: Option<&'a dyn Fn(&str) -> Option<Vec<u8>>>,
 }
 
 pub const ACC_NATIVE: u32 = 0x100;
+
+/// `files` key listing the split APK paths (newline-separated).
+pub const SPLITS: &str = "!splits";
 
 /// The JNI short symbol name of `class->method` (`Java_` + mangled class + `_` + mangled method).
 pub fn jni_name(class: &str, method: &str) -> String {
@@ -585,6 +593,41 @@ impl<'a> Vm<'a> {
                 (self.bytes_arr(&rest), Val::Null)
             }
             ("Ljava/io/InputStream;", "close", _) => none,
+            ("Landroid/content/Context;" | "Landroid/content/ContextWrapper;" | "Landroid/app/Activity;", "getApplicationInfo", _) => {
+                let files = self.files.ok_or("no APK file access")?;
+                let list = files(SPLITS).map(|b| String::from_utf8_lossy(&b).into_owned()).unwrap_or_default();
+                let mut dirs = Vec::new();
+                for p in list.lines().filter(|l| !l.is_empty()) {
+                    let Val::Ref(r) = self.alloc(Obj::Str(p.to_string())) else { unreachable!() };
+                    dirs.push(1 << 63 | r as u64);
+                }
+                let dirs = self.alloc(Obj::Arr("Ljava/lang/String;".into(), dirs));
+                let base = self.alloc(Obj::Str("base.apk".into()));
+                let f = HashMap::from([("splitSourceDirs".to_string(), (dirs, Val::Null)), ("sourceDir".to_string(), (base, Val::Null))]);
+                (self.alloc(Obj::Inst("Landroid/content/pm/ApplicationInfo;".into(), f)), Val::Null)
+            }
+            ("Ljava/util/zip/ZipFile;", "<init>", "(Ljava/lang/String;)V") => {
+                let path = self.str_arg(a[1]);
+                *self.obj(a[0])? = Obj::ZipFile(path);
+                none
+            }
+            ("Ljava/util/zip/ZipFile;", "getEntry", _) => {
+                let Obj::ZipFile(path) = self.obj(a[0])?.clone() else { return Err("getEntry on non-ZipFile".into()) };
+                let n = self.str_arg(a[1]);
+                let files = self.files.ok_or("no APK file access")?;
+                match files(&format!("{path}!/{n}")) {
+                    Some(b) => (self.alloc(Obj::ZipEntry(n, b)), Val::Null),
+                    None => none,
+                }
+            }
+            ("Ljava/util/zip/ZipFile;", "getInputStream", _) => match self.obj(a[1])? {
+                Obj::ZipEntry(_, b) => {
+                    let b = b.clone();
+                    (self.alloc(Obj::Stream(b, 0)), Val::Null)
+                }
+                _ => return Err("getInputStream on non-ZipEntry".into()),
+            },
+            ("Ljava/util/zip/ZipFile;", "close", _) => none,
             ("Ljava/util/Arrays;", "copyOf", "([BI)[B") => {
                 let mut b = self.bytes_of(a[0])?;
                 b.resize(a[1].n() as usize, 0);

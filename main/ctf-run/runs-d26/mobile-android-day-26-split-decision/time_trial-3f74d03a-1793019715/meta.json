@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-26-split-decision/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "3f74d03a-4ff0-43c6-b91e-b8d0ae88fb6b",
+  "started_at": "2026-10-26T13:01:56.755Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1383.998911,
+  "start_ttfb_ms": 1383.708931,
+  "clock": {
+    "start_sent": "2026-10-26T13:01:55.563Z",
+    "start_received": "2026-10-26T13:01:56.947Z",
+    "start_date_header": "2026-10-26T13:01:56.000Z",
+    "last_delivery": "2026-10-26T13:01:58.496Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "split_decision_time_trial.apks",
+      "bytes": 21535,
+      "wire": 21535,
+      "ttfb_ms": 1298.1839719999998,
+      "total_ms": 1549.2290739999999,
+      "done_at_ms": 2933.361959,
+      "analyse_ms": 0.447257
+    }
+  ]
+}
