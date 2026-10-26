@@ -13,8 +13,42 @@ use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, overlay, pe, wasm, x8
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 use std::collections::BTreeMap;
+use std::sync::{Condvar, Mutex};
 
 pub struct BinaryRe;
+
+/// Process-wide cap on members being inflated + analysed at once, across every set in flight (a mastery
+/// analyses each delivery on its own fetch worker). Each set's biggest member (`d08--sample.elf`, 25 MB
+/// compressed -> 67 MB) comes first, so 9 concurrent sets held ~830 MB of members on top of the 321 MB of
+/// deliveries: the d25 mastery peaked at ~1.8 GB on 2 cores and was OOM-killed on the jumpbox (1.9 GB,
+/// ~450 MB taken by other services). One slot per core costs no CPU time and keeps the peak at ~2 members.
+static SLOTS: Slots = Slots { busy: Mutex::new(0), freed: Condvar::new() };
+
+struct Slots {
+    busy: Mutex<usize>,
+    freed: Condvar,
+}
+
+struct Slot;
+
+impl Slots {
+    fn take(&self) -> Slot {
+        let limit = std::thread::available_parallelism().map_or(2, |n| n.get()).max(1);
+        let mut busy = self.busy.lock().unwrap_or_else(|e| e.into_inner());
+        while *busy >= limit {
+            busy = self.freed.wait(busy).unwrap_or_else(|e| e.into_inner());
+        }
+        *busy += 1;
+        Slot
+    }
+}
+
+impl Drop for Slot {
+    fn drop(&mut self) {
+        *SLOTS.busy.lock().unwrap_or_else(|e| e.into_inner()) -= 1;
+        SLOTS.freed.notify_one();
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Container {
@@ -404,6 +438,7 @@ fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
                     loop {
                         let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let Some((day, e, primary)) = jobs.get(i) else { break };
+                        let _slot = SLOTS.take();
                         let r = z.read(e, b"infected").map(|data| {
                             // Day 15 ships stripped + symbolized builds of one specimen: analyse every binary.
                             if *primary || !e.base_name().ends_with(".json") {
@@ -654,5 +689,30 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
             }
         }
         answer_spec(field, spec, side, q)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SLOTS;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn slots_cap_concurrent_members() {
+        let limit = std::thread::available_parallelism().map_or(2, |n| n.get()).max(1);
+        let (live, peak) = (AtomicUsize::new(0), AtomicUsize::new(0));
+        std::thread::scope(|s| {
+            for _ in 0..limit * 3 {
+                s.spawn(|| {
+                    let _slot = SLOTS.take();
+                    let now = live.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(now, Ordering::SeqCst);
+                    std::thread::sleep(std::time::Duration::from_millis(5));
+                    live.fetch_sub(1, Ordering::SeqCst);
+                });
+            }
+        });
+        assert!(peak.load(Ordering::SeqCst) <= limit);
+        assert_eq!(*SLOTS.busy.lock().unwrap(), 0);
     }
 }

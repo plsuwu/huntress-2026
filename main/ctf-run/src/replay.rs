@@ -144,15 +144,15 @@ pub struct Outcome {
     pub missing_expected: usize,
 }
 
-/// Runs one case through its lane (analyses in parallel, like a live run).
-pub fn replay(case: &Case, lane_name: Option<&str>) -> Res<Outcome> {
+/// Runs one case through its lane (analyses in parallel, like a live run). The delivery bytes move out of
+/// `case` (no second copy), so peak memory matches a live run.
+pub fn replay(case: &mut Case, lane_name: Option<&str>) -> Res<Outcome> {
     let mut ctx = RunCtx::new(&case.challenge);
     let lane = lanes::find(lane_name, &ctx.base).ok_or_else(|| format!("no lane for {:?}", ctx.base))?;
     let attempt = Attempt::from_value(&case.challenge, case.start.clone())?;
     ctx.started_ms = attempt.started_at.as_deref().and_then(crate::time::parse_iso);
-    let deliveries: Vec<Delivery> = case
-        .deliveries
-        .iter()
+    let deliveries: Vec<Delivery> = std::mem::take(&mut case.deliveries)
+        .into_iter()
         .enumerate()
         .map(|(i, (name, bytes))| Delivery {
             spec: attempt.deliveries.get(i).cloned().unwrap_or_else(|| DeliverySpec {
@@ -165,7 +165,7 @@ pub fn replay(case: &Case, lane_name: Option<&str>) -> Res<Outcome> {
                 size: None,
             }),
             name: name.clone(),
-            bytes: bytes.clone(),
+            bytes,
         })
         .collect();
     let mut done = Analysed::new(deliveries.len());
@@ -210,7 +210,7 @@ pub fn main(paths: &[PathBuf], lane: Option<&str>, show: bool) -> bool {
     let (mut n, mut good) = (0, 0);
     for case in collect(paths) {
         n += 1;
-        let case = match case {
+        let mut case = match case {
             Ok(c) => c,
             Err(e) => {
                 say!("replay", "LOAD FAILED: {e}");
@@ -219,7 +219,7 @@ pub fn main(paths: &[PathBuf], lane: Option<&str>, show: bool) -> bool {
             }
         };
         let t = Instant::now();
-        match replay(&case, lane) {
+        match replay(&mut case, lane) {
             Err(e) => {
                 say!("replay", "{}: FAILED: {e}", case.label);
                 all_ok = false;
