@@ -44,6 +44,7 @@ pub enum T {
     A85,
     Rle,
     Cp,
+    Bf,
 }
 
 impl T {
@@ -71,6 +72,7 @@ impl T {
             // Untrimmed: a pair's character may be a space.
             T::Rle => codec::run_length(s.trim_start()),
             T::Cp => codec::code_points(t),
+            T::Bf => codec::brainfuck(t),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -124,6 +126,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         23 => T::A85, // "Eighty-Five Alive": Adobe Ascii85 (`<~ ... ~>`, "the alphabet got bigger")
         24 => T::Rle, // "String Theory": run-length `count:char,` pairs ("the comma knows where to stop")
         25 => T::Cp, // "You Have a Point": Unicode code points `U+004E U+0069 ...` ("a code point, anyway")
+        26 => T::Bf, // "Food for Thought": Brainfuck `+-.` on one cell ("a very small language")
         _ => return None,
     })
 }
@@ -137,6 +140,10 @@ fn structured(frag: &str) -> Option<(T, String)> {
     }
     if let Some(r) = codec::code_points(v) {
         return Some((T::Cp, r));
+    }
+    // Before Morse: a program's `.`/`-` would otherwise read as dots and dashes.
+    if let Some(r) = codec::brainfuck(v) {
+        return Some((T::Bf, r));
     }
     // Before the escape peels: a pair's character may be `\\`, `%` or `&`.
     if let Some(r) = codec::run_length(frag.trim_start()) {
@@ -464,7 +471,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         }
         // Delimited Ascii85 first: its alphabet holds `\\`, `%` and `&`, which other peels would eat.
         // Run-length pairs likewise carry any character.
-        let a85 = T::Rle.apply(&t).or_else(|| T::Cp.apply(&t)).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
+        let a85 = T::Rle.apply(&t).or_else(|| T::Cp.apply(&t)).or_else(|| T::Bf.apply(&t)).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
         let next = a85.or_else(|| [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t)));
         if let Some(n) = next {
             t = n;
@@ -734,6 +741,24 @@ mod tests {
         assert_eq!(codec::code_points("U+1F600,U+0041").as_deref(), Some("\u{1F600}A"));
         assert_eq!(codec::code_points("U+004 U+0041"), None);
         assert_eq!(codec::code_points("x U+0041"), None);
+    }
+
+    #[test]
+    fn brainfuck_blob() {
+        // Day 26 "Food for Thought": `+`/`-` deltas then `.` per character, one cell.
+        let sentence = format!("{PREFIX}crisp-lantern-meadow-42");
+        let mut cur = 0u8;
+        let mut bf = String::new();
+        for b in sentence.bytes() {
+            let d = b.wrapping_sub(cur) as i8;
+            bf.push_str(&if d >= 0 { "+".repeat(d as usize) } else { "-".repeat(-d as usize) });
+            bf.push('.');
+            cur = b;
+        }
+        assert!(matches!(solve_blob(&bf), Outcome::Solved { slug, .. } if slug == "crisp-lantern-meadow-42"));
+        assert_eq!(codec::brainfuck("++++++++[>++++++++<-]>+.").as_deref(), Some("A"));
+        assert_eq!(codec::brainfuck("-.-. .-"), None);
+        assert_eq!(codec::brainfuck("+[.").as_deref(), None);
     }
 
     #[test]

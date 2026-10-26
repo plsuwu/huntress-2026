@@ -271,6 +271,12 @@ agents. All 15 routes were CORRECT untimed, with no ranked attempts spent. Detai
 | binary-RE | Clojure JAR pair (vulnerable/corrected) | nothing; untagged configs answered from the first member again (configs equal). Mastery 9 sets |
 | mobile | v1 `hex` (single), v2 `analysis` (TT + 9 mastery APKs) | nothing; pure DEX arithmetic. **Day 7 seen as v2 for the first time**; day 8 still not seen as v2 |
 
+## Day 26 outcome (warmups, 2026-10-26)
+
+| Lane | Gimmick | What broke / what was graded |
+|---|---|---|
+| warmups | **Brainfuck** `+-.` deltas on one cell ("Food for Thought") | new `codec::brainfuck` (`T::Bf`, full bounded interpreter), peeled after code points, before Morse. Mastery row 26 = `T::Bf` (each fragment is its own program, from cell 0); 128 mastery sets |
+
 ## Day 26 predictions
 
 - Warmups: another per-character notation (`&#x..;`, `\x4E`, `0x4E` tokens, quoted-printable `=4E`, `\N{...}`); QP and

@@ -185,6 +185,54 @@ pub fn code_points(s: &str) -> Option<String> {
     (!out.is_empty()).then_some(out)
 }
 
+/// Brainfuck (Day 26 "Food for Thought": `+-.` deltas on one cell). Only the eight commands and
+/// whitespace are accepted, with at least one `.` and one of `+<>[`, so Morse (`.-` only) never
+/// reads as a program. Wrapping 8-bit cells on a 30000-cell tape; `,` reads 0; bounded by a step
+/// budget. `None` unless the program is well formed, halts and prints UTF-8.
+pub fn brainfuck(s: &str) -> Option<String> {
+    let prog: Vec<u8> = s.bytes().filter(|b| !b.is_ascii_whitespace()).collect();
+    if !prog.iter().all(|b| b"+-<>[].,".contains(b)) || !prog.contains(&b'.') || !prog.iter().any(|b| b"+<>[".contains(b)) {
+        return None;
+    }
+    let mut jump = vec![0usize; prog.len()];
+    let mut stack = Vec::new();
+    for (i, &b) in prog.iter().enumerate() {
+        match b {
+            b'[' => stack.push(i),
+            b']' => {
+                let j = stack.pop()?;
+                jump[i] = j;
+                jump[j] = i;
+            }
+            _ => {}
+        }
+    }
+    if !stack.is_empty() {
+        return None;
+    }
+    let (mut tape, mut ptr, mut pc, mut out) = (vec![0u8; 30000], 0usize, 0usize, Vec::new());
+    let mut steps = 0u64;
+    while pc < prog.len() {
+        steps += 1;
+        if steps > 50_000_000 || out.len() > 1 << 20 {
+            return None;
+        }
+        match prog[pc] {
+            b'+' => tape[ptr] = tape[ptr].wrapping_add(1),
+            b'-' => tape[ptr] = tape[ptr].wrapping_sub(1),
+            b'>' => ptr = (ptr + 1).checked_rem(tape.len())?,
+            b'<' => ptr = ptr.checked_sub(1)?,
+            b'.' => out.push(tape[ptr]),
+            b',' => tape[ptr] = 0,
+            b'[' if tape[ptr] == 0 => pc = jump[pc],
+            b']' if tape[ptr] != 0 => pc = jump[pc],
+            _ => {}
+        }
+        pc += 1;
+    }
+    String::from_utf8(out).ok().filter(|o| !o.is_empty())
+}
+
 /// Hex pairs, whitespace ignored.
 pub fn hex(s: &str) -> Option<Vec<u8>> {
     let c = strip_ws(s);
