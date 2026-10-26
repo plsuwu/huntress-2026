@@ -245,3 +245,12 @@ here after every release night.
 - **Mastery:** medians improved on most routes (d23 7.2 -> 5.5 s, d24 7.3 -> 6.2 s, d25 8.1 -> 7.2 s). d22-d25 (6-9
   sets) are still CPU-bound at the end: a 1.3-2.7 s tail once the downloads are in.
 - **Board:** overall #1 fell to 89 (102 this afternoon) as other teams improved across lanes.
+
+## 2026-10-26: evening full HoF pass (user-approved)
+
+- **Plan:** pruned the jumpbox (208 zips, 6.2 GB -> 15 GB free); `plan-full-d26-eve.json`, 196 routes, server-bound
+  lanes first, up to 399 runs. Ran ~19:10-20:25 AEST on `1b48e006`.
+- **Result:** 382 runs, all CORRECT. **#1 89 -> 101**, top-3 169 -> 176. By lane, #1 before -> after: metadata
+  21 -> 30 (10 rank gains), warmups 7 -> 9 (7), script 43 -> 44, mobile 14 -> 14 (3), binary 4 -> 4 (1).
+- Server-bound lanes keep paying off in the 16:00-21:00 window. Other teams keep improving between passes (102 at
+  17:15 -> 89 by 19:00), so a late-afternoon pass each day holds the board.
