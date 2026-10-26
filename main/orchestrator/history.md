@@ -229,3 +229,19 @@ here after every release night.
 - **Binary fixes (evening, 2026-10-26):** the memory cap (`264c6ce`), then streaming analysis (`6df4424` and the
   progressive d08 decode). Deployed `1b48e006`. Live dry runs: d25 TT analysis tail 532 -> 96 ms. Jumpbox disk
   is at 6.4 GB free after the afternoon campaign: prune (`tools/prune_hof_runs.sh`) before the next one.
+
+## 2026-10-26: binary-only ranked pass after the streaming deploy (user-approved)
+
+- **Prep:** pruned the jumpbox (278 zips, 8.5 GB -> 15 GB free), surveyed, `plan-d26-bin.json`: 33 binary routes,
+  TT first then mastery, up to 80 runs. Ran ~18:40-19:30 AEST on `1b48e006`.
+- **Result:** 78 runs, all CORRECT. Binary #1 3 -> 4: d25 TT 2304 -> **1534 ms (#1)**. d21 TT 1931 -> 1775. Masteries:
+  d08 3842 -> 3451 (#6 -> #5), d10 2805 -> 2649, d17 4357 -> 4006, d19 4311 -> 4103, d21 4693 -> 4113,
+  d22 5718 -> 5489, d24 6620 -> 5937. The other TTs kept their old bests.
+- **Why the TTs barely moved:** streaming works live. The TT analysis tail after the last byte went 400-535 ms ->
+  0-73 ms on every route. But downloads were slower than when the old bests were set (e.g. d13 2.2 -> 2.9 s, d20 2.1 ->
+  3.7 s median), and ±700 ms of download variance swamps the ~450 ms saved. The old bests were lucky fast downloads.
+  Binary TT is now purely download-bound: improving the board takes more re-rolls (TT pools have 44-240 attempts
+  left), not more engineering.
+- **Mastery:** medians improved on most routes (d23 7.2 -> 5.5 s, d24 7.3 -> 6.2 s, d25 8.1 -> 7.2 s). d22-d25 (6-9
+  sets) are still CPU-bound at the end: a 1.3-2.7 s tail once the downloads are in.
+- **Board:** overall #1 fell to 89 (102 this afternoon) as other teams improved across lanes.
