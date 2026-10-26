@@ -69,6 +69,7 @@ classes must remain unknown until supported by the page, behavior and question.
 | OS command injection (unescaped shell path) | `/api/clues` gives feature_route + input_parameter + example_path (a Gin app that shells out, unescaped, to build a directory listing from the raw parameter value). Appending `; <cmd>` to the value runs `<cmd>` as a second shell statement (plain `;`-chaining only — `$(...)` substitution is rejected server-side with `diagnostic_failed` on every target seen). The proof is never reflected directly; it has to be `cat`-ed from the file named by the container's own `OBJECTIVE_PATH` env var (itself only visible via an `env` injection). | `recovery_lib.py`, `rec_command_injection`; `day-25-web-exploitation/shell-company/NOTES.md` |
 | Password-reset token / account-id confusion | `/api/clues` gives feature_route (request a token) + secondary_route (redeem it) + recovery_guide_route (discloses account_parameter/token_parameter names and the self_service-flagged account ids — no guessing needed). feature_route refuses to issue a token for a non-self-service account, but secondary_route never binds the redeemed token to the account_id it is redeemed against: request a token for a self-service account, then redeem it while claiming a different, non-self-service account id. | `recovery_lib.py`, `rec_reset_account_confusion`; `day-25-web-exploitation/reset-expectations/NOTES.md` |
 | GraphQL field-level authorization bypass | `/api/clues` gives feature_route (a live GraphQL endpoint, POST `{"query": ...}`) + protected_reference (an id hidden from a list query's sensitive field). Authorization is enforced by omission on the list surface (e.g. `caseIndex`, which never returns the sensitive field at all) but the matching single-object surface (e.g. `case(id)`) has no field-level check whatsoever — query it directly for `protected_reference`. "Vary the protocol surface" means switch GraphQL *operation* (list → single-object), not HTTP method. Needs a browser-like User-Agent — a bare urllib UA gets 403'd by the edge WAF on this app. | `recovery_lib.py`, `rec_graphql_field_bypass`; `day-25-web-exploitation/resolver-revolt/NOTES.md` |
+| Forged/unsigned webhook event trust | `/api/clues` gives feature_route + event_type + owner_scope (+ current_role) — no `secondary_route`/`inventory_route`/`protected_reference`/`state_format_route`, so it's distinguishable from every class above that also starts from feature_route. The receiver at feature_route has **no signature/HMAC/auth check at all**: a GET returns `post_required`, an empty POST returns `webhook_rejected`, but it blindly trusts any POST body that claims the disclosed event_type/owner_scope. The exact field names are *not* disclosed and are easy to over-guess: the receiver wants exactly two bare keys, `{"event": event_type, "owner": owner_scope}` — not the clue's own key names (`event_type`/`owner_scope`), not `type`/`scope`, no nesting under `data`/`payload`. Both keys required, both values matched exactly. The check is stateless (identical proof on every correct repeat), so probing field-name/value variants directly against a live target is safe. | `recovery_lib.py` (not yet folded — see below), `rec_forged_webhook_event`; `day-26-web-exploitation/trust-the-webhook/NOTES.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -99,6 +100,36 @@ wordlist). Before recording a target as blocked for lack of an oracle, confirm
 every evidence-backed candidate on one axis was actually tried combined with
 every plausible value on the other axis, not just independently.
 
+### A working hit is not the same as knowing the mechanism
+
+Day 26's trust-the-webhook (above) showed the opposite failure mode from
+day-12's: a first-contact agent met a brand-new, undocumented bug class (no
+table row matched its clue shape) and, under "speed first" pressure with a
+free-retry untimed attempt, combined every plausible field-name alias
+(`event`/`type`/`event_type`, `owner_scope`/`scope`/`owner`) into one POST
+body, flat and nested under `data`/`payload` at once. It got a `200` on the
+first such attempt — a real win for `single_solve` — but could not say which
+field or nesting actually mattered. That is not the same thing as having
+found the mechanism, and a kitchen-sink body of unknown composition cannot be
+folded into `recovery_lib.py` (every `rec_*` there is one tight,
+single-insight trigger + minimal payload) or trusted to transfer to another
+target's field names.
+
+**Do not stop at a first hit that merges many unverified guesses into one
+request.** Before writing a new class up as *the* method: check whether
+repeating the exact same working request returns the exact same proof. If it
+does, the check is stateless (not a one-shot consumable event), and it is
+safe to binary-search the kitchen-sink body down to its minimal form directly
+against the live target — halve the fields, see if it still works, bisect
+from there. On trust-the-webhook this took six follow-up requests to go from
+a 9-key body to the true minimal payload (two bare keys, neither of which was
+the clue's own field name — see the table row above). Do not confuse this
+with the day-12 cross-product advice just above: that is about running a
+*matrix of separate, individually-interpretable requests* across two
+genuinely uncertain axes when there is no oracle at all; it is not license to
+merge every alias into a single body and declare victory once one combination
+sticks.
+
 ## HTTP and lifecycle discipline
 
 - Use a separate cookie jar per assigned target. A root GET established the
@@ -127,6 +158,17 @@ every plausible value on the other axis, not just independently.
 - Once a mode's attempt is submitted CORRECT, its live target is torn down
   fast: re-requesting it afterward returns HTTP 410 `{"state":"completed"}`.
   Capture evidence *before* submitting, not after. Day 24.
+- A target you crash or lose mid-attempt (Cloudflare 500 / error 1101, or a
+  410 while the attempt is still `active`) is recovered by re-running
+  `python3 tools/wk.py begin <mode>` - NOT by sitting and polling the dead URL
+  for an auto-restart. `begin` always re-POSTs `op=start`: on an active untimed
+  attempt that re-provisions a fresh target under the same attempt_id (the GM
+  rotates the target host); if the old attempt expired it transparently returns
+  a new one and warns you, so re-derive any stale answers. It is a plain untimed
+  start, not a reset/switch_target, so it is allowed. Better: don't crash it in
+  the first place - a malformed/non-object body can trip the origin into a 500
+  and take the container down for the whole attempt, so probe with well-formed
+  requests. Day 26 (trust-the-webhook).
 - A bare `Python-urllib/*` default User-Agent gets 403'd outright by the edge
   WAF/Cloudflare on at least one app (resolver-revolt's GraphQL endpoint,
   day 25) with no body hint that it's a UA issue — every request, including
