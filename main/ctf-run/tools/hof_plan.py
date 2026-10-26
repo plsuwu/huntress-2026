@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Build a hof_campaign.py plan from a hof_survey.py --json survey.
 
-  hof_plan.py SURVEY.json OUT.json [--days A-B] [--unattempted] [--exclude PLAN.json,...]
+  hof_plan.py SURVEY.json OUT.json [--days A-B] [--unattempted] [--exclude PLAN.json,...] [--order PREFIX,...]
 
 Every route with ranked attempts left gets an entry (the Day 22 full-pass rules):
   - not #1: budget 3, or 2 on a pool of <= 16, or 1 on a pool of <= 2 (never more than `left`);
   - already #1: budget 1 with `past_first` (try to beat our own time).
 Routes that spent ranked attempts but never got a scoreboard row are skipped (not HoF-eligible).
+--order runs routes by lane prefix in that order (e.g. warmups,mobile-android,metadata-forensics first: the
+server-bound lanes), unlisted lanes last; within a lane, routes not yet #1 come first.
 --unattempted keeps only routes with no scoreboard entry yet; --exclude drops routes listed in other plans.
 `rft` comes from the route config (survey `rft`), not the last attempt's `run_for_time`.
 """
@@ -45,6 +47,10 @@ def main():
         if r.get("rank") == 1:
             item["past_first"] = True
         plan.append(item)
+    if "--order" in a:
+        order = a[a.index("--order") + 1].split(",")
+        lane = lambda i: next((k for k, p in enumerate(order) if i["route"].startswith(p)), len(order))
+        plan.sort(key=lambda i: (lane(i), bool(i.get("past_first"))))
     json.dump(plan, open(out, "w"), indent=0)
     runs = sum(i["budget"] for i in plan)
     print(f"{len(plan)} routes, up to {runs} ranked runs -> {out}")
