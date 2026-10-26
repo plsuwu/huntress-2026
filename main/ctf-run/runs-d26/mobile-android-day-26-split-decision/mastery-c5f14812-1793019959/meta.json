@@ -1,0 +1,122 @@
+{
+  "challenge": "mobile-android-day-26-split-decision/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "c5f14812-5cb7-4126-ac1f-ab05a374bd7b",
+  "started_at": "2026-10-26T13:06:00.645Z",
+  "deadline": null,
+  "shape": "artifacts[10]+downloads[10]",
+  "start_ms": 1647.92615,
+  "start_ttfb_ms": 1647.796551,
+  "clock": {
+    "start_sent": "2026-10-26T13:05:59.195Z",
+    "start_received": "2026-10-26T13:06:00.843Z",
+    "start_date_header": "2026-10-26T13:06:00.000Z",
+    "last_delivery": "2026-10-26T13:06:02.670Z",
+    "submit_sent": "2026-10-26T13:06:02.670Z",
+    "submit_received": "2026-10-26T13:06:04.747Z",
+    "submit_date_header": "2026-10-26T13:06:04.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 10,
+      "name": "split_decision_mastery_10.apks",
+      "bytes": 21535,
+      "wire": 21535,
+      "ttfb_ms": 1236.6877510000002,
+      "total_ms": 1485.5555160000001,
+      "done_at_ms": 3133.7667300000003,
+      "analyse_ms": 0.897304
+    },
+    {
+      "delivery": 1,
+      "name": "split_decision_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1238.072361,
+      "total_ms": 1487.851684,
+      "done_at_ms": 3135.9047969999997,
+      "analyse_ms": 1.106219
+    },
+    {
+      "delivery": 8,
+      "name": "split_decision_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1253.7929700000002,
+      "total_ms": 1510.189312,
+      "done_at_ms": 3158.3938310000003,
+      "analyse_ms": 1.086578
+    },
+    {
+      "delivery": 7,
+      "name": "split_decision_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1277.690236,
+      "total_ms": 1527.986369,
+      "done_at_ms": 3176.156242,
+      "analyse_ms": 0.23211099999999998
+    },
+    {
+      "delivery": 3,
+      "name": "split_decision_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1284.622271,
+      "total_ms": 1535.944036,
+      "done_at_ms": 3184.050503,
+      "analyse_ms": 0.137434
+    },
+    {
+      "delivery": 4,
+      "name": "split_decision_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1307.1831249999998,
+      "total_ms": 1562.4487359999998,
+      "done_at_ms": 3210.575225,
+      "analyse_ms": 0.133438
+    },
+    {
+      "delivery": 9,
+      "name": "split_decision_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1320.242641,
+      "total_ms": 1575.937967,
+      "done_at_ms": 3224.137153,
+      "analyse_ms": 0.699408
+    },
+    {
+      "delivery": 5,
+      "name": "split_decision_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1441.244947,
+      "total_ms": 1697.2767050000002,
+      "done_at_ms": 3345.42837,
+      "analyse_ms": 0.145566
+    },
+    {
+      "delivery": 6,
+      "name": "split_decision_mastery_06.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1513.8442140000002,
+      "total_ms": 1769.967646,
+      "done_at_ms": 3418.1326990000002,
+      "analyse_ms": 1.231091
+    },
+    {
+      "delivery": 2,
+      "name": "split_decision_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1568.6740340000001,
+      "total_ms": 1824.498411,
+      "done_at_ms": 3472.570056,
+      "analyse_ms": 1.812462
+    }
+  ]
+}

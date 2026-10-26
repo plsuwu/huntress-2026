@@ -201,6 +201,15 @@ fn trunc(s: &str) -> String {
     s.chars().take(300).collect()
 }
 
+/// Head and tail of a nested error chain (the innermost cause is at the end).
+fn ends(s: &str) -> String {
+    let c: Vec<char> = s.chars().collect();
+    if c.len() <= 400 {
+        return s.to_string();
+    }
+    format!("{} ... {}", c[..100].iter().collect::<String>(), c[c.len() - 300..].iter().collect::<String>())
+}
+
 /// Decodes a puzzle object.
 pub fn decode(p: &Value) -> Result<String, String> {
     let data = p.str_of("data").unwrap_or("");
@@ -257,10 +266,48 @@ fn unique_code<'a>(z: &Zip, names: impl Iterator<Item = &'a str>, what: &str) ->
     }
 }
 
-fn solve_apk(bytes: &[u8]) -> Result<String, String> {
+/// d26 split APKs (`.apks` = `base.apk` + configuration/feature splits): a split's `assets/*.json`
+/// (`{"part":..,"part_index":i,..}`) carries the base puzzle's missing `parts[i]`.
+fn split_fragments(z: &Zip) -> Result<Vec<(usize, String)>, String> {
+    let mut out = Vec::new();
+    for f in z.files().filter(|f| f.name.starts_with("assets/") && f.name.ends_with(".json")) {
+        let Ok(v) = Value::parse_bytes(&z.read(f, b"infected")?) else { continue };
+        if let (Some(part), Some(i)) = (v.str_of("part"), v.get("part_index").and_then(Value::as_i64)) {
+            out.push((usize::try_from(i).map_err(|_| format!("{}: bad part_index {i}", f.name))?, part.to_string()));
+        }
+    }
+    Ok(out)
+}
+
+/// The puzzle with `parts[i]` filled from the splits' fragments (only empty slots; a conflicting one is an error).
+fn merge_fragments(v: Value, frags: &[(usize, String)]) -> Result<Value, String> {
+    if frags.is_empty() {
+        return Ok(v);
+    }
+    let Value::Obj(mut members) = v else { return Err("puzzle is not an object".into()) };
+    let parts = members.iter_mut().find(|(k, _)| k == "parts").map(|(_, p)| p).ok_or("split fragments but no parts")?;
+    let Value::Arr(parts) = parts else { return Err("parts is not an array".into()) };
+    for (i, part) in frags {
+        let slot = parts.get_mut(*i).ok_or_else(|| format!("part_index {i} out of range"))?;
+        match slot.as_str() {
+            Some("") | None => *slot = Value::Str(part.clone()),
+            Some(old) if old == part => {}
+            Some(old) => return Err(format!("parts[{i}]: base has {old:?}, split has {part:?}")),
+        }
+    }
+    Ok(Value::Obj(members))
+}
+
+/// Solves a base APK; `splits` are the other APKs of its split set (d26 `.apks`), whose assets, native
+/// libraries and part fragments belong to the same installed app.
+fn solve_apk(bytes: &[u8], splits: &[(String, Zip)]) -> Result<String, String> {
     let z = Zip::parse(bytes)?;
     let raw = z.read_name(PUZZLE, b"infected")?;
-    let v = Value::parse_bytes(&raw).map_err(|e| format!("{PUZZLE}: {e}"))?;
+    let mut frags = Vec::new();
+    for (_, s) in splits {
+        frags.extend(split_fragments(s)?);
+    }
+    let v = merge_fragments(Value::parse_bytes(&raw).map_err(|e| format!("{PUZZLE}: {e}"))?, &frags)?;
     // A puzzle string naming an APK member (d20 `dynamic`: `data` = `assets/payload.dex`, a secondary DEX
     // whose string table holds the code).
     let members: Vec<&str> = v.as_object().unwrap_or_default().iter().filter_map(|(_, x)| x.as_str()).filter(|s| *s != PUZZLE && z.find(s).is_some()).collect();
@@ -275,18 +322,19 @@ fn solve_apk(bytes: &[u8]) -> Result<String, String> {
         }
         // d23 `analysis`: no data at all - the code is computed by `classes.dex` (`Release.code(Context)`
         // through a chain of long mixers); interpret it.
-        dex_code(&z).map_err(|d| format!("{e}; dex: {d}"))
+        dex_code(&z, splits).map_err(|d| format!("{e}; dex: {d}"))
     })
 }
 
 /// The single `ANS-` code returned by the static `String` methods of the APK's DEX files, run in the interpreter.
-fn dex_code(z: &Zip) -> Result<String, String> {
+fn dex_code(z: &Zip, splits: &[(String, Zip)]) -> Result<String, String> {
     let mut codes = std::collections::BTreeMap::<String, Vec<String>>::new();
     let mut seen = Vec::new();
     // d15 `analysis`: a `native` mixer in `lib/x86_64/libarena.so` (JNI symbol, straight-line arithmetic).
     let mut libs: Vec<(Vec<u8>, Vec<(String, usize)>)> = Vec::new();
-    for f in z.files().filter(|f| f.name.starts_with("lib/x86_64/") && f.name.ends_with(".so")) {
-        let b = z.read(f, b"infected")?;
+    let apks = || std::iter::once(z).chain(splits.iter().map(|(_, s)| s));
+    for (a, f) in apks().flat_map(|a| a.files().map(move |f| (a, f))).filter(|(_, f)| f.name.starts_with("lib/x86_64/") && f.name.ends_with(".so")) {
+        let b = a.read(f, b"infected")?;
         let Some(e) = Elf::parse(&b) else { continue };
         let syms = e.symbols(&b, 11).unwrap_or_default().into_iter().filter(|s| s.value != 0).filter_map(|s| Some((s.name, e.vaddr_to_offset(s.value)?))).collect();
         libs.push((b, syms));
@@ -297,14 +345,24 @@ fn dex_code(z: &Zip) -> Result<String, String> {
         full.extend_from_slice(args);
         x64emu::call(b, off, &full)
     };
-    let files = |name: &str| z.read_name(name, b"infected").ok();
+    // Split assets are merged into the app's AssetManager (d26 feature split).
+    // `ApplicationInfo.splitSourceDirs` + `ZipFile` reads go through `dalvik::SPLITS` / `<split>!/<member>`.
+    let files = |name: &str| {
+        if name == dalvik::SPLITS {
+            return Some(splits.iter().map(|(n, _)| format!("{n}\n")).collect::<String>().into_bytes());
+        }
+        if let Some((path, member)) = name.split_once("!/") {
+            return splits.iter().find(|(n, _)| n == path).and_then(|(_, s)| s.read_name(member, b"infected").ok());
+        }
+        apks().find_map(|a| a.read_name(name, b"infected").ok())
+    };
     // Only the primary DEX files are entry points; others (assets/payload.dex) load through class loaders.
     for f in z.files().filter(|f| f.name.ends_with(".dex") && !f.name.contains('/')) {
         let dex = std::rc::Rc::new(Dex::parse(&z.read(f, b"infected")?).map_err(|e| format!("{}: {e}", f.name))?);
         for (sig, r) in dalvik::run_string_methods(&dex, Some(&native), Some(&files)) {
             match &r {
                 Ok(s) => ans_codes(s.as_bytes()).into_iter().for_each(|c| codes.entry(c).or_default().push(sig.clone())),
-                Err(e) => seen.push(format!("{sig}: {}", trunc(e))),
+                Err(e) => seen.push(format!("{sig}: {}", ends(e))),
             }
         }
     }
@@ -318,18 +376,41 @@ fn dex_code(z: &Zip) -> Result<String, String> {
 fn collect(name: &str, bytes: &[u8], out: &mut Vec<(String, Result<String, String>)>, depth: u8) -> Result<(), String> {
     let z = Zip::parse(bytes)?;
     if z.find(PUZZLE).is_some() {
-        out.push((name.to_string(), solve_apk(bytes)));
+        out.push((name.to_string(), solve_apk(bytes, &[])));
         return Ok(());
     }
     if depth > 3 {
         return Err("archives nested too deep".into());
     }
     // A container of APKs (or of zips of APKs).
+    let mut inner = Vec::new();
     for e in z.files() {
-        let inner = z.read(e, b"infected")?;
-        if zip::is_zip(&inner) {
-            collect(e.base_name(), &inner, out, depth + 1)?;
+        let b = z.read(e, b"infected")?;
+        if zip::is_zip(&b) {
+            inner.push((e.base_name().to_string(), b));
         }
+    }
+    // A split-APK set (d26 `.apks`): one base APK with the puzzle plus split APKs (a manifest, no puzzle).
+    // Answered as one item named after the set (the question's artifact).
+    let mut bases = Vec::new();
+    let mut splits = Vec::new();
+    for (n, b) in &inner {
+        let iz = Zip::parse(b)?;
+        if iz.find(PUZZLE).is_some() {
+            bases.push(b);
+        } else if iz.find("AndroidManifest.xml").is_some() {
+            splits.push((n.clone(), iz));
+        }
+    }
+    if !splits.is_empty() {
+        match bases.as_slice() {
+            [base] => out.push((name.to_string(), solve_apk(base, &splits))),
+            _ => return Err(format!("{name}: {} split APKs with {} base APKs", splits.len(), bases.len())),
+        }
+        return Ok(());
+    }
+    for (n, b) in &inner {
+        collect(n, b, out, depth + 1)?;
     }
     Ok(())
 }
@@ -420,11 +501,27 @@ mod tests {
     fn analysis_apks_run_their_dex() {
         let apk = |n: &str| std::fs::read(format!("{}/testdata/{n}", env!("CARGO_MANIFEST_DIR"))).unwrap();
         // d23: `Release.code` over long mixers and brute-force `Probe` loops (graded CORRECT, also checked by hand).
-        assert_eq!(solve_apk(&apk("d23-mobile-tt.apk")).unwrap(), "ANS-E4F679E90A7D1CAE");
+        assert_eq!(solve_apk(&apk("d23-mobile-tt.apk"), &[]).unwrap(), "ANS-E4F679E90A7D1CAE");
         // v2 d16: guarded JNI `nativeShare(JI)J` in lib/x86_64/libarena.so (cmp/jcc/movzx).
-        assert_eq!(solve_apk(&apk("d23-mobile-v2-d16.apk")).unwrap(), "ANS-7BF9CD9FEB8E911F");
+        assert_eq!(solve_apk(&apk("d23-mobile-v2-d16.apk"), &[]).unwrap(), "ANS-7BF9CD9FEB8E911F");
         // v2 d20: assets/payload.dex through InMemoryDexClassLoader + reflection.
-        assert_eq!(solve_apk(&apk("d23-mobile-v2-d20.apk")).unwrap(), "ANS-02D5DB6B306ACAF5");
+        assert_eq!(solve_apk(&apk("d23-mobile-v2-d20.apk"), &[]).unwrap(), "ANS-02D5DB6B306ACAF5");
+    }
+
+    #[test]
+    fn split_apk_sets() {
+        let set = |n: &str| {
+            let b = std::fs::read(format!("{}/testdata/{n}", env!("CARGO_MANIFEST_DIR"))).unwrap();
+            let mut out = Vec::new();
+            collect(n, &b, &mut out, 0).unwrap();
+            assert_eq!(out.len(), 1);
+            assert_eq!(out[0].0, n);
+            out.remove(0).1
+        };
+        // d26 v1 `split`: the feature split's `assets/huntress_feature.json` fills the base's empty `parts[0]`.
+        assert_eq!(set("d26-mobile-single.apks").unwrap(), "ANS-7E37D134754DEA01");
+        // d26 v2: `Assets.readSplit` reads `huntress_feature.bin` via `splitSourceDirs` + `ZipFile` (graded CORRECT).
+        assert_eq!(set("d26-mobile-tt.apks").unwrap(), "ANS-2DF27FDEEFEF5A67");
     }
 
     #[test]
