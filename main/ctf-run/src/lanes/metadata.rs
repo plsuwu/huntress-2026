@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pe, regf, sqlite, video, zip};
+use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pe, prefetch, regf, sqlite, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -518,6 +518,53 @@ fn evtx_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-prefetch-<field>` -> a Windows Prefetch (`SCCA`, MAM-compressed on Windows 10+) field. d26 asked
+/// `executable-name`: the header's UTF-16 name @0x10 (the `.pf` itself is renamed `trace-NNN.pf`). Other
+/// fields are unverified guesses; an unknown field fails with a prefetch facts dump.
+fn prefetch_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-prefetch-")?;
+    let want = &key[i + 10..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("prefetch-").unwrap_or(want);
+    let Some(p) = prefetch::Prefetch::parse(b) else { return Some(Err(format!("no SCCA prefetch; {}", facts("prefetch", b)))) };
+    let ts = |ft: Option<&u64>| ft.map(|&t| evtx::filetime_iso(t)).unwrap_or_else(none);
+    let sorted = |mut v: Vec<String>| {
+        v.sort();
+        compact_json(&v)
+    };
+    Some(Ok(match want {
+        "executable-name" | "executable" | "exe-name" | "executable-filename" => p.executable_name.clone(),
+        "hash" | "prefetch-hash" | "path-hash" | "hash-hex" => format!("{:08X}", p.hash),
+        "version" | "format-version" => p.version.to_string(),
+        "run-count" | "execution-count" => p.run_count.to_string(),
+        "last-run-time" | "last-run" | "last-execution-time" => ts(p.last_runs.first()),
+        "volume-serial" | "volume-serial-number" => p.volumes.first().map(|v| format!("{:08X}", v.serial)).unwrap_or_else(none),
+        "volume-device-path" | "volume-path" => p.volumes.first().map(|v| v.device_path.clone()).unwrap_or_else(none),
+        "volume-count" => p.volumes.len().to_string(),
+        "file-count" | "filename-count" | "metrics-count" => p.filenames.len().to_string(),
+        "filenames" | "referenced-files" => sorted(p.filenames.clone()),
+        "executable-path" | "image-path" => {
+            let name = p.executable_name.to_ascii_uppercase();
+            match p.filenames.iter().find(|f| f.to_ascii_uppercase().rsplit('\\').next() == Some(name.as_str())) {
+                Some(f) => f.clone(),
+                None => return Some(Err(format!("no file-name string ends with {name:?}; {}", prefetch_facts(&p)))),
+            }
+        }
+        _ => return Some(Err(format!("unknown prefetch field {want:?}; {}", prefetch_facts(&p)))),
+    }))
+}
+
+fn prefetch_facts(p: &prefetch::Prefetch) -> String {
+    let runs: Vec<String> = p.last_runs.iter().map(|&t| evtx::filetime_iso(t)).collect();
+    let vols: Vec<String> = p.volumes.iter().map(|v| format!("{} serial {:08X} created {}", v.device_path, v.serial, evtx::filetime_iso(v.created))).collect();
+    format!(
+        "prefetch v{} compressed {} len {} size {} exe {:?} hash {:08X} runs {} last_runs {runs:?} metrics {} traces {} volumes {vols:?} files {:?}",
+        p.version, p.compressed, p.len, p.file_size, p.executable_name, p.hash, p.run_count, p.metrics_count, p.trace_count, p.filenames.iter().take(32).collect::<Vec<_>>()
+    )
+}
+
 /// `...-registry-<field>` -> a registry hive (`regf`) field. d25 graded `hive-root-name`: the name of the `nk`
 /// cell the base block's root offset points at (the "true root", whatever the file is called). That cell
 /// must carry KEY_HIVE_ENTRY. Other fields are unverified guesses; a field named like one of the root key's
@@ -769,6 +816,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(h) = regf::Hive::parse(b) {
         f.push(registry_facts(&h));
     }
+    if let Some(p) = prefetch::Prefetch::parse(b) {
+        f.push(prefetch_facts(&p));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -873,6 +923,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = registry_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = prefetch_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {

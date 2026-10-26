@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-26-before-you-go",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "986a5baa-09d9-4480-9195-7ffe5d3436bf",
+  "started_at": "2026-10-26T13:00:07.314Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1526.3665469999999,
+  "start_ttfb_ms": 1526.307056,
+  "clock": {
+    "start_sent": "2026-10-26T13:03:54.199Z",
+    "start_received": "2026-10-26T13:03:55.725Z",
+    "start_date_header": "2026-10-26T13:03:55.000Z",
+    "last_delivery": "2026-10-26T13:03:57.545Z",
+    "submit_sent": "2026-10-26T13:03:57.545Z",
+    "submit_received": "2026-10-26T13:03:59.221Z",
+    "submit_date_header": "2026-10-26T13:03:59.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-26-evidence.zip",
+      "bytes": 3943,
+      "wire": 3943,
+      "ttfb_ms": 1583.8521540000002,
+      "total_ms": 1819.001598,
+      "done_at_ms": 3345.496475,
+      "analyse_ms": 0.034356
+    }
+  ]
+}
