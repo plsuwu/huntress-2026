@@ -414,3 +414,21 @@ replay -> timed), module map, testing rules.
   warmups masteries failed on a `-<digits>`-suffixed answer, which `match_template` used to truncate. The suffix is now
   submitted whole (test `digit_suffixed_answer_is_submitted_whole`, real day-19 bytes), and ranked suffixed sets
   were confirmed CORRECT. Deployed `7f302241` (previous: `ctf-run.prev-48c2542f`, `ctf-run.prev-608adf3f`).
+- 2026-10-26 - Binary-RE HoF gap analysis (161 ranked jumpbox runs, Oct 22-26; no code change). Board: 2/50 #1, most
+  routes #2-#4 at 1.1-1.5x the leader. Per run: start ~50-300 ms, download, then the whole analysis, then submit.
+  **The download is capped per connection at ~8-25 MB/s (never >30)** while 8-9 parallel connections reach 90-113 MB/s,
+  on every day and time. So it is not t3 network credits, and not our TCP (`tcp_rmem` max 14 MB, RTT ~8 ms): the cap
+  is upstream (Cloudflare/origin). A 36 MB TT zip takes ~2.1 s.
+  **Analysis never overlaps the download:** the tail after the last delivery equals the last set's analysis, 400-535 ms
+  per TT (d08+) and 0.6-2.1 s per mastery (sets contend for the 2 hyperthreads). Locally the d25 TT set (89.6 MB
+  inflated) is 92 ms decrypt+inflate plus 33 ms SHA-256; the jumpbox is ~4x slower (Xeon 8259CL: AES/AVX2/AVX-512,
+  no SHA-NI). Specimens differ per variant (config, XOR keys and hashes all vary), so caching answers is out; only
+  a few shared libraries (e.g. `FSharp.Core.dll`) are constant.
+  Levers, best first:
+  1. HTTP `Range` split downloads, if the origin honours Range (untested: expired capabilities 404; needs a live
+     untimed attempt). Could cut TT downloads ~4x; keep the split small for GM load.
+  2. Stream decrypt/inflate/SHA-256 per member as bytes arrive (local headers carry sizes), so analysis hides
+     under the download: -0.4..-0.5 s TT, -0.6..-2.1 s mastery.
+  3. Mastery CPU: multi-buffer AVX-512 SHA-256 across members/sets, cached hashes for the constant libraries, and
+     less thread oversubscription (9 sets x 2 workers + hash threads on 2 hyperthreads).
+  Leader times of 113-224 ms on 32-95 MB routes (d10 mastery, d13 TT/mastery) are not reachable by any full download.
