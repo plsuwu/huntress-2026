@@ -104,6 +104,8 @@ pub struct Spec {
     pub overlay: Option<(usize, usize)>,
     /// Resource overlay (`RS20`): the HCFG resource length field.
     pub hcfg_resource_size: Option<usize>,
+    /// Jar: parsed `.json` members by path (`crash/trace.json`, d26).
+    pub jar_json: BTreeMap<String, Value>,
 }
 
 /// One delivery: specimens grouped by day (`d01` -> primary specimen + sidecar files).
@@ -252,6 +254,11 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
             s.zip_methods = m;
             s.coroutine_runtime = z.files().any(|e| e.name.starts_with("kotlin/coroutines/") || e.name.starts_with("kotlinx/coroutines/"));
             s.main_class = jar_main_class(&z);
+            for e in z.files().filter(|e| e.name.ends_with(".json") && e.usize <= 1 << 20) {
+                if let Some(v) = z.read(e, b"").ok().and_then(|b| Value::parse_bytes(&b).ok()) {
+                    s.jar_json.insert(e.name.clone(), v);
+                }
+            }
         }
     } else {
         s.container = Some(Container::Other);
@@ -738,6 +745,14 @@ fn cxx_names(s: &Spec) -> &[String] {
     if s.symbols.is_empty() { &s.mangled_names } else { &s.symbols }
 }
 
+/// The `frames` strings of the jar JSON member the question names ("Parse crash/trace.json and ...").
+fn trace_frames<'a>(s: &'a Spec, q: &Question) -> Result<Vec<&'a str>, String> {
+    let named: Vec<&str> = q.question.split_whitespace().map(|t| t.trim_end_matches(['.', ',', ';', ':'])).filter(|t| s.jar_json.contains_key(*t)).collect();
+    let [path] = named.as_slice() else { return Err(format!("{}: question names {named:?} of jar JSON members {:?}", s.name, s.jar_json.keys())) };
+    let frames = s.jar_json[*path].get("frames").and_then(Value::as_array).ok_or_else(|| format!("{}: {path} has no frames array", s.name))?;
+    frames.iter().map(|f| f.as_str().ok_or_else(|| format!("{}: {path} frame {f:?} is not a string", s.name))).collect()
+}
+
 fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -> Result<String, String> {
     let need = |o: Option<String>, what: &str| o.ok_or_else(|| format!("{}: no {what}", s.name));
     let h = || s.hcfg.as_ref().ok_or_else(|| format!("{}: no HCFG blob found", s.name));
@@ -825,6 +840,12 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
         }
         "analysis_method_count" => need(s.main_class.as_ref().map(|c| c.methods.len().to_string()), "Main-Class")?,
         "analysis_access_flags" => need(s.main_class.as_ref().map(|c| c.access.to_string()), "Main-Class")?,
+        "analysis_crash_fault_method" => trace_frames(s, q)?.first().ok_or_else(|| format!("{}: empty frames", s.name))?.to_string(),
+        // "true exactly when every string in crash/trace.json frames is present in the primary classfile method-name set".
+        "analysis_crash_frames_match_methods" => {
+            let c = s.main_class.as_ref().ok_or_else(|| format!("{}: no Main-Class", s.name))?;
+            trace_frames(s, q)?.iter().all(|f| c.methods.iter().any(|m| m.0 == *f)).to_string()
+        }
         "analysis_hcfg_storage" => hcfg_storage(s, h()?)?,
         "analysis_overlay_offset" => need(s.overlay.map(|o| o.0.to_string()), "validated packed overlay")?,
         "analysis_overlay_size" => need(s.overlay.map(|o| o.1.to_string()), "validated packed overlay")?,

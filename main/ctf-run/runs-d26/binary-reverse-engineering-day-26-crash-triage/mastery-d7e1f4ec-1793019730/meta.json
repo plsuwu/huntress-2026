@@ -1,0 +1,122 @@
+{
+  "challenge": "binary-reverse-engineering-day-26-crash-triage/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d7e1f4ec-b7a7-4025-a432-304d568bbcbd",
+  "started_at": "2026-10-26T13:02:12.865Z",
+  "deadline": null,
+  "shape": "artifacts[10]+downloads[10]",
+  "start_ms": 2532.441134,
+  "start_ttfb_ms": 2518.888214,
+  "clock": {
+    "start_sent": "2026-10-26T13:02:10.645Z",
+    "start_received": "2026-10-26T13:02:13.178Z",
+    "start_date_header": "2026-10-26T13:02:13.000Z",
+    "last_delivery": "2026-10-26T13:02:40.120Z",
+    "submit_sent": "2026-10-26T13:02:40.124Z",
+    "submit_received": "2026-10-26T13:02:44.591Z",
+    "submit_date_header": "2026-10-26T13:02:44.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35734602,
+      "wire": 35734602,
+      "ttfb_ms": 1959.068647,
+      "total_ms": 18504.893500000002,
+      "done_at_ms": 21037.455188,
+      "analyse_ms": 23.710442
+    },
+    {
+      "delivery": 10,
+      "name": "evidence.zip",
+      "bytes": 35812406,
+      "wire": 35812406,
+      "ttfb_ms": 1872.036631,
+      "total_ms": 22701.060763,
+      "done_at_ms": 25233.782307999998,
+      "analyse_ms": 31.376649
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 35782399,
+      "wire": 35782399,
+      "ttfb_ms": 1881.723906,
+      "total_ms": 24295.770303,
+      "done_at_ms": 26828.469046,
+      "analyse_ms": 29.641303
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 35734573,
+      "wire": 35734573,
+      "ttfb_ms": 1816.7555069999999,
+      "total_ms": 24570.313077000003,
+      "done_at_ms": 27102.891948,
+      "analyse_ms": 92.666968
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 35782630,
+      "wire": 35782630,
+      "ttfb_ms": 1886.833226,
+      "total_ms": 24737.011918,
+      "done_at_ms": 27269.673209,
+      "analyse_ms": 32.547774000000004
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 35705000,
+      "wire": 35705000,
+      "ttfb_ms": 1920.827399,
+      "total_ms": 24765.028346000003,
+      "done_at_ms": 27297.681001,
+      "analyse_ms": 35.458614
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 35809243,
+      "wire": 35809243,
+      "ttfb_ms": 2118.5968599999997,
+      "total_ms": 25202.571823,
+      "done_at_ms": 27735.277843,
+      "analyse_ms": 25.701353
+    },
+    {
+      "delivery": 8,
+      "name": "evidence.zip",
+      "bytes": 35734708,
+      "wire": 35734708,
+      "ttfb_ms": 1794.2993060000001,
+      "total_ms": 26214.635623,
+      "done_at_ms": 28747.349265,
+      "analyse_ms": 31.705199000000004
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 35782629,
+      "wire": 35782629,
+      "ttfb_ms": 1802.3623280000002,
+      "total_ms": 26435.117138999998,
+      "done_at_ms": 28967.768798,
+      "analyse_ms": 27.827047
+    },
+    {
+      "delivery": 9,
+      "name": "evidence.zip",
+      "bytes": 35707962,
+      "wire": 35707962,
+      "ttfb_ms": 1800.4291650000002,
+      "total_ms": 26942.12099,
+      "done_at_ms": 29474.839261,
+      "analyse_ms": 0.345317
+    }
+  ]
+}

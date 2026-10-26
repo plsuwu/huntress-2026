@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-26-crash-triage/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "45c74bc3-a3f7-4d6e-9dce-c64e999f5f6e",
+  "started_at": "2026-10-26T13:01:57.936Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2581.879828,
+  "start_ttfb_ms": 2581.035339,
+  "clock": {
+    "start_sent": "2026-10-26T13:01:55.790Z",
+    "start_received": "2026-10-26T13:01:58.372Z",
+    "start_date_header": "2026-10-26T13:01:58.000Z",
+    "last_delivery": "2026-10-26T13:02:02.007Z",
+    "submit_sent": "2026-10-26T13:02:02.008Z",
+    "submit_received": "2026-10-26T13:02:04.192Z",
+    "submit_date_header": "2026-10-26T13:02:04.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35809514,
+      "wire": 35809514,
+      "ttfb_ms": 1455.846271,
+      "total_ms": 3634.6127930000002,
+      "done_at_ms": 6216.703725,
+      "analyse_ms": 0.31411999999999995
+    }
+  ]
+}
