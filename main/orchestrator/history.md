@@ -254,3 +254,17 @@ here after every release night.
   21 -> 30 (10 rank gains), warmups 7 -> 9 (7), script 43 -> 44, mobile 14 -> 14 (3), binary 4 -> 4 (1).
 - Server-bound lanes keep paying off in the 16:00-21:00 window. Other teams keep improving between passes (102 at
   17:15 -> 89 by 19:00), so a late-afternoon pass each day holds the board.
+
+## 2026-10-26: Day 26 release night
+
+- **Rush:** `rush.py all` started 22:50 (late; prep still finished by 22:53). Released 23:00:01; every lane had its
+  routes within ~4 s. A web-exploitation lane (days 19, 20) is still listed; ignored per policy.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - script 23:01:32 `beam-message-flow` (Erlang escript polyglot): the existing solver handled all three modes in
+    the 31 s first pass, with notes only.
+  - warmups 23:03:32 `food-for-thought` (Brainfuck).
+  - binary 23:03:52 `crash-triage` (Groovy JAR, crash/trace.json frames).
+  - metadata 23:07:43 `before-you-go` (Prefetch, SCCA + LZXPRESS Huffman, executable name).
+  - mobile 23:07:48 `split-decision` (split APK sets `.apks`: splitSourceDirs + ZipFile in the DEX interpreter).
+- All five merged by ~23:10; 82 tests, replay clean. Not yet deployed. Jumpbox disk 8.7 GB free before any campaign.
+- **Day-number slip:** the request said "Day 25" on the 26th; rush's default (day of month) was right. Trust the date.
