@@ -391,7 +391,8 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
     let jobs = opts.jobs.unwrap_or(queries.len()).clamp(1, MAX_JOBS);
     let next = AtomicUsize::new(0);
     let specs = &attempt.deliveries;
-    let work = |i: usize, r: io::Result<Response>| -> Landed {
+    let open = |_: usize| lane.and_then(|l| lanes::open_stream(l, &ctx));
+    let work = |i: usize, r: io::Result<Response>, stream: Option<Box<dyn lanes::Stream>>| -> Landed {
         let fetch = match r {
             Ok(resp) if resp.ok() => {
                 let t = FetchTiming { ttfb_ms: ms(resp.ttfb), total_ms: ms(resp.total), wire: resp.wire_len, done_at_ms: ms(t_start.elapsed()) };
@@ -402,7 +403,10 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
         };
         let t = Instant::now();
         let analysis = match (&fetch, lane) {
-            (Ok((d, _)), Some(l)) => Some(l.analyse(d, &ctx)),
+            (Ok((d, _)), Some(l)) => Some(match stream {
+                Some(s) => s.finish(d, &ctx),
+                None => l.analyse(d, &ctx),
+            }),
             _ => None,
         };
         Landed { index: i, fetch, analysis, analyse_ms: ms(t.elapsed()) }
@@ -418,7 +422,7 @@ pub fn attempt(opts: &Opts, pool: &Arc<Pool>) -> Res<bool> {
 
     std::thread::scope(|scope| {
         let (tx, rx) = mpsc::channel();
-        fetch::spawn_all(scope, pool, opts.hedge, &queries, &next, jobs, &work, tx);
+        fetch::spawn_all(scope, pool, opts.hedge, &queries, &next, jobs, &open, &work, tx);
         for landed in rx {
             let i = landed.index;
             st.last_delivery = time::now_ms();

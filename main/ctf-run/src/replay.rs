@@ -171,7 +171,8 @@ pub fn replay(case: &mut Case, lane_name: Option<&str>) -> Res<Outcome> {
     let mut done = Analysed::new(deliveries.len());
     let t_analyse = Instant::now();
     let analyses: Vec<_> = std::thread::scope(|s| {
-        let hs: Vec<_> = deliveries.iter().map(|d| s.spawn(|| lane.analyse(d, &ctx))).collect();
+        // Through the lane's stream when it has one, fed 1 MiB at a time like a download.
+        let hs: Vec<_> = deliveries.iter().map(|d| s.spawn(|| lanes::analyse_as_streamed(lane, d, &ctx, 1 << 20))).collect();
         hs.into_iter().map(|h| h.join().unwrap_or_else(|_| Err("analysis panicked".into()))).collect()
     });
     let analyse_ms = ms(t_analyse.elapsed());

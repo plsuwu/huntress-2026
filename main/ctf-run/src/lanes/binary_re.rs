@@ -7,12 +7,13 @@
 //! `answer_format`: `exact_text` containers are lowercase (`elf`), `pattern` ones canonical (`ELF`);
 //! an `integer` ELF class is `64`, otherwise `ELF64`.
 
-use super::{Analysed, Analysis, Lane};
+use super::{Analysed, Analysis, Lane, Stream};
 use crate::crypto::sha256::{hex, sha256};
 use crate::formats::{bytes, dotnet, elf, hcfg, jvm, macho, overlay, pe, wasm, x86, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Condvar, Mutex};
 
 pub struct BinaryRe;
@@ -408,7 +409,23 @@ fn member_matches(name: &str, m: &str) -> bool {
     name.ends_with(m) || stem.ends_with(m)
 }
 
-fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
+/// One member's spec, as a set needs it: a non-primary `.json` sidecar keeps only its name and hash.
+fn member_spec(z: &zip::Zip, e: &zip::Entry, primary: bool) -> Result<Spec, String> {
+    let _slot = SLOTS.take();
+    z.read(e, b"infected").map(|data| {
+        // Day 15 ships stripped + symbolized builds of one specimen: analyse every binary.
+        if primary || !e.base_name().ends_with(".json") {
+            analyse_specimen(e.base_name(), &data)
+        } else {
+            Spec { name: e.base_name().to_string(), sha256: hex(&sha256(&data)), ..Spec::default() }
+        }
+    })
+}
+
+/// `streamed`: members analysed while the archive downloaded, by local-header offset. Each is used only
+/// when the central directory confirms it (same name and size at that offset); everything else is
+/// analysed here, so the result never depends on what the stream managed to do.
+fn analyse_set(z: &zip::Zip, mut streamed: HashMap<u64, Streamed>) -> Result<Set, String> {
     // Group members by day in central-directory order: `artifact_sha256_N` is the day's Nth member
     // (graded on d15: `-symbolized` precedes `-stripped` there), and the primary specimen is the
     // first non-.json one.
@@ -422,11 +439,19 @@ fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
     }
     // Biggest specimens first, spread over two workers (the jumpbox has 2 cores).
     let mut jobs: Vec<(String, &zip::Entry, bool)> = Vec::new();
+    let mut early = Vec::new();
     for (day, g) in &groups {
         let primary = g.iter().position(|e| !e.base_name().ends_with(".json")).ok_or_else(|| format!("{day}: no specimen"))?;
         for (i, e) in g.iter().enumerate() {
-            jobs.push((day.clone(), e, i == primary));
+            match streamed.remove(&e.lh_offset) {
+                Some(m) if m.name == e.raw_name && m.csize == e.csize => early.push((day.clone(), *e, i == primary, m.job)),
+                _ => jobs.push((day.clone(), *e, i == primary)),
+            }
         }
+    }
+    drop(streamed); // members the directory does not confirm: their threads finish on their own
+    if std::env::var_os("CTF_PROFILE").is_some() {
+        eprintln!("  [profile] set: {} of {} members streamed", early.len(), early.len() + jobs.len());
     }
     jobs.sort_by_key(|(_, e, _)| std::cmp::Reverse(e.usize));
     let next = std::sync::atomic::AtomicUsize::new(0);
@@ -438,22 +463,27 @@ fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
                     loop {
                         let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                         let Some((day, e, primary)) = jobs.get(i) else { break };
-                        let _slot = SLOTS.take();
-                        let r = z.read(e, b"infected").map(|data| {
-                            // Day 15 ships stripped + symbolized builds of one specimen: analyse every binary.
-                            if *primary || !e.base_name().ends_with(".json") {
-                                analyse_specimen(e.base_name(), &data)
-                            } else {
-                                Spec { name: e.base_name().to_string(), sha256: hex(&sha256(&data)), ..Spec::default() }
-                            }
-                        });
-                        out.push((day.clone(), *primary, r));
+                        out.push((day.clone(), *primary, member_spec(z, e, *primary)));
                     }
                     out
                 })
             })
             .collect();
-        hs.into_iter().map(|h| h.join().unwrap_or_default()).collect()
+        // Streamed members (a failed one is redone the ordinary way, so its error is the usual one).
+        let mine: Vec<_> = early
+            .into_iter()
+            .map(|(day, e, primary, job)| {
+                let r = match job.join() {
+                    Ok(Ok(spec)) if primary || !e.base_name().ends_with(".json") => Ok(spec),
+                    Ok(Ok(spec)) => Ok(Spec { name: spec.name, sha256: spec.sha256, ..Spec::default() }),
+                    _ => member_spec(z, e, primary),
+                };
+                (day, primary, r)
+            })
+            .collect();
+        let mut all: Vec<_> = hs.into_iter().map(|h| h.join().unwrap_or_default()).collect();
+        all.push(mine);
+        all
     });
     let mut days: BTreeMap<String, (Option<Spec>, Vec<(String, String)>, Vec<Spec>)> = BTreeMap::new();
     for (day, primary, r) in results.into_iter().flatten() {
@@ -475,6 +505,88 @@ fn analyse_set(z: &zip::Zip) -> Result<Set, String> {
         })
         .collect();
     Ok(Set { days })
+}
+
+/// Bytes of streamed member copies waiting or being analysed, across every delivery in flight. They come
+/// on top of the deliveries themselves (a mastery holds 9 x 36 MB), so past the budget a member is left
+/// for `finish`, which reads it from the finished body: a time trial streams everything, a mastery
+/// streams what fits.
+static STREAM_BYTES: AtomicUsize = AtomicUsize::new(0);
+const STREAM_BUDGET: usize = 96 << 20;
+
+/// A member analysed while its archive was still downloading.
+struct Streamed {
+    name: Vec<u8>,
+    csize: u64,
+    job: std::thread::JoinHandle<Result<Spec, String>>,
+}
+
+/// Walks the local headers of a downloading evidence zip and analyses each `dNN--` member on its own
+/// thread (under `SLOTS`) as soon as its bytes are all in, so a time trial's analysis hides under its
+/// ~2 s download instead of following it.
+#[derive(Default)]
+struct ZipStream {
+    next: usize,
+    stopped: bool,
+    members: HashMap<u64, Streamed>,
+}
+
+impl Stream for ZipStream {
+    fn feed(&mut self, b: &[u8]) {
+        while !self.stopped {
+            let (end, raw_name, csize) = match zip::local_member_end(b, self.next) {
+                Ok(Some(m)) => m,
+                Ok(None) => return,
+                // The central directory (or something unexpected): `finish` handles the rest.
+                Err(_) => {
+                    self.stopped = true;
+                    return;
+                }
+            };
+            let at = std::mem::replace(&mut self.next, end);
+            let name = String::from_utf8_lossy(raw_name);
+            if day_of(name.rsplit('/').next().unwrap_or(&name)).is_none() {
+                continue;
+            }
+            let len = end - at;
+            if STREAM_BYTES.fetch_add(len, Ordering::SeqCst) + len > STREAM_BUDGET {
+                STREAM_BYTES.fetch_sub(len, Ordering::SeqCst);
+                continue;
+            }
+            let raw = b[at..end].to_vec();
+            let job = std::thread::spawn(move || {
+                let r = zip::Zip::local(&raw).and_then(|(z, e)| {
+                    let _slot = SLOTS.take();
+                    z.read(&e, b"infected").map(|data| analyse_specimen(e.base_name(), &data))
+                });
+                drop(raw);
+                STREAM_BYTES.fetch_sub(len, Ordering::SeqCst);
+                r
+            });
+            self.members.insert(at as u64, Streamed { name: raw_name.to_vec(), csize, job });
+        }
+    }
+
+    fn finish(self: Box<Self>, d: &Delivery, _: &RunCtx) -> Result<Analysis, String> {
+        analyse_delivery(d, self.members)
+    }
+}
+
+/// A delivery is either the evidence zip itself or an outer zip of per-set evidence zips.
+fn analyse_delivery(d: &Delivery, streamed: HashMap<u64, Streamed>) -> Result<Analysis, String> {
+    let z = zip::Zip::parse(&d.bytes)?;
+    if z.files().any(|e| day_of(e.base_name()).is_some()) {
+        return Ok(Box::new(vec![analyse_set(&z, streamed)?]));
+    }
+    let mut sets = Vec::new();
+    for e in z.files().filter(|e| e.name.ends_with(".zip")) {
+        let inner = z.read(e, b"infected")?;
+        sets.push(analyse_set(&zip::Zip::parse(&inner)?, HashMap::new())?);
+    }
+    if sets.is_empty() {
+        return Err(format!("{}: no dNN specimens", d.name));
+    }
+    Ok(Box::new(sets))
 }
 
 fn container_label(s: &Spec, q: &Question) -> Result<String, String> {
@@ -618,20 +730,11 @@ impl Lane for BinaryRe {
     }
 
     fn analyse(&self, d: &Delivery, _: &RunCtx) -> Result<Analysis, String> {
-        let z = zip::Zip::parse(&d.bytes)?;
-        // A delivery is either the evidence zip itself or an outer zip of per-set evidence zips.
-        if z.files().any(|e| day_of(e.base_name()).is_some()) {
-            return Ok(Box::new(vec![analyse_set(&z)?]));
-        }
-        let mut sets = Vec::new();
-        for e in z.files().filter(|e| e.name.ends_with(".zip")) {
-            let inner = z.read(e, b"infected")?;
-            sets.push(analyse_set(&zip::Zip::parse(&inner)?)?);
-        }
-        if sets.is_empty() {
-            return Err(format!("{}: no dNN specimens", d.name));
-        }
-        Ok(Box::new(sets))
+        analyse_delivery(d, HashMap::new())
+    }
+
+    fn stream(&self, _: &RunCtx) -> Option<Box<dyn Stream>> {
+        Some(Box::new(ZipStream::default()))
     }
 
     fn answer(&self, q: &Question, done: &Analysed, ctx: &RunCtx) -> Result<String, String> {

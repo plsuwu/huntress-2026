@@ -2,7 +2,7 @@
 //! result (e.g. parse + analyse the delivery) before sending it on, so CPU work overlaps the
 //! downloads still in flight and the receiver sees finished items in completion order.
 
-use super::http::Response;
+use super::http::{Progress, Response};
 use super::pool::Pool;
 use std::io;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -10,22 +10,27 @@ use std::sync::mpsc::{self, Sender};
 use std::sync::Arc;
 use std::thread::Scope;
 
-/// Spawns `jobs` workers inside `scope`; each takes the next query (`op=...` string), fetches it,
-/// runs `then(index, result)` and sends the output on `tx`. Returns immediately; the receiver
+/// Spawns `jobs` workers inside `scope`; each takes the next query (`op=...` string), opens
+/// `open(index)` (an optional sink that sees the body while it downloads; not with `hedge`), fetches it,
+/// runs `then(index, result, sink)` and sends the output on `tx`. Returns immediately; the receiver
 /// gets exactly `queries.len()` messages unless a worker panics. `next` is the shared work cursor
 /// (start it at 0).
-pub fn spawn_all<'scope, 'env: 'scope, T, F>(
+#[allow(clippy::too_many_arguments)]
+pub fn spawn_all<'scope, 'env: 'scope, T, S, O, F>(
     scope: &'scope Scope<'scope, 'env>,
     pool: &'env Arc<Pool>,
     hedge: bool,
     queries: &'env [String],
     next: &'env AtomicUsize,
     jobs: usize,
+    open: &'env O,
     then: &'env F,
     tx: Sender<T>,
 ) where
     T: Send + 'env,
-    F: Fn(usize, io::Result<Response>) -> T + Sync,
+    S: Progress,
+    O: Fn(usize) -> Option<S> + Sync,
+    F: Fn(usize, io::Result<Response>, Option<S>) -> T + Sync,
 {
     for _ in 0..jobs.clamp(1, queries.len().max(1)) {
         let tx = tx.clone();
@@ -34,8 +39,13 @@ pub fn spawn_all<'scope, 'env: 'scope, T, F>(
             loop {
                 let i = next.fetch_add(1, Ordering::Relaxed);
                 let Some(q) = queries.get(i) else { break };
-                let result = if hedge { get_hedged(pool, q) } else { client.get_identity(q) };
-                if tx.send(then(i, result)).is_err() {
+                let mut sink = if hedge { None } else { open(i) };
+                let result = match sink.as_mut() {
+                    _ if hedge => get_hedged(pool, q),
+                    Some(s) => client.get_identity_progress(q, Some(s as &mut dyn Progress)),
+                    None => client.get_identity(q),
+                };
+                if tx.send(then(i, result, sink)).is_err() {
                     break;
                 }
             }

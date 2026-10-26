@@ -7,6 +7,9 @@
 //!      suffix against the lane's kind table (a `match` or a `(suffix, handler)` list): adding a
 //!      question kind is adding one row.
 //!
+//! A lane may also `stream`: start on a delivery's complete parts while the rest is still downloading
+//! (binary-RE: zip members), then `finish` on the whole delivery with the same result `analyse` gives.
+//!
 //! Lanes must never guess: return `Err` (with what was seen) when unsure; the runner then refuses
 //! to submit and prints the error so the kind/reader can be added.
 
@@ -22,6 +25,64 @@ use std::any::Any;
 
 pub type Analysis = Box<dyn Any + Send + Sync>;
 
+/// Incremental analysis of one delivery while it downloads (see `Lane::stream`).
+pub trait Stream {
+    /// The body received so far (a growing prefix; identity-encoded downloads only).
+    fn feed(&mut self, prefix: &[u8]);
+    /// The complete delivery: returns exactly what `Lane::analyse` would.
+    fn finish(self: Box<Self>, d: &Delivery, ctx: &RunCtx) -> Result<Analysis, String>;
+}
+
+impl crate::net::http::Progress for Box<dyn Stream> {
+    fn progress(&mut self, body: &[u8]) {
+        self.feed(body);
+    }
+}
+
+/// The lane's stream for one delivery, unless `CTF_NO_STREAM` is set (A/B timing, or a way out).
+pub fn open_stream(lane: &dyn Lane, ctx: &RunCtx) -> Option<Box<dyn Stream>> {
+    if std::env::var_os("CTF_NO_STREAM").is_some() { None } else { lane.stream(ctx) }
+}
+
+/// Analyses one complete delivery the way a live run does: through the lane's stream when it has one
+/// (fed in `step`-byte increments, like a download), else `analyse`. For replay and tests.
+pub fn analyse_as_streamed(lane: &dyn Lane, d: &Delivery, ctx: &RunCtx, step: usize) -> Result<Analysis, String> {
+    // `CTF_REPLAY_MBPS=17`: pace the feed like a download at that rate and report the analysis tail
+    // (last byte -> analysis done), the part of a live run's timer the stream is meant to hide.
+    let mbps: Option<f64> = std::env::var("CTF_REPLAY_MBPS").ok().and_then(|v| v.parse().ok()).filter(|r| *r > 0.0);
+    let t0 = std::time::Instant::now();
+    let tail = |t: std::time::Instant, how: &str| {
+        if mbps.is_some() {
+            eprintln!("  [paced] {} {} B: download {:.0} ms, analysis tail {:.1} ms ({how})", d.name, d.bytes.len(), (t - t0).as_secs_f64() * 1e3, t.elapsed().as_secs_f64() * 1e3);
+        }
+    };
+    let pace = |k: usize| {
+        if let Some(r) = mbps {
+            let due = std::time::Duration::from_secs_f64(k as f64 / (r * 1e6));
+            if let Some(w) = due.checked_sub(t0.elapsed()) {
+                std::thread::sleep(w);
+            }
+        }
+    };
+    let Some(mut s) = open_stream(lane, ctx) else {
+        pace(d.bytes.len());
+        let t = std::time::Instant::now();
+        let r = lane.analyse(d, ctx);
+        tail(t, "analyse");
+        return r;
+    };
+    let mut k = 0;
+    while k < d.bytes.len() {
+        k = (k + step.max(1)).min(d.bytes.len());
+        pace(k);
+        s.feed(&d.bytes[..k]);
+    }
+    let t = std::time::Instant::now();
+    let r = s.finish(d, ctx);
+    tail(t, "stream");
+    r
+}
+
 pub trait Lane: Sync {
     fn name(&self) -> &'static str;
 
@@ -30,6 +91,11 @@ pub trait Lane: Sync {
 
     /// Parses one delivery. Called concurrently for different deliveries.
     fn analyse(&self, d: &Delivery, ctx: &RunCtx) -> Result<Analysis, String>;
+
+    /// A stream for one delivery that is about to download, or `None` to `analyse` it once it lands.
+    fn stream(&self, _ctx: &RunCtx) -> Option<Box<dyn Stream>> {
+        None
+    }
 
     /// Answers one question from the finished analyses.
     fn answer(&self, q: &Question, done: &Analysed, ctx: &RunCtx) -> Result<String, String>;

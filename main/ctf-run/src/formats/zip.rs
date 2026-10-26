@@ -67,6 +67,57 @@ fn u64le(b: &[u8], at: usize) -> Option<u64> {
     Some(u64::from_le_bytes(b.get(at..at + 8)?.try_into().ok()?))
 }
 
+/// ZIP64 sizes and the WinZip-AES record from a local header's extra field: (uncompressed size, aes).
+fn local_extra(extra: &[u8], mut usize_: u64) -> (u64, Option<(u8, u16, u16)>) {
+    let mut aes = None;
+    let mut x = 0;
+    while x + 4 <= extra.len() {
+        let id = u16le(extra, x).unwrap();
+        let sz = u16le(extra, x + 2).unwrap() as usize;
+        let body = extra.get(x + 4..x + 4 + sz).unwrap_or(&[]);
+        match id {
+            // A local ZIP64 record holds both sizes: uncompressed, then compressed.
+            0x0001 if usize_ == 0xFFFF_FFFF => usize_ = u64le(body, 0).unwrap_or(usize_),
+            0x9901 if body.len() >= 7 => aes = Some((body[4], u16le(body, 5).unwrap(), u16le(body, 0).unwrap())),
+            _ => {}
+        }
+        x += 4 + sz;
+    }
+    (usize_, aes)
+}
+
+/// The local member starting at `at` in a (possibly partial) archive: `Ok(Some((end, raw name,
+/// compressed size)))` once its header and data are all present, `Ok(None)` while bytes are missing,
+/// `Err` when `at` is not a local header (the central directory, or junk) or the member's size is only in
+/// a trailing data descriptor.
+pub fn local_member_end(b: &[u8], at: usize) -> Result<Option<(usize, &[u8], u64)>, String> {
+    let Some(head) = b.get(at..at + 30) else {
+        return if b.len() <= at || b[at..].iter().zip(b"PK\x03\x04").all(|(x, y)| x == y) { Ok(None) } else { Err("not a local header".into()) };
+    };
+    if head[..4] != *b"PK\x03\x04" {
+        return Err("not a local header".into());
+    }
+    if u16le(head, 6).unwrap() & 8 != 0 {
+        return Err("member uses a data descriptor".into());
+    }
+    let nlen = u16le(head, 26).unwrap() as usize;
+    let xlen = u16le(head, 28).unwrap() as usize;
+    let Some(extra) = b.get(at + 30 + nlen..at + 30 + nlen + xlen) else { return Ok(None) };
+    let mut csize = u32le(head, 18).unwrap() as u64;
+    if csize == 0xFFFF_FFFF {
+        let mut x = 0;
+        while x + 4 <= extra.len() {
+            let (id, sz) = (u16le(extra, x).unwrap(), u16le(extra, x + 2).unwrap() as usize);
+            if id == 0x0001 {
+                csize = u64le(extra, x + 12).ok_or("short ZIP64 extra")?;
+            }
+            x += 4 + sz;
+        }
+    }
+    let end = (at + 30 + nlen + xlen).checked_add(usize::try_from(csize).map_err(|_| "member too large")?).ok_or("member too large")?;
+    Ok((b.len() >= end).then(|| (end, &b[at + 30..at + 30 + nlen], csize)))
+}
+
 pub fn is_zip(data: &[u8]) -> bool {
     data.starts_with(b"PK\x03\x04") || data.starts_with(b"PK\x05\x06")
 }
@@ -155,6 +206,31 @@ impl<'a> Zip<'a> {
             p += 46 + nlen + xlen + klen;
         }
         Ok(Zip { data, entries, eocd_total: total, comment, verified: Default::default(), keys: Default::default() })
+    }
+
+    /// A one-member archive over `data` = a local file header and its data (no central directory), for
+    /// members decoded while the rest of the archive is still downloading. Sizes, CRC and the WinZip-AES
+    /// extra come from the local header, so members written with a data descriptor are refused.
+    pub fn local(data: &'a [u8]) -> Result<(Zip<'a>, Entry), String> {
+        let (end, _, _) = local_member_end(data, 0)?.ok_or("truncated local member")?;
+        let nlen = u16le(data, 26).unwrap() as usize;
+        let xlen = u16le(data, 28).unwrap() as usize;
+        let raw_name = data[30..30 + nlen].to_vec();
+        let (usize_, aes) = local_extra(&data[30 + nlen..30 + nlen + xlen], u32le(data, 22).unwrap() as u64);
+        let e = Entry {
+            name: String::from_utf8_lossy(&raw_name).into_owned(),
+            raw_name,
+            method: u16le(data, 8).unwrap(),
+            flags: u16le(data, 6).unwrap(),
+            crc: u32le(data, 14).unwrap(),
+            csize: (end - 30 - nlen - xlen) as u64,
+            usize: usize_,
+            lh_offset: 0,
+            aes,
+            external_attr: 0,
+        };
+        let z = Zip { data, entries: vec![e.clone()], eocd_total: 1, comment: Vec::new(), verified: Default::default(), keys: Default::default() };
+        Ok((z, e))
     }
 
     pub fn find(&self, name: &str) -> Option<&Entry> {

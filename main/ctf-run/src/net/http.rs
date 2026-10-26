@@ -13,6 +13,17 @@ const IO_TIMEOUT: Duration = Duration::from_secs(120);
 const MAX_HEAD: usize = 64 * 1024;
 const MAX_BODY: usize = 1 << 30;
 
+/// Receives a download's body prefix as it grows, so a lane can start on whatever has fully arrived while
+/// the rest is still in flight. Called after every socket read with the whole body so far.
+pub trait Progress {
+    fn progress(&mut self, body: &[u8]);
+}
+
+/// Reborrows an optional progress sink for one call (the cast shortens the trait object's lifetime).
+fn again<'b>(p: &'b mut Option<&mut dyn Progress>) -> Option<&'b mut dyn Progress> {
+    p.as_mut().map(|p| &mut **p as &mut dyn Progress)
+}
+
 fn invalid(msg: &'static str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, msg)
 }
@@ -299,9 +310,14 @@ impl Client {
     /// `GET <base>?<query>` without `Accept-Encoding`: for artifact downloads, which are already
     /// compressed (zip/apk) - gzip would add server work, wire bytes and a decode pass.
     pub fn get_identity(&mut self, query: &str) -> io::Result<Response> {
+        self.get_identity_progress(query, None)
+    }
+
+    /// `get_identity` that also reports the body prefix to `progress` while it arrives.
+    pub fn get_identity_progress(&mut self, query: &str, progress: Option<&mut dyn Progress>) -> io::Result<Response> {
         let target = self.ep.target(query);
         let req = self.head("GET", &target, None, false);
-        self.send(&req)
+        self.send_progress(&req, progress)
     }
 
     /// `POST <base>` with a JSON body.
@@ -328,15 +344,19 @@ impl Client {
     }
 
     fn send(&mut self, req: &[u8]) -> io::Result<Response> {
+        self.send_progress(req, None)
+    }
+
+    fn send_progress(&mut self, req: &[u8], mut progress: Option<&mut dyn Progress>) -> io::Result<Response> {
         let reused = self.stream.is_some();
-        match self.round_trip(req, reused) {
+        match self.round_trip(req, reused, again(&mut progress)) {
             Ok(r) => Ok(r),
             Err(e) => {
                 self.stream = None;
                 // A kept-alive connection the server closed while idle fails before any response
                 // byte arrives; only that case is retried, once, on a fresh connection.
                 if reused && !self.got_bytes {
-                    let r = self.round_trip(req, false);
+                    let r = self.round_trip(req, false, progress);
                     if r.is_err() {
                         self.stream = None;
                     }
@@ -348,7 +368,7 @@ impl Client {
         }
     }
 
-    fn round_trip(&mut self, req: &[u8], reused: bool) -> io::Result<Response> {
+    fn round_trip(&mut self, req: &[u8], reused: bool, progress: Option<&mut dyn Progress>) -> io::Result<Response> {
         self.buf.clear();
         self.pos = 0;
         self.got_bytes = false;
@@ -398,13 +418,15 @@ impl Client {
             None => None,
         };
         let encoding = hv("content-encoding").map(|v| v.trim().to_ascii_lowercase());
+        // Progress sees only bodies that arrive as they will be used (no content coding to undo).
+        let progress = progress.filter(|_| matches!(encoding.as_deref(), None | Some("identity")));
 
         let mut body = Vec::with_capacity(length.unwrap_or(16 * 1024).min(MAX_BODY));
         if status == 204 || status == 304 {
         } else if chunked {
-            self.read_chunked(&mut body)?;
+            self.read_chunked(&mut body, progress)?;
         } else if let Some(n) = length {
-            self.take(n, &mut body)?;
+            self.take(n, &mut body, progress)?;
         } else {
             body.extend_from_slice(&self.buf[self.pos..]);
             self.pos = self.buf.len();
@@ -454,17 +476,36 @@ impl Client {
     }
 
     /// Moves exactly `n` body bytes into `out`: buffered bytes first, then straight from the socket.
-    fn take(&mut self, n: usize, out: &mut Vec<u8>) -> io::Result<()> {
+    /// With `progress`, the body so far is reported after every socket read.
+    fn take(&mut self, n: usize, out: &mut Vec<u8>, progress: Option<&mut dyn Progress>) -> io::Result<()> {
         if out.len() + n > MAX_BODY {
             return Err(invalid("response body too large"));
         }
         let have = (self.buf.len() - self.pos).min(n);
         out.extend_from_slice(&self.buf[self.pos..self.pos + have]);
         self.pos += have;
-        if n > have {
-            let start = out.len();
-            out.resize(start + n - have, 0);
-            self.stream.as_mut().unwrap().read_exact(&mut out[start..])?;
+        let Some(p) = progress else {
+            if n > have {
+                let start = out.len();
+                out.resize(start + n - have, 0);
+                self.stream.as_mut().unwrap().read_exact(&mut out[start..])?;
+            }
+            return Ok(());
+        };
+        let (mut filled, end) = (out.len(), out.len() + n - have);
+        p.progress(&out[..filled]);
+        out.resize(end, 0);
+        let stream = self.stream.as_mut().unwrap();
+        while filled < end {
+            match stream.read(&mut out[filled..end]) {
+                Ok(0) => return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "connection closed mid-body")),
+                Ok(k) => {
+                    filled += k;
+                    p.progress(&out[..filled]);
+                }
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+                Err(e) => return Err(e),
+            }
         }
         Ok(())
     }
@@ -483,7 +524,7 @@ impl Client {
         }
     }
 
-    fn read_chunked(&mut self, out: &mut Vec<u8>) -> io::Result<()> {
+    fn read_chunked(&mut self, out: &mut Vec<u8>, mut progress: Option<&mut dyn Progress>) -> io::Result<()> {
         loop {
             let line = self.read_line()?;
             let size = line.split(';').next().unwrap_or("").trim();
@@ -492,7 +533,7 @@ impl Client {
                 while !self.read_line()?.is_empty() {}
                 return Ok(());
             }
-            self.take(size, out)?;
+            self.take(size, out, again(&mut progress))?;
             if !self.read_line()?.is_empty() {
                 return Err(invalid("missing CRLF after chunk"));
             }
