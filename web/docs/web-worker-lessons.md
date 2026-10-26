@@ -69,7 +69,7 @@ classes must remain unknown until supported by the page, behavior and question.
 | OS command injection (unescaped shell path) | `/api/clues` gives feature_route + input_parameter + example_path (a Gin app that shells out, unescaped, to build a directory listing from the raw parameter value). Appending `; <cmd>` to the value runs `<cmd>` as a second shell statement (plain `;`-chaining only — `$(...)` substitution is rejected server-side with `diagnostic_failed` on every target seen). The proof is never reflected directly; it has to be `cat`-ed from the file named by the container's own `OBJECTIVE_PATH` env var (itself only visible via an `env` injection). | `recovery_lib.py`, `rec_command_injection`; `day-25-web-exploitation/shell-company/NOTES.md` |
 | Password-reset token / account-id confusion | `/api/clues` gives feature_route (request a token) + secondary_route (redeem it) + recovery_guide_route (discloses account_parameter/token_parameter names and the self_service-flagged account ids — no guessing needed). feature_route refuses to issue a token for a non-self-service account, but secondary_route never binds the redeemed token to the account_id it is redeemed against: request a token for a self-service account, then redeem it while claiming a different, non-self-service account id. | `recovery_lib.py`, `rec_reset_account_confusion`; `day-25-web-exploitation/reset-expectations/NOTES.md` |
 | GraphQL field-level authorization bypass | `/api/clues` gives feature_route (a live GraphQL endpoint, POST `{"query": ...}`) + protected_reference (an id hidden from a list query's sensitive field). Authorization is enforced by omission on the list surface (e.g. `caseIndex`, which never returns the sensitive field at all) but the matching single-object surface (e.g. `case(id)`) has no field-level check whatsoever — query it directly for `protected_reference`. "Vary the protocol surface" means switch GraphQL *operation* (list → single-object), not HTTP method. Needs a browser-like User-Agent — a bare urllib UA gets 403'd by the edge WAF on this app. | `recovery_lib.py`, `rec_graphql_field_bypass`; `day-25-web-exploitation/resolver-revolt/NOTES.md` |
-| Forged/unsigned webhook event trust | `/api/clues` gives feature_route + event_type + owner_scope (+ current_role) — no `secondary_route`/`inventory_route`/`protected_reference`/`state_format_route`, so it's distinguishable from every class above that also starts from feature_route. The receiver at feature_route has **no signature/HMAC/auth check at all**: a GET returns `post_required`, an empty POST returns `webhook_rejected`, but it blindly trusts any POST body that claims the disclosed event_type/owner_scope. The exact field names are *not* disclosed and are easy to over-guess: the receiver wants exactly two bare keys, `{"event": event_type, "owner": owner_scope}` — not the clue's own key names (`event_type`/`owner_scope`), not `type`/`scope`, no nesting under `data`/`payload`. Both keys required, both values matched exactly. The check is stateless (identical proof on every correct repeat), so probing field-name/value variants directly against a live target is safe. | `recovery_lib.py` (not yet folded — see below), `rec_forged_webhook_event`; `day-26-web-exploitation/trust-the-webhook/NOTES.md` |
+| Forged/unsigned webhook event trust | `/api/clues` gives feature_route + event_type + owner_scope (+ current_role) — no `secondary_route`/`inventory_route`/`protected_reference`/`state_format_route`, so it's distinguishable from every class above that also starts from feature_route. The receiver at feature_route has **no signature/HMAC/auth check at all**: a GET returns `post_required`, an empty POST returns `webhook_rejected`, but it blindly trusts any POST body that claims the disclosed event_type/owner_scope. The exact field names are *not* disclosed and are easy to over-guess: the receiver wants exactly two bare keys, `{"event": event_type, "owner": owner_scope}` — not the clue's own key names (`event_type`/`owner_scope`), not `type`/`scope`, no nesting under `data`/`payload`. Both keys required, both values matched exactly. The check is stateless (identical proof on every correct repeat), so probing field-name/value variants directly against a live target is safe. | `recovery_lib.py`, `rec_forged_webhook_event`; `day-26-web-exploitation/trust-the-webhook/NOTES.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -188,13 +188,16 @@ shared, stdlib-only module folding every class above (`rec_backup`, `rec_idor`,
 `rec_session_fixation`, `rec_reflect_callback`, `rec_stored_xss_bot`, `rec_csrf`,
 `rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`,
 `rec_command_injection`, `rec_reset_account_confusion`,
-`rec_graphql_field_bypass`, `rec_sqli_group_close`) plus the `Target` HTTP
-client and `classify_and_recover` dispatcher behind it, shared by
-`day-21-web-exploitation/solve.py` and `day-22-web-exploitation/solve.py` (the
-day-24 and day-25 family solvers ported their own classes directly rather than
-importing this module, per the rule below — `recovery_lib.py` itself folded
-them in afterward, from the graded evidence; `rec_sqli_group_close` folds in
-day-19's payload, now reconfirmed verbatim across five independent live apps).
+`rec_graphql_field_bypass`, `rec_forged_webhook_event`, `rec_sqli_group_close`)
+plus the `Target` HTTP client and `classify_and_recover` dispatcher behind it,
+shared by `day-21-web-exploitation/solve.py` and `day-22-web-exploitation/solve.py`
+(the day-24 and day-25 family solvers ported their own classes directly rather
+than importing this module, per the rule below — `recovery_lib.py` itself
+folded them in afterward, from the graded evidence; `rec_sqli_group_close`
+folds in day-19's payload, now reconfirmed verbatim across five independent
+live apps; `rec_forged_webhook_event` folds in day-26's trust-the-webhook payload,
+binary-searched down to its minimal `{"event", "owner"}` form — see the lesson
+above on not stopping at an unverified kitchen-sink hit).
 It is verified against local HTTP fixtures for every class it recovers (not
 just read for plausibility), but a fixture is not a live target: still read it
 before trusting it against your assignment.
