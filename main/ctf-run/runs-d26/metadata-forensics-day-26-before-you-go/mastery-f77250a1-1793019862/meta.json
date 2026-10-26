@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-26-before-you-go/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "f77250a1-7a9e-4fc2-beab-5484080a5af3",
+  "started_at": "2026-10-26T13:04:25.506Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2758.912638,
+  "start_ttfb_ms": 2757.407437,
+  "clock": {
+    "start_sent": "2026-10-26T13:04:22.944Z",
+    "start_received": "2026-10-26T13:04:25.703Z",
+    "start_date_header": "2026-10-26T13:04:25.000Z",
+    "last_delivery": "2026-10-26T13:04:28.201Z",
+    "submit_sent": "2026-10-26T13:04:28.208Z",
+    "submit_received": "2026-10-26T13:04:30.923Z",
+    "submit_date_header": "2026-10-26T13:04:30.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-26-before-you-go-mastery.zip",
+      "bytes": 6984382,
+      "wire": 6984382,
+      "ttfb_ms": 1465.853587,
+      "total_ms": 2479.353411,
+      "done_at_ms": 5238.419046999999,
+      "analyse_ms": 18.353424999999998
+    }
+  ]
+}
