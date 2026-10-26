@@ -21,6 +21,12 @@ Each entry gives the rule, then why, with the date it was set. These override de
 - **Run ranked attempts from the jumpbox.** If it is down, ask the user to start it; never fall back to running ranked
   attempts locally. *(2026-10-15)*
 
+- **Pruning old binary run zips on the jumpbox is approved.** `ctf-run/tools/prune_hof_runs.sh --do` deletes
+  `deliveries/*.zip` in binary-RE ranked run dirs except the newest per route and mode, and keeps all JSON. The
+  user chose this when the disk filled ("Delete binary zips, keep newest") and asked for it again before the binary
+  campaign ("Prune the jumpbox"). Deleting anything else there (other run dirs, `runs-campaign/`, logs) still
+  needs asking. *(2026-10-26)*
+
 ## Scope
 
 - **Only the five known lanes:** warmups, metadata-forensics, script-analysis, binary-reverse-engineering and

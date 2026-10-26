@@ -40,8 +40,12 @@ def survey(rid):
                                     "sort": "elapsed_ms", "direction": "asc", "challenge": base})
         rows = get(f"{API}/api/speed-scoreboard?{q}").get("rows", [])
         me = next((r for r in rows if r.get("team_name") == TEAM), None)
+        # `cohort` + `par_ms` differ between teams on one route (the pool/generation an attempt came from; d10
+        # mastery mixes par 200 s and 28 s entries in one ranking). Rows carry no timestamp.
         out.update(teams=len(rows), top=[r["elapsed_ms"] for r in rows[:3]],
-                   rank=me and me["rank"], elapsed=me and me["elapsed_ms"])
+                   rank=me and me["rank"], elapsed=me and me["elapsed_ms"],
+                   cohort=me and me.get("cohort"), par=me and me.get("par_ms"),
+                   top_cohorts=[r.get("cohort") for r in rows[:3]])
     except Exception as e:  # noqa: BLE001
         out["board_error"] = repr(e)[:120]
     return out

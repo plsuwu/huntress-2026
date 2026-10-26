@@ -29,7 +29,7 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/replay.rs` | offline: run a lane over saved runs / fixture manifests, diff against expected answers |
 | `src/oracle.rs` | untimed subset submits + bisection to find wrong answers |
 | `src/gm.rs` | Game Master protocol, response normalisation (bundle preference), route cache |
-| `src/net/` | keep-alive HTTP/1.1 (gzip for JSON, identity for downloads), connection pool, fetch workers |
+| `src/net/` | keep-alive HTTP/1.1 (gzip for JSON, identity for downloads; optional body `Progress` for lane streams), connection pool, fetch workers |
 | `src/lanes/` | one file per lane + `probe` (answers nothing; pipeline testing) |
 | `src/formats/` | zip (AES/ZipCrypto/ZIP64), inflate (libdeflate), elf, pe, macho, jvm, jar, dotnet, wasm, cfb/MSI, lnk, ooxml, email, media (jpeg/png/pdf), audio, video, sqlite, apk, overlay, hcfg, dex + dalvik (DEX interpreter), x86 (tiny) + x64emu (JNI leaf emulator), bytes |
 | `src/crypto/` | aes (AES-NI + portable; beats RustCrypto aes+ctr), sha1/hmac/pbkdf2 (8-lane AVX2 batch beats every crate), sha256 (ring), md5 (md-5), crc32 (crc32fast) |
@@ -37,7 +37,7 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 | `src/script/` | script-analysis toolkit: descriptor model + rubric, label-driven decode, cmd.exe model, JScript evaluator, families |
 | `src/evidence.rs` | nested-zip registry (`a.zip -> member` labels) |
 | `src/rx.rs` | Python-`re` semantics on fancy-regex (backrefs, lookaround; a syntax translator bridges `$`, `\Z`, `{,n}`, class `[`); ASCII subjects use a cheap ASCII-mode build; `re!()` and a global cache keep compiles to one per pattern |
-| `tools/` | `deploy.sh` (static binary -> jumpbox), `fixtures_<lane>.py` (original manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `run_legs.py` (per-leg timings), `hof_survey.py` / `hof_campaign.py` (Hall of Fame), `rush/` (release night) |
+| `tools/` | `deploy.sh` (static binary -> jumpbox), `fixtures_<lane>.py` (original manifest generators), `fixtures_from_runs.py` (graded run dirs -> fixtures), `oracle_groups.py` (family-grouped untimed oracle), `run_legs.py` (per-leg timings), `hof_survey.py` / `hof_plan.py` / `hof_campaign.py` (Hall of Fame), `prune_hof_runs.sh` (jumpbox disk), `rush/` (release night) |
 | `fixtures/<lane>/*.json` | replay manifests (point at the original files under `../utils/solver_py_scripts`) |
 
 ## The lane contract (`src/lanes/mod.rs`)
@@ -80,7 +80,7 @@ analyse zip members as they arrive. Replay goes through the stream too (`CTF_REP
 
 ## Testing and performance
 
-- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 365 cases after Day 23),
+- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 395 cases after Day 25),
   `cargo build --features tls` must stay green.
   The jumpbox runs the static musl binary from `nix build .#ctf-run` (repo flake), shipped by `tools/deploy.sh`; never
   compile on the burstable t3.small before ranked runs (`--remote-build` only if the flake is unavailable).

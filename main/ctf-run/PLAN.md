@@ -452,3 +452,7 @@ replay -> timed), module map, testing rules.
     78 tests. Deployed `1b48e006` (previous binary kept as `ctf-run.prev` on the box).
   - **Next:** the TT tail is now `FSharp.Core.dll` (5.7 MB, arrives last; its .NET `xor_json` scan). Mastery
     stays CPU-bound (~5 s of analysis for 9 sets on 2 hyperthreads).
+  - **Open:** a paced replay of the d25 mastery is slower at live-sized 16 KB feeds than at 1 MiB (jumpbox 8.49 vs
+    7.26 s wall; the 1 MiB figure beats the non-streaming 8.43 s), although the live d24 mastery `--dry` improved
+    clearly. Probably the replay feeder (9 pacing threads waking ~2000 times each on 2 hyperthreads), but not
+    proven: compare against ranked mastery legs (`run_legs.py`) before tuning further.

@@ -13,9 +13,13 @@ KEY=../huntress-id_ed25519
 HOST=HuntressCTF@10.1.181.90
 if [ "${1:-}" != "--remote-build" ]; then
   (cd .. && nix build .#ctf-run)
-  tar czf - tools | ssh -i "$KEY" -o BatchMode=yes "$HOST" "mkdir -p ~/ctf-run-v2/target/release && cd ~/ctf-run-v2 && rm -rf tools && tar xzf - && rm -f target/release/ctf-run"
-  scp -q -i "$KEY" ../result/bin/ctf-run "$HOST:ctf-run-v2/target/release/ctf-run"
-  ssh -i "$KEY" -o BatchMode=yes "$HOST" "chmod 755 ~/ctf-run-v2/target/release/ctf-run && ~/ctf-run-v2/target/release/ctf-run lanes >/dev/null && echo deployed static binary"
+  # Handshakes to the box can take ~40 s, hence the long ConnectTimeout. The binary goes up as ctf-run.new and is
+  # renamed over the old one only after it runs, so a running campaign never sees a missing binary; the previous
+  # one stays as ctf-run.prev.
+  SSH="-i $KEY -o BatchMode=yes -o ConnectTimeout=250"
+  tar czf - tools | ssh $SSH "$HOST" "mkdir -p ~/ctf-run-v2/target/release && cd ~/ctf-run-v2 && rm -rf tools && tar xzf -"
+  scp -q $SSH ../result/bin/ctf-run "$HOST:ctf-run-v2/target/release/ctf-run.new"
+  ssh $SSH "$HOST" "cd ~/ctf-run-v2/target/release && chmod 755 ctf-run.new && ./ctf-run.new lanes >/dev/null && { [ ! -f ctf-run ] || cp -f ctf-run ctf-run.prev; } && mv -f ctf-run.new ctf-run && echo deployed static binary \$(sha256sum ctf-run | cut -c1-8)"
   exit 0
 fi
 shift

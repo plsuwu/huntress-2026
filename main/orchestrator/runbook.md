@@ -88,8 +88,9 @@ cd ctf-run && tools/rush/merge.sh N --deploy   # ... and ships the static binary
 - **Merging early:** finished lanes can merge while others are still working. The replay will then report a few
   failing cases: these are the unfinished lanes' new day-N fixtures, shared through the `fixtures` symlink. This is
   expected; the merges are already committed. Deploy only once the replay is fully clean.
-- **Timing:** deploy only between campaigns. `deploy.sh` removes the jumpbox binary before the scp, which would break
-  a running campaign.
+- **Timing:** deploy between campaigns. Since 2026-10-26 `deploy.sh` swaps the binary atomically (`ctf-run.new` ->
+  `ctf-run`, old one kept as `ctf-run.prev`), but it still replaces `tools/` and a mid-campaign swap changes the
+  binary between runs.
 - **Dirty tree:** `nix build` warns "Git tree is dirty" whenever there are uncommitted files. Untracked run dirs are
   harmless.
 
@@ -97,7 +98,8 @@ cd ctf-run && tools/rush/merge.sh N --deploy   # ... and ships the static binary
 
 **Check jumpbox disk first** (`df -h ~` on the box): every ranked run saves its deliveries under `runs-hof/`, and a
 binary-RE run keeps up to ~32 MB per evidence zip. On 2026-10-25 a full pass filled the 38 GB disk after ~95 binary
-runs and the campaign died on ENOSPC. Want 8 GB+ free; otherwise prune with `ctf-run/tools/prune_hof_runs.sh` (keeps
+runs and the campaign died on ENOSPC. A binary mastery run saves ~200-320 MB (5-9 sets x 36 MB), a TT ~36 MB; a full
+pass adds ~6 GB, a binary-only pass ~9 GB. Want 8 GB+ free; otherwise prune with `ctf-run/tools/prune_hof_runs.sh` (keeps
 the newest run's zips per route and mode, and all JSON). Build plans with `ctf-run/tools/hof_plan.py`.
 
 ```sh
@@ -111,6 +113,11 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
   runs-hof/campaign-dNN.jsonl > runs-hof/campaign-dNN.log 2>&1 < /dev/null &'
 ```
 
+- **Plans:** `hof_plan.py SURVEY OUT [--order warmups,mobile-android,metadata-forensics,...]` applies the standard
+  budgets and skips HoF-ineligible routes. Put the server-bound lanes first when the run starts in the quiet
+  afternoon window; filter the plan JSON for a single-lane pass.
+- **Lost attempts:** a run that ends with `rc -9` and no result was killed (OOM on 2026-10-26), not graded. The
+  attempt is spent and expires unanswered; the campaign stops that route on it.
 - **Survey arguments:** `--days` needs a range, so write `20-20`, not `20`.
 - **Launching:** the launch ssh often hangs, so wrap it in `timeout`. The campaign keeps running regardless.
 - **Is it still running?** Use `ps -eo args | grep "^[p]ython3 -u tools/hof_campaign"`. A bare `pgrep -f` matches the
@@ -134,6 +141,14 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
   then `ssh -S /tmp/claude-1000/jb/s $H ...` and `scp -o ControlPath=/tmp/claude-1000/jb/s ...` take under 1 s. Keep the socket
   path short: Unix sockets cap it at 108 bytes, and the session scratchpad path is too long. `deploy.sh` opens its own
   connections, so do its four steps by hand through the socket if it times out.
+  **But (2026-10-25/26) the master does not survive between the coordinator's Bash calls** (the harness reaps
+  background children), so a socket opened in one call is gone in the next and ssh then falls back to password
+  auth ("Too many authentication failures"). Either open the master inside the same command, or use plain keyed
+  ssh with `-o BatchMode=yes -o ConnectTimeout=250` (handshakes took 15-60 s, some timed out: retry).
+- `scp` sometimes fails with `Connection closed` on a slow handshake: retry it, and check the remote file before
+  acting on it (`&&`-chain the launch after the copy).
+- Options in a variable (`S="-S sock"; ssh $S ...`) are not split by zsh either: pass them literally or use `${=S}`.
+- A Monitor's `grep 503` matches leader times in campaign lines (`top [503, ...]`): match `HTTP 503`.
 - **No tzdata in the coordinator shell:** `TZ=Australia/Brisbane date` silently falls back to UTC, and so does
   `TZ=Australia/Sydney`. On Day 25 this made a "sleep until 23:00 AEST" timer target 23:00 UTC. The machine's local
   zone is already AEST, so use plain `date` (e.g. `date -d "today 23:00" +%s`).
