@@ -226,3 +226,6 @@ here after every release night.
   members peak at ~1.1 GB. `dmesg`/`journalctl -k` are not readable there. The attempt expired unanswered (11 left).
   Day 26 binary mastery will have 10 sets: cap concurrent set analysis and free each delivery once analysed before
   the next ranked binary mastery.
+- **Binary fixes (evening, 2026-10-26):** the memory cap (`264c6ce`), then streaming analysis (`6df4424` and the
+  progressive d08 decode). Deployed `1b48e006`. Live dry runs: d25 TT analysis tail 532 -> 96 ms. Jumpbox disk
+  is at 6.4 GB free after the afternoon campaign: prune (`tools/prune_hof_runs.sh`) before the next one.

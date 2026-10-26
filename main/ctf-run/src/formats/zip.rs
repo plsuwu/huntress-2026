@@ -86,11 +86,36 @@ fn local_extra(extra: &[u8], mut usize_: u64) -> (u64, Option<(u8, u16, u16)>) {
     (usize_, aes)
 }
 
-/// The local member starting at `at` in a (possibly partial) archive: `Ok(Some((end, raw name,
-/// compressed size)))` once its header and data are all present, `Ok(None)` while bytes are missing,
-/// `Err` when `at` is not a local header (the central directory, or junk) or the member's size is only in
-/// a trailing data descriptor.
-pub fn local_member_end(b: &[u8], at: usize) -> Result<Option<(usize, &[u8], u64)>, String> {
+/// A local header's compressed size (from its ZIP64 record when the 32-bit field is saturated).
+fn local_csize(head: &[u8], extra: &[u8]) -> Result<u64, String> {
+    let csize = u32le(head, 18).ok_or("short header")? as u64;
+    if csize != 0xFFFF_FFFF {
+        return Ok(csize);
+    }
+    let mut x = 0;
+    while x + 4 <= extra.len() {
+        let (id, sz) = (u16le(extra, x).unwrap(), u16le(extra, x + 2).unwrap() as usize);
+        if id == 0x0001 {
+            return u64le(extra, x + 12).ok_or_else(|| "short ZIP64 extra".into());
+        }
+        x += 4 + sz;
+    }
+    Err("ZIP64 size without a ZIP64 record".into())
+}
+
+/// A local file header in a (possibly partial) archive; its data may not have arrived yet.
+pub struct LocalHead<'b> {
+    pub raw_name: &'b [u8],
+    /// Where the member's data starts and ends.
+    pub data: usize,
+    pub end: usize,
+    pub csize: u64,
+    pub usize: u64,
+}
+
+/// The local header at `at`: `Ok(None)` while its bytes are still missing, `Err` when `at` is not a
+/// local header (the central directory, or junk) or the member's size is only in a trailing data descriptor.
+pub fn local_head(b: &[u8], at: usize) -> Result<Option<LocalHead<'_>>, String> {
     let Some(head) = b.get(at..at + 30) else {
         return if b.len() <= at || b[at..].iter().zip(b"PK\x03\x04").all(|(x, y)| x == y) { Ok(None) } else { Err("not a local header".into()) };
     };
@@ -103,19 +128,192 @@ pub fn local_member_end(b: &[u8], at: usize) -> Result<Option<(usize, &[u8], u64
     let nlen = u16le(head, 26).unwrap() as usize;
     let xlen = u16le(head, 28).unwrap() as usize;
     let Some(extra) = b.get(at + 30 + nlen..at + 30 + nlen + xlen) else { return Ok(None) };
-    let mut csize = u32le(head, 18).unwrap() as u64;
-    if csize == 0xFFFF_FFFF {
-        let mut x = 0;
-        while x + 4 <= extra.len() {
-            let (id, sz) = (u16le(extra, x).unwrap(), u16le(extra, x + 2).unwrap() as usize);
-            if id == 0x0001 {
-                csize = u64le(extra, x + 12).ok_or("short ZIP64 extra")?;
-            }
-            x += 4 + sz;
+    let csize = local_csize(head, extra)?;
+    let (usize_, _) = local_extra(extra, u32le(head, 22).unwrap() as u64);
+    let data = at + 30 + nlen + xlen;
+    let end = data.checked_add(usize::try_from(csize).map_err(|_| "member too large")?).ok_or("member too large")?;
+    Ok(Some(LocalHead { raw_name: &b[at + 30..at + 30 + nlen], data, end, csize, usize: usize_ }))
+}
+
+/// The local member starting at `at` in a (possibly partial) archive: `Ok(Some((end, raw name,
+/// compressed size)))` once its header and data are all present, otherwise as `local_head`.
+pub fn local_member_end(b: &[u8], at: usize) -> Result<Option<(usize, &[u8], u64)>, String> {
+    Ok(local_head(b, at)?.filter(|h| b.len() >= h.end).map(|h| (h.end, h.raw_name, h.csize)))
+}
+
+/// Decodes one member while its compressed bytes arrive: WinZip AES (CTR, block-aligned as it goes) or
+/// plain, then DEFLATE or stored, into an output buffer sized from the local header. `push` the member's
+/// data bytes in order (everything after the local header); `output` grows as they are decoded.
+pub struct MemberStream {
+    name: String,
+    usize: usize,
+    csize: usize,
+    method: u16,
+    crc: Option<u32>,
+    aes: Option<(u8, u16, u16)>,
+    password: Vec<u8>,
+    /// Data bytes received, and those not yet decrypted (an incomplete block or the AES header).
+    got: usize,
+    pending: Vec<u8>,
+    cipher: Option<(Aes, u128)>,
+    inflater: flate2::Decompress,
+    /// Zeroed up front (lazily mapped pages); `produced` bytes of it are decoded.
+    out: Vec<u8>,
+    produced: usize,
+}
+
+impl MemberStream {
+    /// `head`: the local header through the end of its extra field.
+    pub fn new(head: &[u8], password: &[u8]) -> Result<MemberStream, String> {
+        if head.get(..4) != Some(b"PK\x03\x04") {
+            return Err("not a local header".into());
         }
+        let flags = u16le(head, 6).ok_or("short header")?;
+        let nlen = u16le(head, 26).ok_or("short header")? as usize;
+        let xlen = u16le(head, 28).ok_or("short header")? as usize;
+        let extra = head.get(30 + nlen..30 + nlen + xlen).ok_or("short header")?;
+        let csize = local_csize(head, extra)?;
+        let (usize_, aes) = local_extra(extra, u32le(head, 22).unwrap() as u64);
+        if flags & 8 != 0 {
+            return Err("member uses a data descriptor".into());
+        }
+        if flags & 1 != 0 && aes.is_none() {
+            return Err("ZipCrypto member".into());
+        }
+        let method = match aes {
+            Some((_, m, _)) => m,
+            None => u16le(head, 8).unwrap(),
+        };
+        if method != 0 && method != 8 {
+            return Err(format!("unsupported compression method {method}"));
+        }
+        let usize_ = usize::try_from(usize_).map_err(|_| "member too large")?;
+        if usize_ > 1 << 30 {
+            return Err("member too large".into());
+        }
+        let out = vec![0u8; usize_]; // calloc: pages are mapped as the inflater reaches them
+        Ok(MemberStream {
+            name: String::from_utf8_lossy(&head[30..30 + nlen]).into_owned(),
+            usize: usize_,
+            csize: usize::try_from(csize).map_err(|_| "member too large")?,
+            method,
+            crc: match aes {
+                Some((_, _, 2)) => None, // AE-2 stores no CRC
+                _ => Some(u32le(head, 14).unwrap()),
+            },
+            aes,
+            password: password.to_vec(),
+            got: 0,
+            pending: Vec::new(),
+            cipher: None,
+            inflater: flate2::Decompress::new(false),
+            out,
+            produced: 0,
+        })
     }
-    let end = (at + 30 + nlen + xlen).checked_add(usize::try_from(csize).map_err(|_| "member too large")?).ok_or("member too large")?;
-    Ok((b.len() >= end).then(|| (end, &b[at + 30..at + 30 + nlen], csize)))
+
+    pub fn output(&self) -> &[u8] {
+        &self.out[..self.produced]
+    }
+
+    pub fn complete(&self) -> bool {
+        self.got == self.csize
+    }
+
+    pub fn push(&mut self, data: &[u8]) -> Result<(), String> {
+        let data = &data[..data.len().min(self.csize - self.got)];
+        self.got += data.len();
+        let Some((strength, _, _)) = self.aes else { return self.decode(data.to_vec()) };
+        let salt_len: usize = match strength {
+            1 => 8,
+            2 => 12,
+            3 => 16,
+            _ => return Err(format!("{}: bad AES strength {strength}", self.name)),
+        };
+        // Encrypted body: salt, 2-byte verifier, ciphertext, 10-byte MAC (not checked, as in `read`).
+        let body_end = self.csize.checked_sub(10).ok_or("AES member too short")?;
+        let before = self.got - data.len();
+        let lo = (salt_len + 2).saturating_sub(before).min(data.len());
+        if self.cipher.is_none() {
+            self.pending.extend_from_slice(&data[..lo]);
+            if self.pending.len() < salt_len + 2 {
+                return Ok(());
+            }
+            let key_len = salt_len * 2;
+            let mut k = vec![0u8; key_len * 2 + 2];
+            winzip_kdf(&self.password, &self.pending[..salt_len], &mut k);
+            if k[key_len * 2..] != self.pending[salt_len..salt_len + 2] {
+                return Err(format!("{}: wrong password", self.name));
+            }
+            self.cipher = Some((Aes::new(&k[..key_len]).unwrap(), 1));
+            self.pending.clear();
+        }
+        // Ciphertext bytes in this push: data offsets before..before+len, clipped to salt+2..body_end.
+        let hi = body_end.saturating_sub(before).min(data.len());
+        if hi > lo {
+            self.pending.extend_from_slice(&data[lo..hi]);
+        }
+        let last = self.got.min(body_end) == body_end;
+        let n = if last { self.pending.len() } else { self.pending.len() / 16 * 16 };
+        if n == 0 {
+            return Ok(());
+        }
+        let mut chunk: Vec<u8> = self.pending.drain(..n).collect();
+        let (aes, ctr) = self.cipher.as_mut().unwrap();
+        aes.ctr_le_xor(*ctr, &mut chunk);
+        *ctr += (n / 16) as u128;
+        self.decode(chunk)
+    }
+
+    fn decode(&mut self, plain: Vec<u8>) -> Result<(), String> {
+        if self.method == 0 {
+            let end = self.produced + plain.len();
+            if end > self.usize {
+                return Err(format!("{}: stored data longer than its size", self.name));
+            }
+            self.out[self.produced..end].copy_from_slice(&plain);
+            self.produced = end;
+            return Ok(());
+        }
+        // Bounded output windows: offered the whole remaining buffer, each call cost time in proportion
+        // to it (16 KB pushes into a 67 MB member: 1.2 s locally, ~17 s on the jumpbox).
+        const WINDOW: usize = 1 << 20;
+        let mut input = &plain[..];
+        while !input.is_empty() {
+            let (in0, out0) = (self.inflater.total_in(), self.inflater.total_out());
+            let hi = self.usize.min(self.produced + WINDOW);
+            let status = self
+                .inflater
+                .decompress(input, &mut self.out[self.produced..hi], flate2::FlushDecompress::None)
+                .map_err(|e| format!("{}: inflate: {e}", self.name))?;
+            let used = (self.inflater.total_in() - in0) as usize;
+            let made = (self.inflater.total_out() - out0) as usize;
+            input = &input[used..];
+            self.produced += made;
+            match status {
+                flate2::Status::StreamEnd => break,
+                _ if used == 0 && made == 0 => {
+                    return Err(format!("{}: inflate made no progress (output {} of {})", self.name, self.produced, self.usize));
+                }
+                _ => {}
+            }
+        }
+        Ok(())
+    }
+
+    /// The decoded member, once every data byte has been pushed.
+    pub fn finish(self) -> Result<Vec<u8>, String> {
+        if self.got != self.csize {
+            return Err(format!("{}: {} of {} data bytes", self.name, self.got, self.csize));
+        }
+        if self.produced != self.usize {
+            return Err(format!("{}: decoded {} of {} bytes", self.name, self.produced, self.usize));
+        }
+        if self.crc.is_some_and(|c| crc32::crc32(&self.out) != c) {
+            return Err(format!("{}: CRC mismatch", self.name));
+        }
+        Ok(self.out)
+    }
 }
 
 pub fn is_zip(data: &[u8]) -> bool {
@@ -411,6 +609,36 @@ mod tests {
             let z = Zip::parse(&data).unwrap();
             assert_eq!(z.read_name("s.txt", b"infected").unwrap(), want, "{f}");
             assert!(z.read_name("s.txt", b"wrong").is_err(), "{f}");
+        }
+    }
+
+    #[test]
+    fn member_stream_matches_read() {
+        // Every member pushed in awkward step sizes (inside an AES block, across the salt/verifier and the MAC).
+        for f in ["testdata/plain.zip", "testdata/aes.zip"] {
+            let data = std::fs::read(f).unwrap();
+            let z = Zip::parse(&data).unwrap();
+            for e in z.files() {
+                let want = z.read(e, b"infected").unwrap();
+                let at = e.lh_offset as usize;
+                let (end, _, _) = local_member_end(&data, at).unwrap().unwrap();
+                let head = (at + 30 + u16le(&data, at + 26).unwrap() as usize + u16le(&data, at + 28).unwrap() as usize).min(end);
+                for step in [1, 7, 16, 17, 4096] {
+                    let mut m = MemberStream::new(&data[at..head], b"infected").unwrap();
+                    for c in data[head..end].chunks(step) {
+                        m.push(c).unwrap();
+                    }
+                    assert!(m.complete());
+                    assert_eq!(m.finish().unwrap(), want, "{f} {} step {step}", e.name);
+                }
+            }
+            if f.ends_with("aes.zip") {
+                let e = z.files().next().unwrap();
+                let at = e.lh_offset as usize;
+                let head = at + 30 + u16le(&data, at + 26).unwrap() as usize + u16le(&data, at + 28).unwrap() as usize;
+                let mut m = MemberStream::new(&data[at..head], b"wrong").unwrap();
+                assert!(m.push(&data[head..head + e.csize as usize]).is_err());
+            }
         }
     }
 }

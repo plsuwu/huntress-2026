@@ -171,8 +171,11 @@ pub fn replay(case: &mut Case, lane_name: Option<&str>) -> Res<Outcome> {
     let mut done = Analysed::new(deliveries.len());
     let t_analyse = Instant::now();
     let analyses: Vec<_> = std::thread::scope(|s| {
-        // Through the lane's stream when it has one, fed 1 MiB at a time like a download.
-        let hs: Vec<_> = deliveries.iter().map(|d| s.spawn(|| lanes::analyse_as_streamed(lane, d, &ctx, 1 << 20))).collect();
+        // Through the lane's stream when it has one, fed like a download: 1 MiB steps, or `CTF_REPLAY_STEP`
+        // bytes (a live download reports every socket read, ~16 KB).
+        let step = std::env::var("CTF_REPLAY_STEP").ok().and_then(|v| v.parse().ok()).unwrap_or(1 << 20);
+        let ctx = &ctx;
+        let hs: Vec<_> = deliveries.iter().map(|d| s.spawn(move || lanes::analyse_as_streamed(lane, d, ctx, step))).collect();
         hs.into_iter().map(|h| h.join().unwrap_or_else(|_| Err("analysis panicked".into()))).collect()
     });
     let analyse_ms = ms(t_analyse.elapsed());

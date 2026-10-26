@@ -35,6 +35,9 @@ mimalloc = { version = "0.1", default-features = false }
 sha1 = { version = "0.11.0", default-features = false }
 md-5 = { version = "0.11.0", default-features = false }
 pbkdf2 = { version = "0.13.0", default-features = false, features = ["hmac"] }
+# Streaming raw-deflate (zlib-rs backend) for zip members inflated while they download; libdeflate stays the
+# one-shot path (1.3x zlib-rs), the streamed one only has to keep up with the network.
+flate2 = { version = "1.1.10", default-features = false, features = ["zlib-rs"] }
 
 [profile.release]
 opt-level = 3

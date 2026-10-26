@@ -46,6 +46,10 @@ binary-reverse-engineering, script-analysis) with a low-latency runner built for
 downloads). `answer(question)` runs per question against all analyses: match the question-id suffix (after `setN.`)
 against the lane's kind table. `delivery_of` lets questions be answered (and `--early-submit`ted) as soon as their
 delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()`.
+Optional `stream()`: an incremental analyser fed the body prefix while the delivery downloads (every socket read,
+identity bodies only), whose `finish(delivery)` must return exactly what `analyse` would. Binary-RE uses it to
+analyse zip members as they arrive. Replay goes through the stream too (`CTF_REPLAY_STEP` bytes per feed, default
+1 MiB; `CTF_REPLAY_MBPS` paces it and prints the analysis tail); `CTF_NO_STREAM=1` turns streaming off everywhere.
 
 ## New day: the recipe
 
@@ -86,7 +90,10 @@ delivery lands. Analyses are downcast with `done.get::<T>(i)` / `done.all::<T>()
   straggler tail); never on binary-RE. Downloads always use the capability link (op=artifact is slower). Locally (external API via `HUNTRESS_GM_URL=https://...`) always build
   with `--release --features tls`: a plain `cargo build --release` overwrites the binary with one that refuses https.
   Keep a day's live runs in `runs-dNN/` (`-o runs-dNN`); prune pure `--dry` duplicates once graded runs exist. Build/run on the jumpbox with `tools/deploy.sh` (stable Rust 1.99 there).
-- `CTF_PROFILE=1` prints per-specimen / per-file analysis timings and replay analyse/answer splits.
+- `CTF_PROFILE=1` prints per-specimen / per-file analysis timings and replay analyse/answer splits (binary-RE
+  streams: how many members were streamed, and when the last ones arrived and finished).
+- Binary-RE memory: one member analysis per core at a time (`SLOTS`), and a 96 MB budget for streamed copies;
+  the jumpbox has ~1.2 GB available (2026-10-26: the d25 mastery peaked ~1.8 GB before this and was OOM-killed).
 - Measured: the server timer starts at the end of `start` processing (start latency is free); the timed window is
   download + analyse + submit. Downloads are the long pole (server think-time, 2-8 s tail); prefer bundles, fetch all
   in parallel on warm connections, analyse on the fetch workers, nothing between the last answer and `submit`.

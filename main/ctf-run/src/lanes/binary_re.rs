@@ -155,6 +155,11 @@ fn jar_hcfg(d: &[u8]) -> Option<hcfg::Hcfg> {
 }
 
 pub fn analyse_specimen(name: &str, d: &[u8]) -> Spec {
+    analyse_specimen_with(name, d, None)
+}
+
+/// `sha256`: the hex digest when it is already known (hashed while the member streamed in).
+fn analyse_specimen_with(name: &str, d: &[u8], sha256_hex: Option<String>) -> Spec {
     let prof = std::env::var_os("CTF_PROFILE").is_some();
     let t = std::time::Instant::now();
     let mut lap = |what: &str| {
@@ -164,11 +169,12 @@ pub fn analyse_specimen(name: &str, d: &[u8]) -> Spec {
     };
     // Hash large specimens on their own thread while the scans below run.
     std::thread::scope(|scope| {
-        let hash = (d.len() > (4 << 20)).then(|| scope.spawn(|| hex(&sha256(d))));
+        let hash = (sha256_hex.is_none() && d.len() > (4 << 20)).then(|| scope.spawn(|| hex(&sha256(d))));
         let mut s = analyse_specimen_body(name, d, &mut lap);
-        s.sha256 = match hash {
-            Some(h) => h.join().unwrap_or_default(),
-            None => hex(&sha256(d)),
+        s.sha256 = match (sha256_hex, hash) {
+            (Some(h), _) => h,
+            (None, Some(h)) => h.join().unwrap_or_default(),
+            (None, None) => hex(&sha256(d)),
         };
         lap("sha256");
         s
@@ -514,6 +520,42 @@ fn analyse_set(z: &zip::Zip, mut streamed: HashMap<u64, Streamed>) -> Result<Set
 static STREAM_BYTES: AtomicUsize = AtomicUsize::new(0);
 const STREAM_BUDGET: usize = 96 << 20;
 
+/// Members at least this big (inflated) are decoded while they download rather than after.
+const PROGRESSIVE_MIN: usize = 16 << 20;
+
+/// Decodes a member from the data chunks the stream forwards, hashing the output as it grows; the scans
+/// (under a core slot) run once the last chunk is in. A closed channel before the end (failed download)
+/// is an error, so `finish` redoes the member the ordinary way.
+fn progressive_spec(mut m: zip::MemberStream, rx: std::sync::mpsc::Receiver<Vec<u8>>, name: &str) -> Result<Spec, String> {
+    let mut digest = ring::digest::Context::new(&ring::digest::SHA256);
+    let mut hashed = 0;
+    // Socket reads arrive ~16 KB at a time: decode in batches of whatever has queued up (>= 256 KB).
+    let mut batch = Vec::new();
+    let mut open = true;
+    while open {
+        match rx.recv() {
+            Ok(c) => batch.extend_from_slice(&c),
+            Err(_) => open = false,
+        }
+        while let Ok(c) = rx.try_recv() {
+            batch.extend_from_slice(&c);
+        }
+        if batch.len() >= 256 << 10 || (!open && !batch.is_empty()) {
+            m.push(&batch)?;
+            batch.clear();
+            digest.update(&m.output()[hashed..]);
+            hashed = m.output().len();
+        }
+    }
+    if !m.complete() {
+        return Err(format!("{name}: download ended mid-member"));
+    }
+    let data = m.finish()?;
+    let sha = hex(digest.finish().as_ref());
+    let _slot = SLOTS.take();
+    Ok(analyse_specimen_with(name, &data, Some(sha)))
+}
+
 /// A member analysed while its archive was still downloading.
 struct Streamed {
     name: Vec<u8>,
@@ -524,18 +566,44 @@ struct Streamed {
 /// Walks the local headers of a downloading evidence zip and analyses each `dNN--` member on its own
 /// thread (under `SLOTS`) as soon as its bytes are all in, so a time trial's analysis hides under its
 /// ~2 s download instead of following it.
-#[derive(Default)]
 struct ZipStream {
     next: usize,
     stopped: bool,
     members: HashMap<u64, Streamed>,
+    /// The big member being decoded as it arrives: its data end, bytes forwarded so far, and the channel.
+    progressive: Option<(usize, usize, std::sync::mpsc::Sender<Vec<u8>>)>,
+    /// `CTF_PROFILE`: when the stream opened, and per member (name, arrived, analysed) in ms from it.
+    t0: std::time::Instant,
+    log: Option<std::sync::Arc<Mutex<Vec<(String, f64, f64)>>>>,
+}
+
+impl Default for ZipStream {
+    fn default() -> Self {
+        let log = std::env::var_os("CTF_PROFILE").map(|_| Default::default());
+        ZipStream { next: 0, stopped: false, members: HashMap::new(), progressive: None, t0: std::time::Instant::now(), log }
+    }
 }
 
 impl Stream for ZipStream {
     fn feed(&mut self, b: &[u8]) {
-        while !self.stopped {
-            let (end, raw_name, csize) = match zip::local_member_end(b, self.next) {
-                Ok(Some(m)) => m,
+        loop {
+            if let Some((end, sent, tx)) = &mut self.progressive {
+                let upto = b.len().min(*end);
+                if upto > *sent {
+                    let _ = tx.send(b[*sent..upto].to_vec());
+                    *sent = upto;
+                }
+                if *sent < *end {
+                    return;
+                }
+                self.next = *end;
+                self.progressive = None; // closes the channel: the job finishes the member
+            }
+            if self.stopped {
+                return;
+            }
+            let h = match zip::local_head(b, self.next) {
+                Ok(Some(h)) => h,
                 Ok(None) => return,
                 // The central directory (or something unexpected): `finish` handles the rest.
                 Err(_) => {
@@ -543,17 +611,51 @@ impl Stream for ZipStream {
                     return;
                 }
             };
-            let at = std::mem::replace(&mut self.next, end);
-            let name = String::from_utf8_lossy(raw_name);
-            if day_of(name.rsplit('/').next().unwrap_or(&name)).is_none() {
+            let (at, end) = (self.next, h.end);
+            let name = String::from_utf8_lossy(h.raw_name).into_owned();
+            let base = name.rsplit('/').next().unwrap_or(&name).to_string();
+            let arrived = b.len() >= end;
+            if day_of(&base).is_none() {
+                if !arrived {
+                    return;
+                }
+                self.next = end;
                 continue;
             }
+            // A big member (the 67 MB d08 specimen) is decrypted, inflated and hashed while it downloads,
+            // leaving only the scans for after its last byte. Its output is reserved against the budget.
+            if !arrived && h.usize >= PROGRESSIVE_MIN as u64 {
+                let reserve = h.usize as usize;
+                if STREAM_BYTES.fetch_add(reserve, Ordering::SeqCst) + reserve <= STREAM_BUDGET {
+                    if let Ok(m) = zip::MemberStream::new(&b[at..h.data], b"infected") {
+                        let (tx, rx) = std::sync::mpsc::channel::<Vec<u8>>();
+                        let (t0, log) = (self.t0, self.log.clone());
+                        let job = std::thread::spawn(move || {
+                            let r = progressive_spec(m, rx, &base);
+                            STREAM_BYTES.fetch_sub(reserve, Ordering::SeqCst);
+                            if let (Some(log), Ok(s)) = (log, &r) {
+                                log.lock().unwrap().push((format!("{} (progressive)", s.name), f64::NAN, t0.elapsed().as_secs_f64() * 1e3));
+                            }
+                            r
+                        });
+                        self.members.insert(at as u64, Streamed { name: h.raw_name.to_vec(), csize: h.csize, job });
+                        self.progressive = Some((end, h.data, tx));
+                        continue;
+                    }
+                }
+                STREAM_BYTES.fetch_sub(reserve, Ordering::SeqCst);
+            }
+            if !arrived {
+                return;
+            }
+            self.next = end;
             let len = end - at;
             if STREAM_BYTES.fetch_add(len, Ordering::SeqCst) + len > STREAM_BUDGET {
                 STREAM_BYTES.fetch_sub(len, Ordering::SeqCst);
                 continue;
             }
             let raw = b[at..end].to_vec();
+            let (t0, log, arrived) = (self.t0, self.log.clone(), self.t0.elapsed().as_secs_f64() * 1e3);
             let job = std::thread::spawn(move || {
                 let r = zip::Zip::local(&raw).and_then(|(z, e)| {
                     let _slot = SLOTS.take();
@@ -561,14 +663,26 @@ impl Stream for ZipStream {
                 });
                 drop(raw);
                 STREAM_BYTES.fetch_sub(len, Ordering::SeqCst);
+                if let (Some(log), Ok(s)) = (log, &r) {
+                    log.lock().unwrap().push((s.name.clone(), arrived, t0.elapsed().as_secs_f64() * 1e3));
+                }
                 r
             });
-            self.members.insert(at as u64, Streamed { name: raw_name.to_vec(), csize, job });
+            self.members.insert(at as u64, Streamed { name: h.raw_name.to_vec(), csize: h.csize, job });
         }
     }
 
     fn finish(self: Box<Self>, d: &Delivery, _: &RunCtx) -> Result<Analysis, String> {
-        analyse_delivery(d, self.members)
+        let landed = self.t0.elapsed().as_secs_f64() * 1e3;
+        let r = analyse_delivery(d, self.members);
+        if let Some(log) = self.log {
+            let mut v = log.lock().unwrap().clone();
+            v.sort_by(|a, b| b.2.total_cmp(&a.2));
+            for (name, arrived, done) in v.iter().take(4) {
+                eprintln!("  [profile] stream {name}: arrived {arrived:.0} ms, analysed {done:.0} ms (body done {landed:.0} ms)");
+            }
+        }
+        r
     }
 }
 

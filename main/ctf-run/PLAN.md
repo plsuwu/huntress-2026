@@ -436,3 +436,19 @@ replay -> timed), module map, testing rules.
      ~450 MB taken by the organisers' services) on 2026-10-26 and lost a ranked attempt. Cap concurrent set analyses at
      2 (the CPU has 2 hyperthreads anyway) and drop each delivery's bytes and inflated members once analysed; Day 26
      ships 10 sets.
+- 2026-10-26 - Binary-RE engineering pass (after the gap analysis above).
+  - **Memory:** `SLOTS` (one member analysis per core, across all sets) cut the d25 mastery's peak from
+    ~1.47 GB (live path, 2 cores) to ~0.8 GB. On the jumpbox the old binary was OOM-killed replaying that run;
+    the new one peaks at 765-886 MB. Replay no longer clones delivery bytes, so its peak matches a live run.
+  - **Range: not supported.** `Range: bytes=0-15` returns `200` and the full 35.7 MB (no `Accept-Ranges`), so
+    split downloads are out. The per-connection cap stays.
+  - **Streaming analysis** (`lanes::Stream`, http `Progress`): members are analysed as they arrive, and the
+    67 MB d08 specimen is decrypted, inflated (`flate2`/zlib-rs, 1 MiB output windows) and hashed while it
+    downloads, so only its scans run after its last byte. Results are used only when the central directory
+    confirms them. Gotcha: offering zlib-rs the whole 67 MB output per call made 16 KB pushes cost ~17 s on the
+    jumpbox; bounded windows plus 256 KB batches fixed it.
+  - **Jumpbox, live `--dry` runs:** d25 TT analysis tail 532 -> 96 ms. d24 mastery: the last deliveries finish
+    330-370 ms after landing (was ~2 s); solve 9.8 -> 7.2 s (download variance included). Replay 395/395 clean;
+    78 tests. Deployed `1b48e006` (previous binary kept as `ctf-run.prev` on the box).
+  - **Next:** the TT tail is now `FSharp.Core.dll` (5.7 MB, arrives last; its .NET `xor_json` scan). Mastery
+    stays CPU-bound (~5 s of analysis for 9 sets on 2 hyperthreads).
