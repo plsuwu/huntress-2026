@@ -432,3 +432,7 @@ replay -> timed), module map, testing rules.
   3. Mastery CPU: multi-buffer AVX-512 SHA-256 across members/sets, cached hashes for the constant libraries, and
      less thread oversubscription (9 sets x 2 workers + hash threads on 2 hyperthreads).
   Leader times of 113-224 ms on 32-95 MB routes (d10 mastery, d13 TT/mastery) are not reachable by any full download.
+  4. **Memory (reliability, do first):** binary d25 mastery (9 x 36 MB) was OOM-killed on the jumpbox (1.9 GB, no swap,
+     ~450 MB taken by the organisers' services) on 2026-10-26 and lost a ranked attempt. Cap concurrent set analyses at
+     2 (the CPU has 2 hyperthreads anyway) and drop each delivery's bytes and inflated members once analysed; Day 26
+     ships 10 sets.

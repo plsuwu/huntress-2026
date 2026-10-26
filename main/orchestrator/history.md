@@ -212,3 +212,17 @@ here after every release night.
   (the harness reaps it), so use plain keyed ssh with `ConnectTimeout=150+`. The launch ssh hung every time (exit
   124) but the campaign started anyway. A monitor's `grep 503` matched leader times (`top [503, ...]`): match
   `HTTP 503` instead.
+
+## 2026-10-26: afternoon full HoF pass (user-approved)
+
+- **Plan:** `plan-full-d26-pm.json` (`hof_plan.py --order`, server-bound lanes first): 205 routes, up to 428 runs. Ran
+  15:30-~17:15 AEST on build `722b5abd`, in the quiet latency window. Overnight, other teams had cut our #1 count
+  from 93 to 81.
+- **Result:** 403 runs, 402 CORRECT. **#1 81 -> 102**, top-3 168 -> 180. By lane, #1 before -> after: metadata
+  19 -> 27 (13 rank gains), warmups 7 -> 11 (10), script 38 -> 43, mobile 15 -> 18, binary 2 -> 3.
+- **Lost attempt:** binary d25 mastery run 1 was SIGKILLed (`rc -9`, 7 s in, while analysing 9 x 36 MB sets) before
+  submitting. It was almost certainly the kernel OOM killer: the jumpbox has 1.9 GB RAM, no swap, and ~450 MB taken
+  by the organisers' services (`huntress-ai-arena` 267 MB, docker, snapd), while 9 deliveries + their inflated
+  members peak at ~1.1 GB. `dmesg`/`journalctl -k` are not readable there. The attempt expired unanswered (11 left).
+  Day 26 binary mastery will have 10 sets: cap concurrent set analysis and free each delivery once analysed before
+  the next ranked binary mastery.
