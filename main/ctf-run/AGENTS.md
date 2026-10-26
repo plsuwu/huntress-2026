@@ -80,7 +80,7 @@ analyse zip members as they arrive. Replay goes through the stream too (`CTF_REP
 
 ## Testing and performance
 
-- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 395 cases after Day 25),
+- `cargo test` (unit tests use real bytes; `testdata/`), `ctf-run replay fixtures/<lane>` (all lanes: 410 cases after Day 26),
   `cargo build --features tls` must stay green.
   The jumpbox runs the static musl binary from `nix build .#ctf-run` (repo flake), shipped by `tools/deploy.sh`; never
   compile on the burstable t3.small before ranked runs (`--remote-build` only if the flake is unavailable).

@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-26-beam-message-flow",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "5b05eb24-60de-4c62-8c0e-809d42de6fe7",
+  "started_at": "2026-10-26T13:00:07.127Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1181.222697,
+  "start_ttfb_ms": 1168.3507479999998,
+  "clock": {
+    "start_sent": "2026-10-26T13:00:06.271Z",
+    "start_received": "2026-10-26T13:00:07.452Z",
+    "start_date_header": "2026-10-26T13:00:07.000Z",
+    "last_delivery": "2026-10-26T13:00:09.639Z",
+    "submit_sent": "2026-10-26T13:00:09.646Z",
+    "submit_received": "2026-10-26T13:00:12.238Z",
+    "submit_date_header": "2026-10-26T13:00:12.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 149814,
+      "wire": 149814,
+      "ttfb_ms": 1914.360758,
+      "total_ms": 2162.502005,
+      "done_at_ms": 3344.059224,
+      "analyse_ms": 23.68977
+    }
+  ]
+}

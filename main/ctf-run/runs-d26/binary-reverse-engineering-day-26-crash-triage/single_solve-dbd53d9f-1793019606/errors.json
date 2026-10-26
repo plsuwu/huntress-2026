@@ -1,0 +1,4 @@
+{
+  "d26_analysis_crash_fault_method": "unknown field \"analysis_crash_fault_method\" for d26--sample.jar (Some(Jar))",
+  "d26_analysis_crash_frames_match_methods": "unknown field \"analysis_crash_frames_match_methods\" for d26--sample.jar (Some(Jar))"
+}

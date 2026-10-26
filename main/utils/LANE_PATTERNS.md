@@ -1,4 +1,4 @@
-# Lane patterns & per-day "gimmick" predictions (as of Day 24, 2026-10-24)
+# Lane patterns & per-day "gimmick" predictions (as of Day 26, 2026-10-26)
 
 Derived from every `utils/solver_py_scripts/day-*/**/NOTES.md` (days 2-13) plus the GM `op=list` route metadata.
 Read this before starting a new day: most of the day's "gimmick" is predictable, and the real risk is usually the
@@ -271,11 +271,34 @@ agents. All 15 routes were CORRECT untimed, with no ranked attempts spent. Detai
 | binary-RE | Clojure JAR pair (vulnerable/corrected) | nothing; untagged configs answered from the first member again (configs equal). Mastery 9 sets |
 | mobile | v1 `hex` (single), v2 `analysis` (TT + 9 mastery APKs) | nothing; pure DEX arithmetic. **Day 7 seen as v2 for the first time**; day 8 still not seen as v2 |
 
-## Day 26 outcome (warmups, 2026-10-26)
+## Day 26 outcome (2026-10-26)
+
+Dual-pool. The rush started late (22:50) but prep still finished by 22:53; the release was detected at 23:00:01 and
+all five lanes were done by 23:07:48. Script passed the first pass with no code change; binary, warmups, metadata and
+mobile were fixed by their agents and were CORRECT on the first submit after the fix. All 15 routes were CORRECT
+untimed, with no ranked attempts spent. **Mastery is 10 sets** in script, binary, metadata and mobile (warmups: 128).
+Details in `solver_py_scripts/day-26-*/*/NOTES.md`; run log in `orchestrator/history.md`.
 
 | Lane | Gimmick | What broke / what was graded |
 |---|---|---|
 | warmups | **Brainfuck** `+-.` deltas on one cell ("Food for Thought") | new `codec::brainfuck` (`T::Bf`, full bounded interpreter), peeled after code points, before Morse. Mastery row 26 = `T::Bf` (each fragment is its own program, from cell 0); 128 mastery sets |
+| metadata | `d26-prefetch-001-prefetch-executable-name` (Windows Prefetch) | graded = SCCA header exe name (UTF-16LE @0x10) verbatim, uppercase. Single shipped a **compressed** `MAM\x04` prefetch (LZXPRESS Huffman), TT/mastery uncompressed SCCA v30: both paths needed. New `formats/prefetch.rs`; other `prefetch_answer` fields are ungraded guesses |
+| script | `polyglot-erlang-*` (`.escript`), **no new `host-` file** (+44, not +55) | nothing; descriptor is a function's return value (`build_plan() -> "..."`), found by the `HUNTRESS_ANALYSIS_V1` marker fallback. Day 23 TT schema; mastery 10 sets |
+| binary-RE | **one** Groovy JAR (not a pair) + `crash/trace.json` | two new fields: `analysis_crash_fault_method` (first `frames` string) and `analysis_crash_frames_match_methods` (all frames are Main-Class methods: `true` in every set so far). `Spec::jar_json` keeps a jar's JSON members |
+| mobile | **split APK sets** (`.apks` = `base.apk` + manifest-only `feature.apk`) | single (v1 `split`): an empty `parts` slot is filled from the split's `assets/*.json`. TT (v2): `readSplit` walks `getApplicationInfo().splitSourceDirs` with `ZipFile`; new dalvik APIs. Mastery = 9 bare v2 APKs + the d26 `.apks`; **day 8 still not seen as v2** |
+
+## Day 27 predictions
+
+- Warmups: another esoteric "small language" (Ook!, whitespace, Brainfuck with loops `[>+++<-]`, which the interpreter
+  already handles) or another per-character notation (quoted-printable `=4E`, `0x4E` tokens, `\N{...}`). Ook!,
+  whitespace, QP and `0x` tokens are not decoded yet. Mastery row 27 joins the fixed rows.
+- Metadata: a follow-up `prefetch-*` field ("connect execution traces to the correct hosts"): volume serial / device
+  path / volume creation time, prefetch hash, run count, last run time. `prefetch_answer` already answers those as
+  **ungraded guesses**; either compression path may ship.
+- Script: one more polyglot language on the Day 23 TT schema (maybe without a `host-` file again); mastery 11 sets.
+- Binary-RE: more fields on the crash-trace JSON, or a `false` variant of `analysis_crash_frames_match_methods`
+  (a frame that is not a Main-Class method). Mastery 11 sets.
+- Mobile: another container/packaging twist or a new v2 mechanism; day 8 may finally appear as v2.
 
 ## Day 26 predictions
 

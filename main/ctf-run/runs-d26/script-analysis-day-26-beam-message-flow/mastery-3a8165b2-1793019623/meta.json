@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-26-beam-message-flow/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "3a8165b2-ee67-42d7-8a06-fcb66c369680",
+  "started_at": "2026-10-26T13:00:24.981Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1597.539051,
+  "start_ttfb_ms": 1555.788834,
+  "clock": {
+    "start_sent": "2026-10-26T13:00:23.889Z",
+    "start_received": "2026-10-26T13:00:25.487Z",
+    "start_date_header": "2026-10-26T13:00:25.000Z",
+    "last_delivery": "2026-10-26T13:00:27.604Z",
+    "submit_sent": "2026-10-26T13:00:27.864Z",
+    "submit_received": "2026-10-26T13:00:32.111Z",
+    "submit_date_header": "2026-10-26T13:00:32.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-26-beam-message-flow-mastery.zip",
+      "bytes": 1682177,
+      "wire": 1682177,
+      "ttfb_ms": 1531.7425999999998,
+      "total_ms": 1919.541801,
+      "done_at_ms": 3517.274869,
+      "analyse_ms": 197.603478
+    }
+  ]
+}
