@@ -116,6 +116,10 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
 - **Plans:** `hof_plan.py SURVEY OUT [--order warmups,mobile-android,metadata-forensics,...]` applies the standard
   budgets and skips HoF-ineligible routes. Put the server-bound lanes first when the run starts in the quiet
   afternoon window; filter the plan JSON for a single-lane pass.
+- **Jumpbox token:** `hof_campaign.py` reads `~/.huntress_token` on the box (no `.env` there). On 2026-10-27 the
+  GM token was rotated and the box's copy went stale: the campaign died on its first status call with HTTP 401 (no
+  attempt spent). Before launching, check it answers 200; to update, pipe the local `.env` token over ssh into that
+  file (user-approved 2026-10-27).
 - **Lost attempts:** a run that ends with `rc -9` and no result was killed (OOM on 2026-10-26), not graded. The
   attempt is spent and expires unanswered; the campaign stops that route on it.
 - **Survey arguments:** `--days` needs a range, so write `20-20`, not `20`.

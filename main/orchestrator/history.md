@@ -286,3 +286,15 @@ here after every release night.
 - **Coordinator note:** a binary lane pane sits idle for ~3 min after release while its first-pass mastery downloads;
   that is normal, not a stall. A marker-watch Monitor written as a zsh loop died at once on the unmatched
   `done-*` glob: wrap it in `bash -c 'shopt -s nullglob; ...'`.
+
+## 2026-10-27/28: Day 26-27 ranked pass after the Day 27 deploy (user-approved)
+
+- **Prep:** deployed `ee753884` (static), pruned the jumpbox (193 zips, 5.7 GB -> 15 GB free), surveyed days 26-27
+  (all 20 ranked pools untouched), `plan-d26-27.json`: 20 routes, up to 58 runs, warmups/mobile/metadata first.
+- **Token:** the first launch died with HTTP 401 on its first status call (no attempt spent): the GM token had been
+  rotated and the jumpbox's `~/.huntress_token` was stale. The user approved copying the `.env` token over; relaunched
+  ~23:40 AEST (see runbook "Jumpbox token").
+- **Result:** 38 runs, 37 CORRECT, 1 ungraded (server 503 on submit, d26 metadata TT; the campaign backed off and
+  continued). **13 of 20 routes #1**, 2 at #2 (d26 mobile TT, d27 metadata TT), 4 at #3 (d26 warmups TT, d26 metadata
+  TT, both binary masteries), 1 at #4 (d26 script mastery 2971 vs 2533). Binary TTs went #1 (d26 1648, d27 2652).
+  Jumpbox 13 GB free after.
