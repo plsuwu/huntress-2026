@@ -45,6 +45,7 @@ pub enum T {
     Rle,
     Cp,
     Bf,
+    Ook,
 }
 
 impl T {
@@ -73,6 +74,7 @@ impl T {
             T::Rle => codec::run_length(s.trim_start()),
             T::Cp => codec::code_points(t),
             T::Bf => codec::brainfuck(t),
+            T::Ook => codec::ook(t),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -127,6 +129,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         24 => T::Rle, // "String Theory": run-length `count:char,` pairs ("the comma knows where to stop")
         25 => T::Cp, // "You Have a Point": Unicode code points `U+004E U+0069 ...` ("a code point, anyway")
         26 => T::Bf, // "Food for Thought": Brainfuck `+-.` on one cell ("a very small language")
+        27 => T::Ook, // "Monkey Business": Ook! pairs -> Brainfuck ("Ook. Ook? Ook! Someone seems chatty.")
         _ => return None,
     })
 }
@@ -140,6 +143,9 @@ fn structured(frag: &str) -> Option<(T, String)> {
     }
     if let Some(r) = codec::code_points(v) {
         return Some((T::Cp, r));
+    }
+    if let Some(r) = codec::ook(v) {
+        return Some((T::Ook, r));
     }
     // Before Morse: a program's `.`/`-` would otherwise read as dots and dashes.
     if let Some(r) = codec::brainfuck(v) {
@@ -457,6 +463,12 @@ pub fn solve_blob(text: &str) -> Outcome {
         if let Some(slug) = match_template(&t) {
             return Outcome::Solved { slug, learned: Vec::new() };
         }
+        // Ook! parses only as whole `Ook.`/`Ook?`/`Ook!` pairs, so it goes before the letter and rail
+        // passes, which cost ~30 ms on its 34 KB blob.
+        if let Some(n) = T::Ook.apply(&t) {
+            t = n;
+            continue;
+        }
         // A letter transform that yields the sentence wins over structural layers: ROT47 output can
         // look like escapes (`-c` -> `\4`, which a backslash peel would eat as octal).
         let letters = [T::Rot47, T::Atbash, T::Rev].into_iter().chain((1..26u8).map(T::Rot));
@@ -471,7 +483,7 @@ pub fn solve_blob(text: &str) -> Outcome {
         }
         // Delimited Ascii85 first: its alphabet holds `\\`, `%` and `&`, which other peels would eat.
         // Run-length pairs likewise carry any character.
-        let a85 = T::Rle.apply(&t).or_else(|| T::Cp.apply(&t)).or_else(|| T::Bf.apply(&t)).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
+        let a85 = T::Rle.apply(&t).or_else(|| T::Cp.apply(&t)).or_else(|| T::Bf.apply(&t)).or_else(|| T::Ook.apply(&t)).or_else(|| codec::is_ascii85(&t).then(|| T::A85.apply(&t)).flatten());
         let next = a85.or_else(|| [T::Morse, T::Bacon, T::Bs, T::Ent, T::Pct, T::Num, T::Bin, T::Hex, T::Gz, T::B64, T::B32].iter().find_map(|k| k.apply(&t).filter(|n| *n != t)));
         if let Some(n) = next {
             t = n;
@@ -759,6 +771,26 @@ mod tests {
         assert_eq!(codec::brainfuck("++++++++[>++++++++<-]>+.").as_deref(), Some("A"));
         assert_eq!(codec::brainfuck("-.-. .-"), None);
         assert_eq!(codec::brainfuck("+[.").as_deref(), None);
+    }
+
+    #[test]
+    fn ook_blob() {
+        // Day 27 "Monkey Business": Ook! pairs of a one-cell `+-.` program.
+        let sentence = format!("{PREFIX}crisp-lantern-meadow-42");
+        let (mut cur, mut ook) = (0u8, Vec::new());
+        for b in sentence.bytes() {
+            let d = b.wrapping_sub(cur) as i8;
+            let op = if d >= 0 { "Ook. Ook." } else { "Ook! Ook!" };
+            ook.extend(std::iter::repeat_n(op, d.unsigned_abs() as usize));
+            ook.push("Ook! Ook.");
+            cur = b;
+        }
+        assert!(matches!(solve_blob(&ook.join(" ")), Outcome::Solved { slug, .. } if slug == "crisp-lantern-meadow-42"));
+        // `[`/`]`/`>`/`<` pairs, no spaces: ++++++++[>++++++++<-]>+.
+        let prog = "Ook.Ook.".repeat(8) + "Ook!Ook?Ook.Ook?" + &"Ook.Ook.".repeat(8) + "Ook?Ook.Ook!Ook!Ook?Ook!Ook.Ook?Ook.Ook.Ook!Ook.";
+        assert_eq!(codec::ook(&prog).as_deref(), Some("A"));
+        assert_eq!(codec::ook("Ook. Ook? Ook."), None);
+        assert_eq!(codec::ook("Ook? Ook? Ook! Ook."), None);
     }
 
     #[test]
