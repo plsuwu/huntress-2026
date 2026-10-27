@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pe, prefetch, regf, sqlite, video, zip};
+use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -565,6 +565,58 @@ fn prefetch_facts(p: &prefetch::Prefetch) -> String {
     )
 }
 
+/// `...-pcap-<field>` -> a packet capture (classic libpcap or pcapng) field. d27 graded `packet-count` on a
+/// clean big-endian capture: the walked records. Counts are of complete records only; a malformed capture
+/// (record past EOF, incl > snaplen/orig) stops the walk. Other fields are unverified guesses; an unknown
+/// field fails with a capture facts dump.
+fn pcap_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-pcap-")?;
+    let want = &key[i + 6..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("pcap-").unwrap_or(want);
+    let Some(c) = pcap::Capture::parse(b) else { return Some(Err(format!("no pcap/pcapng magic; {}", facts("pcap", b)))) };
+    let ts = |v: Option<u128>| v.map(|t| pcap::ts_iso(t, c.nanosecond)).unwrap_or_else(none);
+    let first = || c.packets.iter().map(|p| p.ts_ns).min();
+    let last = || c.packets.iter().map(|p| p.ts_ns).max();
+    Some(Ok(match want {
+        "packet-count" | "packets" | "record-count" | "frame-count" => c.packets.len().to_string(),
+        "malformed" | "is-malformed" | "truncated" | "is-truncated" => c.malformed.is_some().to_string(),
+        "valid" | "is-valid" | "well-formed" | "is-well-formed" => c.malformed.is_none().to_string(),
+        "link-type" | "linktype" | "network" | "link-layer-type" | "data-link-type" => c.link_types.first().map(|l| l.to_string()).unwrap_or_else(none),
+        "snaplen" | "snapshot-length" => c.snaplen.to_string(),
+        "version" | "format-version" => format!("{}.{}", c.version.0, c.version.1),
+        "byte-order" | "endianness" | "endian" => (if c.big_endian { "big" } else { "little" }).into(),
+        "format" | "container" | "file-format" => (if c.ng { "pcapng" } else { "pcap" }).into(),
+        "timestamp-precision" | "time-precision" => (if c.nanosecond { "nanosecond" } else { "microsecond" }).into(),
+        "interface-count" => c.link_types.len().to_string(),
+        "first-timestamp" | "first-packet-time" | "start-time" => ts(first()),
+        "last-timestamp" | "last-packet-time" | "end-time" => ts(last()),
+        "duration-seconds" | "duration" => {
+            let d = c.duration_ns();
+            format!("{}.{:06}", d / 1_000_000_000, d % 1_000_000_000 / 1000)
+        }
+        "captured-bytes" | "total-captured-bytes" | "captured-byte-count" => c.packets.iter().map(|p| p.captured as u64).sum::<u64>().to_string(),
+        "original-bytes" | "total-original-bytes" | "total-bytes" | "byte-count" | "wire-bytes" => c.packets.iter().map(|p| p.original as u64).sum::<u64>().to_string(),
+        "truncated-packet-count" | "sliced-packet-count" => c.packets.iter().filter(|p| p.captured < p.original).count().to_string(),
+        _ => return Some(Err(format!("unknown pcap field {want:?}; {}", pcap_facts(&c, b)))),
+    }))
+}
+
+fn pcap_facts(c: &pcap::Capture, b: &[u8]) -> String {
+    let pk: Vec<String> = c
+        .packets
+        .iter()
+        .take(32)
+        .map(|p| format!("@{:#x} {} {}/{} if{} {:?}", p.offset, pcap::ts_iso(p.ts_ns, c.nanosecond), p.captured, p.original, p.interface, String::from_utf8_lossy(&c.data(b, p)[..c.data(b, p).len().min(48)])))
+        .collect();
+    format!(
+        "pcap ng {} big {} nano {} v{}.{} snaplen {} links {:?} packets {} malformed {:?} trailing {} [{}]",
+        c.ng, c.big_endian, c.nanosecond, c.version.0, c.version.1, c.snaplen, c.link_types, c.packets.len(), c.malformed, c.trailing, pk.join(", ")
+    )
+}
+
 /// `...-registry-<field>` -> a registry hive (`regf`) field. d25 graded `hive-root-name`: the name of the `nk`
 /// cell the base block's root offset points at (the "true root", whatever the file is called). That cell
 /// must carry KEY_HIVE_ENTRY. Other fields are unverified guesses; a field named like one of the root key's
@@ -819,6 +871,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(p) = prefetch::Prefetch::parse(b) {
         f.push(prefetch_facts(&p));
     }
+    if let Some(c) = pcap::Capture::parse(b) {
+        f.push(pcap_facts(&c, b));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -926,6 +981,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = prefetch_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = pcap_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {

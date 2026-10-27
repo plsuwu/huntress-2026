@@ -19,6 +19,7 @@ pub mod macho;
 pub mod media;
 pub mod ooxml;
 pub mod overlay;
+pub mod pcap;
 pub mod pe;
 pub mod prefetch;
 pub mod regf;
