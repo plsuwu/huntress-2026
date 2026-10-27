@@ -233,6 +233,37 @@ pub fn brainfuck(s: &str) -> Option<String> {
     String::from_utf8(out).ok().filter(|o| !o.is_empty())
 }
 
+/// Ook! (Day 27 "Monkey Business"): `Ook.`/`Ook?`/`Ook!` tokens read in pairs as Brainfuck commands
+/// (`. ?` > `? .` < `. .` + `! !` - `! .` . `. !` , `! ?` [ `? !` ]), then run by [`brainfuck`].
+/// Whitespace between tokens is optional, `ook` in any case. `None` unless the whole text is an
+/// even number of tokens with no `? ?` pair and the program runs.
+pub fn ook(s: &str) -> Option<String> {
+    let c: String = s.chars().filter(|c| !c.is_whitespace()).collect::<String>().to_ascii_lowercase();
+    let mut toks = c.split("ook");
+    if toks.next() != Some("") {
+        return None;
+    }
+    let marks: Vec<u8> = toks.map(|t| (t.len() == 1).then(|| t.as_bytes()[0])).collect::<Option<_>>()?;
+    if marks.is_empty() || marks.len() % 2 != 0 {
+        return None;
+    }
+    let bf: String = marks
+        .chunks(2)
+        .map(|p| match (p[0], p[1]) {
+            (b'.', b'?') => Some('>'),
+            (b'?', b'.') => Some('<'),
+            (b'.', b'.') => Some('+'),
+            (b'!', b'!') => Some('-'),
+            (b'!', b'.') => Some('.'),
+            (b'.', b'!') => Some(','),
+            (b'!', b'?') => Some('['),
+            (b'?', b'!') => Some(']'),
+            _ => None,
+        })
+        .collect::<Option<_>>()?;
+    brainfuck(&bf)
+}
+
 /// Hex pairs, whitespace ignored.
 pub fn hex(s: &str) -> Option<Vec<u8>> {
     let c = strip_ws(s);
