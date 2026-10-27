@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-27-dependency-surface",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d78ebe38-5766-44cb-b12f-ec70cfebabcb",
+  "started_at": "2026-10-27T13:00:09.431Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1166.046758,
+  "start_ttfb_ms": 1165.976868,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:08.609Z",
+    "start_received": "2026-10-27T13:00:09.775Z",
+    "start_date_header": "2026-10-27T13:00:09.000Z",
+    "last_delivery": "2026-10-27T13:00:12.489Z",
+    "submit_sent": "2026-10-27T13:00:12.489Z",
+    "submit_received": "2026-10-27T13:00:14.769Z",
+    "submit_date_header": "2026-10-27T13:00:14.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "dependency_surface.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1540.313869,
+      "total_ms": 2712.978322,
+      "done_at_ms": 3879.1761500000002,
+      "analyse_ms": 0.054085
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "challenge": "binary-reverse-engineering-day-27-compiler-attribution/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "e64213c3-2ff5-408d-ae60-4e809a6926fd",
+  "started_at": "2026-10-27T13:00:57.323Z",
+  "deadline": null,
+  "shape": "artifacts[11]+downloads[11]",
+  "start_ms": 3624.311224,
+  "start_ttfb_ms": 3590.573849,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:54.405Z",
+    "start_received": "2026-10-27T13:00:58.029Z",
+    "start_date_header": "2026-10-27T13:00:57.000Z",
+    "last_delivery": "2026-10-27T13:02:54.562Z",
+    "submit_sent": "2026-10-27T13:02:54.565Z",
+    "submit_received": "2026-10-27T13:02:59.309Z",
+    "submit_date_header": "2026-10-27T13:02:59.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 9,
+      "name": "evidence.zip",
+      "bytes": 35930668,
+      "wire": 35930668,
+      "ttfb_ms": 1747.5537270000002,
+      "total_ms": 85295.259707,
+      "done_at_ms": 88919.845369,
+      "analyse_ms": 1.9760469999999999
+    },
+    {
+      "delivery": 11,
+      "name": "evidence.zip",
+      "bytes": 35875123,
+      "wire": 35875123,
+      "ttfb_ms": 1693.2516269999999,
+      "total_ms": 93091.215003,
+      "done_at_ms": 96715.938786,
+      "analyse_ms": 99.74238000000001
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 36034438,
+      "wire": 36034438,
+      "ttfb_ms": 1715.9676020000002,
+      "total_ms": 100055.38662399999,
+      "done_at_ms": 103679.87776799999,
+      "analyse_ms": 1.6873369999999999
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 35979698,
+      "wire": 35979698,
+      "ttfb_ms": 2361.0110959999997,
+      "total_ms": 105592.22543,
+      "done_at_ms": 109216.79701899999,
+      "analyse_ms": 1.5762289999999999
+    },
+    {
+      "delivery": 10,
+      "name": "evidence.zip",
+      "bytes": 35875687,
+      "wire": 35875687,
+      "ttfb_ms": 1914.521627,
+      "total_ms": 107475.22116,
+      "done_at_ms": 111099.807419,
+      "analyse_ms": 2.081378
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 35875164,
+      "wire": 35875164,
+      "ttfb_ms": 1923.580547,
+      "total_ms": 112638.888945,
+      "done_at_ms": 116263.34070199999,
+      "analyse_ms": 2.0259129999999996
+    },
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 36005347,
+      "wire": 36005347,
+      "ttfb_ms": 1826.082038,
+      "total_ms": 113647.23336299999,
+      "done_at_ms": 117271.655015,
+      "analyse_ms": 1.577532
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 36035376,
+      "wire": 36035376,
+      "ttfb_ms": 1720.422216,
+      "total_ms": 114150.371854,
+      "done_at_ms": 117774.801024,
+      "analyse_ms": 1.881232
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 36035197,
+      "wire": 36035197,
+      "ttfb_ms": 1612.614629,
+      "total_ms": 114157.225152,
+      "done_at_ms": 117781.732006,
+      "analyse_ms": 1.70184
+    },
+    {
+      "delivery": 8,
+      "name": "evidence.zip",
+      "bytes": 35875507,
+      "wire": 35875507,
+      "ttfb_ms": 1655.383094,
+      "total_ms": 114515.903628,
+      "done_at_ms": 118140.482116,
+      "analyse_ms": 2.785165
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 36005419,
+      "wire": 36005419,
+      "ttfb_ms": 1545.9778589999999,
+      "total_ms": 116520.102647,
+      "done_at_ms": 120144.557789,
+      "analyse_ms": 12.253925
+    }
+  ]
+}

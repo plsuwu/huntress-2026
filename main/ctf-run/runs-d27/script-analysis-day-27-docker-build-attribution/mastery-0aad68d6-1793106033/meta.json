@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-27-docker-build-attribution/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0aad68d6-4c96-4b07-b723-1ae136e05699",
+  "started_at": "2026-10-27T13:00:34.299Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2377.997331,
+  "start_ttfb_ms": 1982.868756,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:33.377Z",
+    "start_received": "2026-10-27T13:00:35.755Z",
+    "start_date_header": "2026-10-27T13:00:35.000Z",
+    "last_delivery": "2026-10-27T13:00:38.120Z",
+    "submit_sent": "2026-10-27T13:00:38.351Z",
+    "submit_received": "2026-10-27T13:00:43.756Z",
+    "submit_date_header": "2026-10-27T13:00:43.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-27-docker-build-attribution-mastery.zip",
+      "bytes": 1672926,
+      "wire": 1672926,
+      "ttfb_ms": 1728.511149,
+      "total_ms": 2149.325375,
+      "done_at_ms": 4527.525009,
+      "analyse_ms": 215.772725
+    }
+  ]
+}

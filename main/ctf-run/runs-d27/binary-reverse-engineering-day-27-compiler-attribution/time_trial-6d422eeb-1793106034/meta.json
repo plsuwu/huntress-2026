@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-27-compiler-attribution/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "6d422eeb-d397-44f8-83ef-ec8d60eb6e0d",
+  "started_at": "2026-10-27T13:00:37.088Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3579.7389380000004,
+  "start_ttfb_ms": 3577.526413,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:34.354Z",
+    "start_received": "2026-10-27T13:00:37.933Z",
+    "start_date_header": "2026-10-27T13:00:37.000Z",
+    "last_delivery": "2026-10-27T13:00:48.732Z",
+    "submit_sent": "2026-10-27T13:00:48.734Z",
+    "submit_received": "2026-10-27T13:00:51.423Z",
+    "submit_date_header": "2026-10-27T13:00:51.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35979674,
+      "wire": 35979674,
+      "ttfb_ms": 1785.358719,
+      "total_ms": 10796.968191,
+      "done_at_ms": 14376.891463,
+      "analyse_ms": 1.2454059999999998
+    }
+  ]
+}

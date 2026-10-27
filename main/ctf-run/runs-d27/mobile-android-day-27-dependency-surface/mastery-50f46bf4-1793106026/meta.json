@@ -1,0 +1,132 @@
+{
+  "challenge": "mobile-android-day-27-dependency-surface/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "50f46bf4-33fb-4b6c-a4d5-f72995e7a40b",
+  "started_at": "2026-10-27T13:00:28.744Z",
+  "deadline": null,
+  "shape": "artifacts[11]+downloads[11]",
+  "start_ms": 2823.680549,
+  "start_ttfb_ms": 2812.969194,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:26.165Z",
+    "start_received": "2026-10-27T13:00:28.989Z",
+    "start_date_header": "2026-10-27T13:00:28.000Z",
+    "last_delivery": "2026-10-27T13:00:31.208Z",
+    "submit_sent": "2026-10-27T13:00:31.208Z",
+    "submit_received": "2026-10-27T13:00:34.144Z",
+    "submit_date_header": "2026-10-27T13:00:34.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 11,
+      "name": "dependency_surface_mastery_11.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1237.4305299999999,
+      "total_ms": 1498.479433,
+      "done_at_ms": 4322.3805219999995,
+      "analyse_ms": 0.014344
+    },
+    {
+      "delivery": 10,
+      "name": "dependency_surface_mastery_10.apks",
+      "bytes": 21536,
+      "wire": 21536,
+      "ttfb_ms": 1299.6860190000002,
+      "total_ms": 1665.8597670000001,
+      "done_at_ms": 4489.761349,
+      "analyse_ms": 0.036528
+    },
+    {
+      "delivery": 9,
+      "name": "dependency_surface_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1457.253204,
+      "total_ms": 1689.644346,
+      "done_at_ms": 4513.535676,
+      "analyse_ms": 0.007289
+    },
+    {
+      "delivery": 7,
+      "name": "dependency_surface_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1401.616193,
+      "total_ms": 1689.655295,
+      "done_at_ms": 4513.532706,
+      "analyse_ms": 0.009186
+    },
+    {
+      "delivery": 1,
+      "name": "dependency_surface_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1321.371928,
+      "total_ms": 1689.690171,
+      "done_at_ms": 4513.534417,
+      "analyse_ms": 0.016892
+    },
+    {
+      "delivery": 8,
+      "name": "dependency_surface_mastery_08.apk",
+      "bytes": 12768,
+      "wire": 12768,
+      "ttfb_ms": 1584.402993,
+      "total_ms": 1777.695127,
+      "done_at_ms": 4601.578103,
+      "analyse_ms": 0.035942999999999996
+    },
+    {
+      "delivery": 4,
+      "name": "dependency_surface_mastery_04.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1600.7042099999999,
+      "total_ms": 1805.269072,
+      "done_at_ms": 4629.1139140000005,
+      "analyse_ms": 0.032709999999999996
+    },
+    {
+      "delivery": 3,
+      "name": "dependency_surface_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1665.9397430000001,
+      "total_ms": 1819.5738210000002,
+      "done_at_ms": 4643.414952,
+      "analyse_ms": 0.008596999999999999
+    },
+    {
+      "delivery": 5,
+      "name": "dependency_surface_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1665.921039,
+      "total_ms": 1838.02689,
+      "done_at_ms": 4661.886431,
+      "analyse_ms": 0.007971
+    },
+    {
+      "delivery": 6,
+      "name": "dependency_surface_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1665.9334649999998,
+      "total_ms": 1840.841746,
+      "done_at_ms": 4664.705495,
+      "analyse_ms": 0.015179
+    },
+    {
+      "delivery": 2,
+      "name": "dependency_surface_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1972.3374420000002,
+      "total_ms": 2219.369793,
+      "done_at_ms": 5043.2100789999995,
+      "analyse_ms": 0.028666999999999998
+    }
+  ]
+}

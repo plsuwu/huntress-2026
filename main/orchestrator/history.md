@@ -268,3 +268,21 @@ here after every release night.
   - mobile 23:07:48 `split-decision` (split APK sets `.apks`: splitSourceDirs + ZipFile in the DEX interpreter).
 - All five merged by ~23:10; 82 tests, replay clean. Not yet deployed. Jumpbox disk 8.7 GB free before any campaign.
 - **Day-number slip:** the request said "Day 25" on the 26th; rush's default (day of month) was right. Trust the date.
+
+## 2026-10-27: Day 27 release night
+
+- **Rush:** `rush.py all` started 22:37 (prep done 22:39:47). VPN/jumpbox were down at the pre-check and came back
+  once the user reconnected (8.7 GB free). Released 23:00:02; every lane had its routes within ~5 s. Web-exploitation
+  days 21-23 listed; ignored per policy.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - mobile 23:01:45 `dependency-surface`: first pass CORRECT on all three modes (32 s); notes only.
+  - script 23:02:23 `docker-build-attribution` (Dockerfile polyglot, marker fallback): first pass COMPLETE; notes only.
+  - binary 23:03:47 `compiler-attribution` (gcc/tcc ELF pair): first pass CORRECT on all three modes (177 s, mastery
+    is the long pole); fixtures + notes, no code change.
+  - warmups 23:05:34 `monkey-business` (Ook! -> Brainfuck): first pass REFUSED; new `codec.rs` decoder.
+  - metadata 23:05:42 `packet-loss-prevention` (pcap packet count): first pass REFUSED; new `formats/pcap.rs`
+    (libpcap 4 magics + pcapng).
+- All five merged by ~23:07; 85 tests, replay clean; GM shows all 15 routes CORRECT. Not yet deployed.
+- **Coordinator note:** a binary lane pane sits idle for ~3 min after release while its first-pass mastery downloads;
+  that is normal, not a stall. A marker-watch Monitor written as a zsh loop died at once on the unmatched
+  `done-*` glob: wrap it in `bash -c 'shopt -s nullglob; ...'`.

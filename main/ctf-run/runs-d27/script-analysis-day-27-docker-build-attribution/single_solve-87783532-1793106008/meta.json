@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-27-docker-build-attribution",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "87783532-1329-44de-8977-802e1f39a528",
+  "started_at": "2026-10-27T13:00:09.482Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1211.2415819999999,
+  "start_ttfb_ms": 1191.058171,
+  "clock": {
+    "start_sent": "2026-10-27T13:00:08.742Z",
+    "start_received": "2026-10-27T13:00:09.953Z",
+    "start_date_header": "2026-10-27T13:00:09.000Z",
+    "last_delivery": "2026-10-27T13:00:12.623Z",
+    "submit_sent": "2026-10-27T13:00:12.642Z",
+    "submit_received": "2026-10-27T13:00:16.862Z",
+    "submit_date_header": "2026-10-27T13:00:16.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 151106,
+      "wire": 151106,
+      "ttfb_ms": 2607.312718,
+      "total_ms": 2616.612952,
+      "done_at_ms": 3828.3038180000003,
+      "analyse_ms": 53.106724
+    }
+  ]
+}
