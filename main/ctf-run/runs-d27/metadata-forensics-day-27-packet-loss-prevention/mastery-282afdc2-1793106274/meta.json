@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-27-packet-loss-prevention/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "282afdc2-8e48-4a19-a4ac-7a029e1bc392",
+  "started_at": "2026-10-27T13:04:37.143Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2669.2984119999996,
+  "start_ttfb_ms": 2668.799679,
+  "clock": {
+    "start_sent": "2026-10-27T13:04:34.666Z",
+    "start_received": "2026-10-27T13:04:37.335Z",
+    "start_date_header": "2026-10-27T13:04:37.000Z",
+    "last_delivery": "2026-10-27T13:04:40.801Z",
+    "submit_sent": "2026-10-27T13:04:40.806Z",
+    "submit_received": "2026-10-27T13:04:42.813Z",
+    "submit_date_header": "2026-10-27T13:04:42.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-27-packet-loss-prevention-mastery.zip",
+      "bytes": 7424487,
+      "wire": 7424487,
+      "ttfb_ms": 1456.487172,
+      "total_ms": 3445.680185,
+      "done_at_ms": 6115.28679,
+      "analyse_ms": 20.007494
+    }
+  ]
+}

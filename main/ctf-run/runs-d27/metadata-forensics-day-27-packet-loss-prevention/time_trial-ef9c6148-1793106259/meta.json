@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-27-packet-loss-prevention/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "ef9c6148-8d55-4a09-afaa-3054ce89a009",
+  "started_at": "2026-10-27T13:04:22.279Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3030.216405,
+  "start_ttfb_ms": 3026.940082,
+  "clock": {
+    "start_sent": "2026-10-27T13:04:19.435Z",
+    "start_received": "2026-10-27T13:04:22.465Z",
+    "start_date_header": "2026-10-27T13:04:22.000Z",
+    "last_delivery": "2026-10-27T13:04:25.089Z",
+    "submit_sent": "2026-10-27T13:04:25.089Z",
+    "submit_received": "2026-10-27T13:04:27.153Z",
+    "submit_date_header": "2026-10-27T13:04:27.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 632683,
+      "wire": 632683,
+      "ttfb_ms": 1464.423325,
+      "total_ms": 2621.2561069999997,
+      "done_at_ms": 5651.671863,
+      "analyse_ms": 1.9916809999999998
+    }
+  ]
+}
