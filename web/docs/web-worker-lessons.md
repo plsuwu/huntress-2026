@@ -32,6 +32,14 @@ single time, across three independent families on the same release night. That
 is strong enough evidence to treat backup exposure + IDOR + group-closing SQLi
 as the *expected* first three mastery targets for any future family, with the
 fourth being whatever that family's own class turns out to be.
+Day 27 (three families, release day 27) extended this again: `double-spent`
+stayed at the standard 4 targets (backup + IDOR + group-closing SQLi + that
+family's own race); `socket-to-me` and `forwarded-misgivings` both saw **5**
+targets for the first time — the same three recurring classes **plus day-20's
+LFI** (newly appearing in this slot's cumulative pool) **plus** that family's
+own novel class, one target per class, no repeats. Do not hard-code an
+expected count of 4 — always read the actual `questions`/`targets` arrays; a
+family's cumulative pool can grow as the event's curriculum does.
 
 Join `questions[].artifact` to `targets[].id` (for example `Target 2`) to find
 the correct URL. Do not rely on array order, curriculum number or title. Preserve
@@ -70,6 +78,9 @@ classes must remain unknown until supported by the page, behavior and question.
 | Password-reset token / account-id confusion | `/api/clues` gives feature_route (request a token) + secondary_route (redeem it) + recovery_guide_route (discloses account_parameter/token_parameter names and the self_service-flagged account ids — no guessing needed). feature_route refuses to issue a token for a non-self-service account, but secondary_route never binds the redeemed token to the account_id it is redeemed against: request a token for a self-service account, then redeem it while claiming a different, non-self-service account id. | `recovery_lib.py`, `rec_reset_account_confusion`; `day-25-web-exploitation/reset-expectations/NOTES.md` |
 | GraphQL field-level authorization bypass | `/api/clues` gives feature_route (a live GraphQL endpoint, POST `{"query": ...}`) + protected_reference (an id hidden from a list query's sensitive field). Authorization is enforced by omission on the list surface (e.g. `caseIndex`, which never returns the sensitive field at all) but the matching single-object surface (e.g. `case(id)`) has no field-level check whatsoever — query it directly for `protected_reference`. "Vary the protocol surface" means switch GraphQL *operation* (list → single-object), not HTTP method. Needs a browser-like User-Agent — a bare urllib UA gets 403'd by the edge WAF on this app. | `recovery_lib.py`, `rec_graphql_field_bypass`; `day-25-web-exploitation/resolver-revolt/NOTES.md` |
 | Forged/unsigned webhook event trust | `/api/clues` gives feature_route + event_type + owner_scope (+ current_role) — no `secondary_route`/`inventory_route`/`protected_reference`/`state_format_route`, so it's distinguishable from every class above that also starts from feature_route. The receiver at feature_route has **no signature/HMAC/auth check at all**: a GET returns `post_required`, an empty POST returns `webhook_rejected`, but it blindly trusts any POST body that claims the disclosed event_type/owner_scope. The exact field names are *not* disclosed and are easy to over-guess: the receiver wants exactly two bare keys, `{"event": event_type, "owner": owner_scope}` — not the clue's own key names (`event_type`/`owner_scope`), not `type`/`scope`, no nesting under `data`/`payload`. Both keys required, both values matched exactly. The check is stateless (identical proof on every correct repeat), so probing field-name/value variants directly against a live target is safe. | `recovery_lib.py`, `rec_forged_webhook_event`; `day-26-web-exploitation/trust-the-webhook/NOTES.md` |
+| Credit double-spend (non-atomic check-then-act race) | `/api/clues` gives feature_route (POST; redeems one credit — reads the stored count, checks `> 0`, writes `count-1` back as two separate steps, no row lock/atomic UPDATE) + secondary_route (GET; reports the proof once the stored balance has gone negative) — the same bare two-key shape as SSRF above, with no clue field to tell them apart. A single serial POST behaves "correctly" and **permanently burns the target's one and only credit** (no in-app reset/topup); the bug only shows when ≥2 requests hit feature_route at the same wall-clock instant, so the race must be the very first touch of feature_route, never a solo probe. 12–16 concurrent racers via a thread pool was consistently enough (~5/16 `ok:true`). | `recovery_lib.py`, `rec_double_spend`; `day-27-web-exploitation/double-spent/NOTES.md` |
+| Unauthorized event-stream subscription (WS upgrade, wrong query-param *name*) | `/api/clues` gives feature_route (a real WebSocket upgrade path, not a normal route — plain GET/POST without `Upgrade` headers returns 426) + stream_reference (a numeric id), no other feature_route-shaped key alongside. A well-formed WS handshake with no query, or with the clue's own key name (`stream_reference`/`ref`/`id`/`channel`), gets a 403 that *looks* like a role/auth rejection but isn't — the upgrade only succeeds when the query string names the stream with the bare, undisclosed key `stream`. Once connected, the server immediately pushes one proof-carrying event, never re-checking the caller's role/ownership of that stream. Needs the non-stdlib `websockets`/`certifi` packages (stdlib `urllib` can't do a clean WS handshake). | `recovery_lib_ws.py`, `rec_unauthorized_event_stream`; `day-27-web-exploitation/socket-to-me/NOTES.md` |
+| Trusted-reverse-proxy header spoofing | `/api/clues` gives feature_route + current_role + `deployment: "trusted_reverse_proxy"` — no `secondary_route`/`inventory_route`/`protected_reference`, distinguishable by that key shape alone. feature_route decides "am I being called from loopback" from a client-supplied `X-Forwarded-For` header with **no actual upstream-proxy allowlist**: sending `X-Forwarded-For: 127.0.0.1` flips `evaluated_client` and returns the proof. `X-Real-IP`/`X-Forwarded-Host`/`X-Forwarded-Proto` do not affect the decision — XFF alone is necessary and sufficient. Stateless; safe to re-probe. | `recovery_lib.py`, `rec_proxy_trust_bypass`; `day-27-web-exploitation/forwarded-misgivings/NOTES.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -130,6 +141,21 @@ genuinely uncertain axes when there is no oracle at all; it is not license to
 merge every alias into a single body and declare victory once one combination
 sticks.
 
+### A bare 403 on a protocol upgrade is not necessarily a role/auth check
+
+Day 27's socket-to-me burned real investigation time assuming a 403 on a
+well-formed WebSocket handshake was a role-elevation puzzle — tried every
+role name as a header/query/subprotocol value, tried Cloudflare-bot-check
+workarounds with full browser fingerprint fidelity across three different
+WS clients, all got the identical 403. The 403 was never about *who* you
+are; it was about *what query-parameter key* you used to name the one
+numeric clue field, and the actual key was undisclosed (not the clue's own
+field name). Before concluding a WS-upgrade 403 is an auth/role rejection,
+systematically vary the query-parameter *name* (not just its value) for
+every disclosed clue field — same cross-product discipline as the day-12
+no-oracle lesson above, applied to parameter *names* instead of a payload
+matrix.
+
 ## HTTP and lifecycle discipline
 
 - Use a separate cookie jar per assigned target. A root GET established the
@@ -180,6 +206,39 @@ sticks.
   shell-company) while accepting plain `;`-chained commands — if a shell
   injection is suspected but `$()` gets rejected, retry with `;` before
   concluding the sink isn't injectable.
+- A one-shot bug (day 27's double-spend: a single credit with no in-app
+  reset/topup) is permanently spent by **any** serial touch of the triggering
+  route, including idle recon made "just to see the shape of the response."
+  Once a target's own README/clues disclose that a route is one-shot/stateful
+  and consumable, do read-only recon via every other route first and make the
+  real attempt (e.g. the concurrent race burst) the very first touch of that
+  specific route — never a solo probe "to see what it returns."
+- The GM exposes an **undocumented per-challenge `op=reset`**
+  (`POST / {"op":"reset","challenge":"<id-or-id/mode>"}`) that tears down a
+  live target and re-provisions a fresh one on the same attempt, resetting
+  in-app state. Not in `AGENTS.md`'s operations table and not implemented in
+  `wk.py`/`web_rush.py` — standing policy (`docs/policies.md`) is that no
+  worker may reset/retry/switch targets, and that still applies here: this is
+  a **coordinator-only, explicitly-user-directed** recovery for a specific
+  stuck attempt (used once, 2026-10-27, to recover double-spent's
+  serially-burned single_solve credit), never a routine or automated path.
+  Day 27.
+- PHP `include()` built from raw string concatenation (`$pages_dir . $doc`,
+  no path-join/validation) still only accepts a plain traversal path — a
+  `php://filter/...` wrapper scheme prefix just produces the literal invalid
+  concatenated path, since the fixed directory prefix always wins. Don't
+  waste requests on filter-wrapper tricks against this app shape; plain `../`
+  traversal is the only lever. Traversing to a real executable file under the
+  same webroot (e.g. `../index.php`) can crash the container (seen: Cloudflare
+  error 1101, self-recovered in ~3s) — only traverse to known-plain-text
+  targets. Day 27 (forwarded-misgivings).
+- `ssl.create_default_context()` on this sandbox's default Python has no
+  system CA trust store wired up for `urllib`/`ssl` — for any HTTPS code path
+  outside `recovery_lib.py`'s own `Target` (e.g. a hand-rolled WebSocket
+  client), pass `cafile=certifi.where()` or export
+  `SSL_CERT_FILE=$(python3 -c "import certifi; print(certifi.where())")`, or
+  every request fails with `CERTIFICATE_VERIFY_FAILED` before reaching the
+  app. Day 27 (socket-to-me).
 
 ## Reuse source, not the old execution workflow
 
@@ -188,7 +247,8 @@ shared, stdlib-only module folding every class above (`rec_backup`, `rec_idor`,
 `rec_session_fixation`, `rec_reflect_callback`, `rec_stored_xss_bot`, `rec_csrf`,
 `rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`,
 `rec_command_injection`, `rec_reset_account_confusion`,
-`rec_graphql_field_bypass`, `rec_forged_webhook_event`, `rec_sqli_group_close`)
+`rec_graphql_field_bypass`, `rec_forged_webhook_event`, `rec_sqli_group_close`,
+`rec_double_spend`, `rec_proxy_trust_bypass`)
 plus the `Target` HTTP client and `classify_and_recover` dispatcher behind it,
 shared by `day-21-web-exploitation/solve.py` and `day-22-web-exploitation/solve.py`
 (the day-24 and day-25 family solvers ported their own classes directly rather
@@ -198,7 +258,13 @@ folds in day-19's payload, now reconfirmed verbatim across five independent
 live apps; `rec_forged_webhook_event` folds in day-26's trust-the-webhook payload,
 binary-searched down to its minimal `{"event", "owner"}` form — see the lesson
 above on not stopping at an unverified kitchen-sink hit).
-It is verified against local HTTP fixtures for every class it recovers (not
+`solver_py_scripts/recovery_lib_ws.py` is a sibling for the one class that needs
+a non-stdlib WebSocket client (`rec_unauthorized_event_stream`, day 27's
+socket-to-me) — kept separate so `recovery_lib.py` itself stays stdlib-only;
+install `websockets`+`certifi` into an ephemeral venv before importing it.
+Graded evidence (live targets, not a local fixture) backs the two newest
+`recovery_lib.py` classes and the one in `recovery_lib_ws.py`; everything else
+is verified against local HTTP fixtures for every class it recovers (not
 just read for plausibility), but a fixture is not a live target: still read it
 before trusting it against your assignment.
 Earlier still: `day-20-web-exploitation/common.py` (`sniff`, `rec_sqli`, `rec_lfi`,

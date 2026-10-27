@@ -181,6 +181,53 @@ grading-lessons.md, decisions to policies.md.
   and `web-driver` killed after confirming all 3 `agent: done` and GM status
   CORRECT on all 9 routes (3 families x 3 modes).
 
+## 2026-10-27: Day 27 run, workers at `claude-sonnet-5` effort medium (one-off); 3 families solved
+
+- Pre-release: a `web_rush.py` sanity probe (`all --day 27 --help`) actually ran
+  the real pipeline for real — the script has no `--help` handling, so extra
+  args after a recognized subcommand are silently ignored rather than
+  rejected — launching a live 3-slot tmux session ~17 minutes early at the old
+  hardcoded high effort. Caught before the 22:59:50 release-detection poll
+  started (no GM/API calls had fired), killed, and relaunched cleanly with
+  `web_rush.py all --day 27 --model claude-sonnet-5 --effort medium`. Added a
+  proper `--effort` CLI override to `web_rush.py` (mirrors the existing
+  `--model` override) so this stays a per-run flag, not a code default change.
+- Day 27 released 3 web-exploitation families (`day-21-double-spent`,
+  `day-22-socket-to-me`, `day-23-forwarded-misgivings`, curriculum days
+  21-23), continuing the sequential curriculum pattern. All 3 pre-warmed slots
+  used, no stand-downs. All 3 completed single_solve/time_trial/mastery
+  CORRECT, each with a committed `NOTES.md` + reusable `solve.py` — no
+  observed quality regression running workers at medium effort instead of the
+  pipeline's default high.
+- Three new bug classes graded CORRECT: `rec_double_spend` (non-atomic
+  check-then-act race on a one-shot credit — serial touches permanently burn
+  it, no in-app reset), `rec_unauthorized_event_stream` (WebSocket upgrade
+  gated by an undisclosed query-parameter *name*, not a real role/auth check
+  — needs non-stdlib `websockets`/`certifi`, so it lives in the new sibling
+  `solver_py_scripts/recovery_lib_ws.py` rather than `recovery_lib.py`
+  proper), and `rec_proxy_trust_bypass` (`X-Forwarded-For` trusted with no
+  upstream-proxy allowlist). The first two folded into `recovery_lib.py`;
+  full detail in `docs/web-worker-lessons.md` and the day's `NOTES.md` files.
+- Mastery grew to **5** targets for the first time on two of the three
+  families (`socket-to-me`, `forwarded-misgivings`): the standard backup +
+  IDOR + group-closing SQLi plus day-20's LFI (newly cumulative in this slot)
+  plus that family's own class, one target per class, no repeats.
+  `double-spent` stayed at the standard 4 (no LFI yet).
+- One coordinator-directed recovery at the user's explicit request:
+  `double-spent`'s `single_solve` credit was already burned by an earlier
+  serial touch before the worker reached it; the user called the GM's
+  undocumented `op=reset` directly to re-provision a fresh target on the same
+  attempt. Documented as a coordinator-only, human-directed path in
+  `docs/policies.md` — never wired into `wk.py`/`web_rush.py`. The resulting
+  stall (`stalled-day-21-double-spent.md`, no takeover file) self-resolved
+  once the fresh target was in hand.
+- This entry, the `docs/web-worker-lessons.md`/`docs/lane-patterns.md`/
+  `docs/policies.md` updates, the `recovery_lib.py` fold-in, and the new
+  `recovery_lib_ws.py` module are this entry's coordinator after-action pass
+  per `docs/runbook.md` step 4, committed together. `workers/web/` cleaned
+  after confirming all 3 `agent: done` and GM status CORRECT on all 9 routes
+  (3 families x 3 modes).
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

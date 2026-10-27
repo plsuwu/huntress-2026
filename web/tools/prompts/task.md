@@ -3,8 +3,15 @@
 The first pass above did not finish this challenge. Make every mode of `{chal}` CORRECT:
 
 1. Read the evidence above and the mode directories under `{wt}`. Reconnect to the current
-   attempt with `python3 tools/wk.py begin <mode>` (idempotent - it reconnects to the same
-   attempt, never starts a second one).
+   attempt with `python3 tools/wk.py begin <mode>` (idempotent - a plain untimed `start` that
+   reconnects to the same attempt and never spends a second timed attempt). If the live target
+   becomes unreachable mid-attempt (500 / Cloudflare 1101 / 410 / connection refused /
+   crashed), the recovery is to re-run `python3 tools/wk.py begin <mode>`: that re-provisions
+   a fresh target under the attempt (and transparently picks up a new attempt if the old one
+   expired, warning you to re-derive any stale answers). Do NOT sit polling a dead target
+   waiting for it to auto-restart - re-running `begin` is a plain untimed start, not a
+   reset/switch_target. Better still, avoid crashing it: send well-formed requests only, since
+   a malformed/non-object body can 500 the origin and take the container down for the attempt.
 2. Solve whatever is not CORRECT, in order: single_solve, then time_trial, then mastery.
    Submit with `python3 tools/wk.py submit <mode>` as soon as you have answers; on CORRECT,
    begin the next mode at once. (`python3 tools/wk.py status` shows the local record per

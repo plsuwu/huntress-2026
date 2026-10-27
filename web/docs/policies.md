@@ -63,6 +63,18 @@
   retry/practice/reset/switch_target, own-family routes only. Allow rules are not a
   permission bypass; blanket rules and bypass modes remain rejected. The token is never
   sent to a target.
+- **Undocumented `op=reset` is coordinator-only, human-directed (2026-10-27).**
+  The GM exposes an undocumented per-challenge `op=reset`
+  (`POST / {"op":"reset","challenge":"<id-or-id/mode>"}`) that tears down a
+  live target and re-provisions a fresh one on the same attempt, resetting
+  in-app state (e.g. a one-shot credit back to its starting value). It is not
+  in `AGENTS.md`'s operations table and has no code path in `wk.py` or
+  `web_rush.py` — the standing no-reset/retry/switch_target rule for workers
+  is unchanged. Used once, at the user's explicit direction, to recover
+  day-27 double-spent's `single_solve` attempt after its one-shot credit was
+  burned serially before the worker session reached it. Treat it as a
+  one-off coordinator recovery action for a specific stuck attempt, never as
+  a routine or automated path, and do not wire it into `wk.py`/`web_rush.py`.
 - **Rush-shaped pipeline (2026-10-24).** The lane runs the main pipeline's shape:
   `tools/web_rush.py` (all/prep/launch/watch/status/takeover) is the single driver —
   it prepares `workers/web/<base-id>/`, primes one Claude pane per slot on
