@@ -8,5 +8,5 @@ __pycache__/
 *.ovpn
 
 # Per-route downloaded challenge material, logs, and state
-workers/web/
+# workers/web/
 .pytest_cache/
