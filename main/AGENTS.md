@@ -15,7 +15,7 @@ curl 'https://2026.huntress.ctf.games/?op=list' -H 'Authorization: Bearer $HUNTR
 access this, use the token below:
 
 ```
-HUNTRESS_GM_TOKEN=gm1.a95b647824bcb4ffda7d362554fa6712.9c1806ce647b69001bff42e70cc655838735366df1873ed8f14ec9d7ca45e919
+HUNTRESS_GM_TOKEN=gm1.a95b64788520105268362d42fbba9426.7a75c13939ce7b1ebdebee3c233dc2d26e6c41a599e39a17321ea980379960ec
 ```
 
 ## Operations
