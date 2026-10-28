@@ -120,9 +120,14 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
   single_solve → time_trial → mastery, serial within the family.
 - **Check the GM directly (read-only):**
   `curl 'https://2026.huntress.ctf.games/?op=status&challenge=<route>' -H "Authorization: Bearer $HUNTRESS_GM_TOKEN"`.
-- Evidence lives in `workers/web/<base-id>/<mode>/` (`start.json`, `targets.json`,
-  `provisioning.json`, recon dumps, `answers.json`, `results.json`, `NOTES.md`,
-  `solve.py`). All of `workers/web/` is git-ignored; keep it for future reference.
+- Runtime evidence (`start.json`, `targets.json`, `provisioning.json`, recon dumps,
+  `answers.json`, `results.json`) lives in `workers/web/<base-id>/<mode>/` - git-ignored,
+  disposable once the day is graded. `NOTES.md`/`solve.py` go straight to
+  `solver_py_scripts/day-NN-web-exploitation/<slug>/` (git-tracked, per the worker's task
+  brief) - they are not scratch, they're the committed record, and nothing needs flattening
+  out of `workers/web/` for a day that followed this convention. See §4 for the handful of
+  pre-2026-10-24 days whose only surviving `solve.py`/`NOTES.md` lived in `workers/web/`
+  itself and have already been rescued into `workers/web/past-solutions/`/`solution-notes/`.
 - **Shared scratch tmpfs can fill under concurrent slots.** Day 24 saw every Bash
   call (even `echo`) fail with ENOSPC on one worker's scratch tmpfs partway
   through a run with multiple slots active, then recover on its own after a
@@ -141,6 +146,12 @@ Workers commit their own day directories. The coordinator then (~10 min):
    makes the next day's first pass stronger.
 4. Append a dated entry to `docs/history.md`.
 5. Commit the shared-doc updates (one commit per day is fine).
+6. Clear that day's disposable runtime state once everything above is done:
+   `workers/web/<base-id>/` (evidence only - `NOTES.md`/`solve.py` already live in
+   `solver_py_scripts/`, nothing is lost) and `workers/web/.rush-dNN/`. Routine cleanup,
+   not a flattening pass - that convention (§ README's `workers/web/` layout) only applied
+   to a handful of pre-2026-10-24 days whose `solve.py`/`NOTES.md` had nowhere else to live;
+   it's already done for those and shouldn't be needed again under the current convention.
 
 ## 5. Standing rules (details in docs/policies.md)
 

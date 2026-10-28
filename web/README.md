@@ -3,8 +3,9 @@
 The `web-exploitation` lane's solution pipeline, rebuilt 2026-10-24 as an adaptation of
 the main pipeline's `rush.py` (one Python driver, direct Game Master calls, tmux as the
 only UI) and migrated 2026-10-28 from Claude Code to opencode. The previous config-driven
-coordinator was torn out as ineffective; `ADAPTATION-PLAN.md` records the adaptation and
-`docs/runbook.md` is the release-night runbook.
+coordinator was torn out as ineffective. `docs/runbook.md` is the release-night runbook,
+`docs/policies.md` the standing rules, and `docs/history.md` the dated record of how the
+pipeline got here.
 
 Requires Python 3.11+, the `opencode` CLI and `tmux`. No Python dependencies, no Rust, no
 SSH, no run host.
@@ -17,7 +18,20 @@ SSH, no run host.
 | `tools/wk.py` | The worker's only GM door: `begin\|submit\|status [--live]\|next`, guarded (untimed only, own family only) |
 | `tools/prompts/` | `prime.md` (pre-release warm-up), `task.md` / `task-done.md` (brief tails) |
 | `solver_py_scripts/recovery_lib.py` | Shared target classifiers/recoverers — the automated first pass and the worker solvers both use it |
-| `workers/web/` | Runtime state, git-ignored: per-challenge dirs, `.rush-dNN/` markers, sessions and briefs, route caches |
+| `workers/web/` | Runtime state, git-ignored (layout below) |
+
+```
+workers/web/
+  past-solutions/        flattened solve.py scripts from past days, kept verbatim (e.g. day-06-reflect-upon-this-single_solve.py)
+  solution-notes/        one consolidated day-NN-slug.md per past day, YAML frontmatter + tags for grep, TAGGING-PROMPT.md explains the tag field
+  .slot-{1,2,3}/         pre-warmed worker dirs (shared trees symlinked in), recreated on every real `launch`
+  .events                cross-day log of route completions, appended to by tools/wk.py - never cleared
+  <base-id>/             per-challenge dir for the day in progress, created fresh at release; gone once that day's notes are folded in
+  .rush-dNN/             the current day's driver state (sessions, briefs, running/done/timedout markers); cleared by the next day's `prep`
+  routes-dNN.json        the current day's route cache
+```
+
+Past-day `<base-id>/` and `.rush-dNN/` directories are not kept around - once a day is graded and its NOTES.md folded into `docs/`, flatten anything worth keeping into `past-solutions/`/`solution-notes/` and remove the rest (see `docs/runbook.md` step 4).
 
 ## Release night
 

@@ -265,6 +265,43 @@ grading-lessons.md, decisions to policies.md.
   pre-2026-10-24 layout (`ctf-run`, `orchestrator/`, `utils/solver_py_scripts`,
   `attack_query.py`, the `previous-solution-research` skill) rather than this repo's own.
 
+## 2026-10-28: Removed ADAPTATION-*.md, flattened workers/web/ into past-solutions/solution-notes
+
+- `ADAPTATION-PLAN.md` and `ADAPTATION-REQUIREMENTS.md` were the design docs for the
+  2026-10-24 rebuild; everything in them that was still-true runtime information had
+  already migrated into `README.md`/`docs/runbook.md`/`docs/policies.md` (they were
+  written from this plan in the first place) or into the code's own docstrings
+  (`tools/web_rush.py`, `tools/wk.py`). Checked section by section before deleting;
+  the one piece of unique value (the directory-layout tree) was re-added to `README.md`
+  in a form that matches current reality rather than the pre-opencode-migration one it
+  described. Removed both files and the live pointers to them in `AGENTS.md`/`README.md`;
+  left the dated narrative mentions in this file's own 2026-10-24 entries alone - they
+  describe what happened at the time, not current state.
+- `workers/web/web-exploitation-day-{06..13}-*` and `day-19-trust-the-webhook` were the
+  only surviving copies of `solve.py`/`NOTES.md` from a pre-2026-10-24 version of this
+  pipeline that wrote solutions directly into the worker dir instead of into the
+  git-tracked `solver_py_scripts/` - git-ignored, so at real risk of being lost outright.
+  Rescued: every `solve.py` flattened verbatim into `workers/web/past-solutions/`
+  (byte-identity verified before deleting the source), every mode's `NOTES.md` folded
+  into one consolidated `workers/web/solution-notes/day-NN-slug.md` per day with YAML
+  frontmatter (day/slug/modes/has_solve_py, mechanical fields only).
+- At the user's direction, skipped deriving bug-class tags inline (originally planned) in
+  favor of a `tags: []` placeholder plus `workers/web/solution-notes/TAGGING-PROMPT.md` -
+  a self-contained prompt for a separate, cheaper model to fill in just that field, reading
+  the consolidated notes and leaving everything else untouched.
+- The remaining `web-exploitation-day-*` dirs (14-18, 20-23) held only disposable JSON
+  runtime evidence with nothing to rescue - deleted along with them. Also removed dead
+  files left over from the pre-2026-10-24 pipeline that nothing in the current code reads
+  (`.lock`, `.gm.lock`, `.gm.last`, `coordinator-d22.log`) and stale per-day route
+  caches/driver state for days already graded (`routes-d01.json`, `routes-d21.json`
+  through `routes-d27.json`, `.rush-d23` through `.rush-d27`). `workers/web/.events` and
+  `.slot-{1,2,3}` are untouched - still actively used by the current pipeline.
+- `workers/web/` now holds only `past-solutions/`, `solution-notes/`, `.slot-{1,2,3}`,
+  `.events`, and whatever the day in progress creates fresh (`<base-id>/`, `.rush-dNN/`,
+  `routes-dNN.json`) - see the layout in `README.md`. `docs/runbook.md` §4 now says to
+  clear a finished day's disposable state after folding its notes, rather than keeping it
+  around indefinitely.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

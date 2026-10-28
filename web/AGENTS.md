@@ -125,6 +125,5 @@ If you are the coordinator (watching worker agents, merging notes, running the r
 pipeline), start with `README.md` for the architecture, then `docs/runbook.md` for the
 step-by-step runbook and `docs/policies.md` for the standing rules. `docs/history.md` and
 `docs/lane-patterns.md` hold the dated per-day record; `docs/web-worker-lessons.md` holds the
-accumulated grading/bug-class lessons. `ADAPTATION-PLAN.md` and `ADAPTATION-REQUIREMENTS.md`
-record why the pipeline is shaped the way it is, for context rather than day-to-day use.
+accumulated grading/bug-class lessons.
 
