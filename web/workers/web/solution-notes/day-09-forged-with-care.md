@@ -243,3 +243,43 @@ was classified from its own evidence, per `docs/web-worker-lessons.md`.
 directly via `curl` (backup exposure / IDOR require no scripted automation
 beyond the few requests shown above); the exact commands and responses are
 preserved in `evidence/`.
+
+## Later consolidated reference (release day 22)
+
+A later, independent pass re-solved this family using the shared `recovery_lib.py` classifier and wrote this condensed reference, folded from the same per-attempt evidence as the section(s) above. Preserved verbatim (heading levels only demoted to nest under this section):
+
+### 09 — CSRF (state-changing GET)
+
+`GET /api/clues` discloses `feature_route` and `preferences_route`. `GET /preferences` renders a form
+that POSTs... except the actual state change is wired to a **plain GET** on `feature_route` with
+`?destination=...&csrf_token=...`, and the "csrf_token" happens to equal the session cookie value — it
+is never actually checked against anything. A real cross-site CSRF (an `<img>`/auto-submitting form on
+an attacker page) would hit that GET with the victim's cookie riding along and
+`Sec-Fetch-Site: cross-site`/foreign `Origin`/`Referer`. Forging exactly that request (while reusing
+the session established on `/`) flips `changed_across_sites` to `true` in `GET /api/preferences`,
+which releases `{"evidence":"proof_<hex>"}`.
+
+Example (attempt in `single_solve`, 2026-10-22): `feature_route=/dispatch-491e3f` →
+`proof_991c4d19e5014091b29e574e76bec48b` (mastery's Target 3, same app/flow). `recovery_lib.rec_csrf`.
+
+### Mastery is cumulative across curriculum days, not just within release day 22
+
+Both families' mastery modes had **3 targets mixing earlier bug classes** from curriculum days as
+far back as day-19/08: 09's mastery mixed backup exposure (day-19 class, Target 1) + IDOR (day-19/08
+class, Target 2, "Incident Picnic" app) + its own CSRF (Target 3); 10's mastery mixed similarly per
+`docs/web-worker-lessons.md`'s cumulative-mastery lesson. Classify every target independently by
+joining `questions[].artifact` to `targets[].id`. `recovery_lib.classify_and_recover` carries the
+day-21 classes (session fixation, reflect-callback, stored-xss-bot) forward precisely so a day-22
+mastery target that turns out to be one of those is still recognized, not just this family's own
+CSRF/upload-bypass classes.
+
+### Carry-forward for future days
+
+- Same Cloudflare/User-Agent and per-attempt-randomisation notes as the "Later consolidated
+  reference (release day 21)" section in `workers/web/solution-notes/day-06-reflect-upon-this.md`
+  (also appended to day-07/day-08) apply here too (shared `recovery_lib.py`, shared `Target` client).
+- `rec_csrf` and `rec_upload_bypass` both read their routes from `/api/clues`, never hard-coded; a
+  fresh attempt mints new route suffixes, cosmetic tokens and destination values.
+- Extend `recovery_lib.classify_and_recover`'s dispatch order (never its individual recoverers'
+  assumptions) for the next new bug class a future release day introduces, the same way day-21 added
+  three classes onto day-19/day-20's two and day-22 added two more onto that.

@@ -1,3 +1,12 @@
+---
+day: 15
+slug: "fetch-quest"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # Fetch Quest (day-24 web-exploitation, curriculum day 15) — SSRF
 
 ## This family's own bug class: SSRF via a fetch proxy
@@ -48,8 +57,8 @@ containing `proof_<hex>`.
     `WHERE (visible = 1 AND note LIKE '%<q>%')` — a classic *group-closing* boolean payload
     `q = ') OR ('1'='1` turns the WHERE true for every row and surfaces the hidden
     `restricted`-pill row (`Record 17903`, note = `proof_2054061705f743be9ff5b96b1e833b4a`).
-    **Exact payload reused verbatim from `solver_py_scripts/day-19-web-exploitation/sqli/solve.py`**
-    (day-19's "Query Me This" is the same app design) — this is the one to try first for any
+    **Exact payload reused verbatim from `workers/web/past-solutions/day-03-sqli-solve.py`**
+    (day-03's "Query Me This" is the same app design) — this is the one to try first for any
     `/lookup?q=` search surface, before any UNION/comment-based sweep. Comment-based (`--`, `#`)
     and plain `' OR '1'='1` payloads do **not** work here (the app's query structure substitutes
     `q` into more than one place, and the simpler payloads either stay false or break syntax
@@ -68,11 +77,11 @@ containing `proof_<hex>`.
 prints the port that worked and the recovered `proof_<hex>`). It intentionally does **not** try to
 classify or solve the other bug classes seen in mastery (backup exposure, IDOR, SQLi) — those are
 already covered by `recovery_lib.py` (backup, IDOR) and by
-`solver_py_scripts/day-19-web-exploitation/sqli/solve.py` (the group-closing SQLi payload for this
+`workers/web/past-solutions/day-03-sqli-solve.py` (the group-closing SQLi payload for this
 exact "Query Me This" app). A future `recovery_lib.py` consolidation could fold in:
 1. `rec_ssrf(t, clues)`: this family's SSRF-via-`feature_route` recoverer (the port-sweep above).
 2. A `rec_sqli_group_close(t, clues)` using the `') OR ('1'='1` payload against a `/lookup`-style
-   search surface, generalizing the day-19 `sqli/solve.py` script into the shared dispatcher.
+   search surface, generalizing the day-03 `sqli-solve.py` script into the shared dispatcher.
 
 ## Environment note for future workers
 

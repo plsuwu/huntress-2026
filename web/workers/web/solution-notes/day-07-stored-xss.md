@@ -253,3 +253,50 @@ with `trim` normalization; both recovered fresh from this attempt's targets.
 - Only the two assigned origins were contacted; no redirects followed
   off-origin; no GM token sent to targets.
 - Prior grading feedback for this mode: `null` (first round).
+
+## Later consolidated reference (release day 21)
+
+A later, independent pass re-solved this family using the shared `recovery_lib.py` classifier and wrote this condensed reference, folded from the same per-attempt evidence as the section(s) above. Preserved verbatim (heading levels only demoted to nest under this section):
+
+### 07 — Stored XSS via moderator bot
+
+`GET /api/clues` (sometimes only discoverable via `/openapi.json`, not a literal root-page link —
+see the carry-forward note below) discloses `feature_route` (a `/<collection>` guestbook), a
+403-gated `moderator_data_route`, and a `receipt_route_template` like `/api/<collection>/{id}/<suffix>`.
+The posted `message` field renders unescaped. A real moderator bot opens every new message in an
+authenticated browser, so:
+
+1. `POST feature_route {"message":"placeholder"}` to learn the current id `N`.
+2. `POST feature_route` again with a `<script>` payload bound to id `N+1`, that does
+   `fetch(moderator_data_route,{credentials:'include'}).then(...).then(t=>fetch(receipt_route_for_id,
+   {method:'POST', body:{evidence:t}}))` — a **same-origin** fetch riding the bot's own session; no
+   outbound callback host is needed, the app itself is the exfil channel.
+3. Poll `GET /<collection>/<id>` every ~6s until the "Moderator receipt" `<pre>` block appears
+   (receipt usually lands within seconds to one poll) and extract `proof_<hex>` from it.
+
+Example (attempt `f6b8d648-...`, 2026-10-22): `moderator_data_route=/staff-ba832ab0`,
+`receipt_route_template=/api/postcards/{id}/receipt-30f87c` → `proof_18a9c83469f24a9fb3464b20ec406398`.
+`recovery_lib.rec_stored_xss_bot`.
+
+### Mastery is cumulative across curriculum days, not just within release day 21
+
+Each family's mastery mode had **3 targets mixing earlier bug classes**, confirming the lessons in
+`docs/web-worker-lessons.md`: 06's mastery mixed backup exposure (day-19 class) + its own
+reflect-callback; 07's mixed backup exposure + its own stored XSS; 08's mixed backup exposure + IDOR
+(day-19 class) + its own session fixation. Classify every target independently by joining
+`questions[].artifact` to `targets[].id` — never assume mastery repeats only the named family's bug.
+`recovery_lib.classify_and_recover` tries clues-driven classes, then IDOR, then backup exposure, in
+that order, and returns `None` (a real "unclassified" signal, not a bug) when nothing matches.
+
+### Carry-forward for future days
+
+- **Do not gate on `"/api/clues" in root_html`** before fetching the clues API: day-07's app only
+  discloses `/api/clues` via `/openapi.json`, never as literal text on the root page. Always attempt
+  `GET /api/clues` directly and treat a non-200 as "this app has no clues API" (this is how
+  `recovery_lib.classify_and_recover` is written now — an earlier draft that pre-filtered on the
+  substring silently misclassified a synthetic stored-XSS fixture in testing before this fix).
+- Cloudflare in front of these apps 403s (`error code 1010`) on urllib's default User-Agent; always
+  send a browser UA (`recovery_lib.UA`).
+- Route suffixes, nonces, session hints and backup filenames are per-attempt; a fresh variant always
+  re-derives them from the current `/api/clues`/`/robots.txt`/directory-index responses, never from a
+  saved value here.

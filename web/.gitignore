@@ -7,6 +7,10 @@ __pycache__/
 *-id_ed25519
 *.ovpn
 
-# Per-route downloaded challenge material, logs, and state
-# workers/web/
+# Per-day driver state and per-challenge runtime scratch - regenerated every release, never
+# meant to be committed. workers/web/past-solutions/, workers/web/solution-notes/, .events and
+# .slot-{1,2,3}/ are the consolidated reference library and ARE committed - see README.md.
+workers/web/.rush-d*/
+workers/web/routes-d*.json
+workers/web/web-exploitation-*/
 .pytest_cache/

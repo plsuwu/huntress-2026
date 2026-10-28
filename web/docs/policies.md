@@ -101,3 +101,15 @@
   parallel, not serialized, so this does not cost the pipeline any of its concurrency. Model is
   left unset everywhere so workers track opencode's own configured default rather than a
   hard-coded string, per the user's explicit call.
+- **Consolidated, tagged solution library (2026-10-28).** `solver_py_scripts/day-NN-web-exploitation/<slug>/`
+  as a write/read target is retired. Workers write directly to
+  `workers/web/solution-notes/day-NN-slug.md` (YAML frontmatter: day/slug/lane/modes/
+  has_solve_py/tags) and `workers/web/past-solutions/day-NN-slug-*.py`, both symlinked into
+  every worker dir, `day-NN` always the challenge's own embedded/curriculum day (from its GM
+  route id / `workers/web/.events`), never the release day it happened to be solved on - the
+  two can differ and did, repeatedly, under the old convention. `recovery_lib.py`/
+  `recovery_lib_ws.py`/`web_templates/` are unaffected - they're shared library code, not
+  per-challenge solutions, and stay in `solver_py_scripts/`. Tag derivation is deliberately
+  out of scope for the automated pipeline - a worker fills in its own note's `tags` field by
+  hand (see `workers/web/solution-notes/TAGGING-PROMPT.md`); past notes were tagged by a
+  separate, cheaper model given that exact prompt, at the user's direction.

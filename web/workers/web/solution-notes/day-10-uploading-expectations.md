@@ -217,3 +217,42 @@ $ python3 -I solve.py start.json
 - `proof-1` = `proof_9bd654f45e634754a78d00c34f1643ca`
 - `proof-2` = `proof_c6cafd44414e4b4f9d979e01d9795856`
 - `proof-3` = `proof_be1abffc95d840f58c536e2b718648f9`
+
+## Later consolidated reference (release day 22)
+
+A later, independent pass re-solved this family using the shared `recovery_lib.py` classifier and wrote this condensed reference, folded from the same per-attempt evidence as the section(s) above. Preserved verbatim (heading levels only demoted to nest under this section):
+
+### 10 — Upload content-type/extension bypass
+
+`GET /api/clues` discloses `feature_route` (upload) and `render_route` (preview). The stated policy
+("`.txt` only") is **never actually enforced** on either the filename extension or the declared
+`content_type` field: uploading `{"filename":"x.html","content":"{{objective}}","content_type":
+"text/html"}` routes the file to the staff HTML-preview path instead of the plain-text path, and that
+preview path **evaluates the `{{objective}}` placeholder**, filling in the proof. The response's
+`path` field (e.g. `/result-824c5b?file=...`) is the render URL to fetch next.
+
+Example (single_solve/time_trial, identical app/flow, scripts byte-identical): upload a `.html`
+filename with `{{objective}}` as content → `GET` the returned render path → proof in the rendered
+body. `recovery_lib.rec_upload_bypass`.
+
+### Mastery is cumulative across curriculum days, not just within release day 22
+
+Both families' mastery modes had **3 targets mixing earlier bug classes** from curriculum days as
+far back as day-19/08: 09's mastery mixed backup exposure (day-19 class, Target 1) + IDOR (day-19/08
+class, Target 2, "Incident Picnic" app) + its own CSRF (Target 3); 10's mastery mixed similarly per
+`docs/web-worker-lessons.md`'s cumulative-mastery lesson. Classify every target independently by
+joining `questions[].artifact` to `targets[].id`. `recovery_lib.classify_and_recover` carries the
+day-21 classes (session fixation, reflect-callback, stored-xss-bot) forward precisely so a day-22
+mastery target that turns out to be one of those is still recognized, not just this family's own
+CSRF/upload-bypass classes.
+
+### Carry-forward for future days
+
+- Same Cloudflare/User-Agent and per-attempt-randomisation notes as the "Later consolidated
+  reference (release day 21)" section in `workers/web/solution-notes/day-06-reflect-upon-this.md`
+  (also appended to day-07/day-08) apply here too (shared `recovery_lib.py`, shared `Target` client).
+- `rec_csrf` and `rec_upload_bypass` both read their routes from `/api/clues`, never hard-coded; a
+  fresh attempt mints new route suffixes, cosmetic tokens and destination values.
+- Extend `recovery_lib.classify_and_recover`'s dispatch order (never its individual recoverers'
+  assumptions) for the next new bug class a future release day introduces, the same way day-21 added
+  three classes onto day-19/day-20's two and day-22 added two more onto that.

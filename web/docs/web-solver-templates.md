@@ -44,5 +44,5 @@ Build the starter `solve.py` around **Tier 1 as inlined, ready-to-run code** (th
 
 ## What was actually built from this (2026-10-25, same session)
 
-- **Promoted into `recovery_lib.py` proper** (Tier 1/stable-Tier-2 — complete, previously-graded recoverers that only needed relocating and wiring into the dispatcher): `rec_lfi` (ported from `day-20-web-exploitation/common.py`, bounded `../` depth sweep, now clues/html-evidence-led and threaded with the optional challenge `prompt` for the mounted-objective-path hint).
+- **Promoted into `recovery_lib.py` proper** (Tier 1/stable-Tier-2 — complete, previously-graded recoverers that only needed relocating and wiring into the dispatcher): `rec_lfi` (ported from `workers/web/past-solutions/day-04-05-shared-common.py`, bounded `../` depth sweep, now clues/html-evidence-led and threaded with the optional challenge `prompt` for the mounted-objective-path hint).
 - **New `solver_py_scripts/web_templates/`** (Tier-2 mechanism scaffolding — not full recoverers, building blocks for writing the next one fast): `starter_solve.py` (the drop-in worker starter), `graphql_helpers.py`, `poll_patterns.py`, and a `README.md` explaining when/how each gets used. Tier-3 items stayed as documented notes rather than modules, per the recommendation above.

@@ -1,3 +1,12 @@
+---
+day: 14
+slug: "the-api-has-opinions"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # web-exploitation-day-14-the-api-has-opinions (release day 24)
 
 All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.

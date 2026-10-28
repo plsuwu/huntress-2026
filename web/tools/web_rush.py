@@ -82,6 +82,20 @@ sys.path.insert(0, os.path.join(ROOT, "solver_py_scripts"))
 import recovery_lib  # noqa: E402  the first pass's classifiers/recoverers
 
 SHARED_TREES = ("AGENTS.md", "docs", "solver_py_scripts", "tools")
+# Symlinked from WORKERS (workers/web/), not ROOT - the consolidated, tagged reference library
+# (past solve.py scripts + per-day notes; see workers/web/solution-notes/TAGGING-PROMPT.md).
+WORKER_SHARED_TREES = ("past-solutions", "solution-notes")
+
+
+def symlink_shared_trees(dest):
+    """Symlink both the repo-root shared trees and the workers/web/ reference library into dest -
+    used for both a real worker dir and a pre-warmed slot dir."""
+    for root, rels in ((ROOT, SHARED_TREES), (WORKERS, WORKER_SHARED_TREES)):
+        for rel in rels:
+            link = os.path.join(dest, rel)
+            src = os.path.join(root, rel)
+            if not os.path.lexists(link) and os.path.lexists(src):
+                os.symlink(src, link)
 
 
 def log(msg):
@@ -253,11 +267,7 @@ def ensure_worker_dir(day, base, rows):
     .env."""
     wt = os.path.join(WORKERS, base)
     os.makedirs(wt, exist_ok=True)
-    for rel in SHARED_TREES:
-        link = os.path.join(wt, rel)
-        src = os.path.join(ROOT, rel)
-        if not os.path.lexists(link) and os.path.lexists(src):
-            os.symlink(src, link)
+    symlink_shared_trees(wt)
     with open(os.path.join(wt, "family.json"), "w") as f:
         json.dump({"base": base, "release_day": day, "routes": rows}, f, indent=2)
         f.write("\n")
@@ -392,10 +402,7 @@ def ensure_slot_dir(slot):
     if os.path.isdir(d):
         shutil.rmtree(d)
     os.makedirs(d)
-    for rel in SHARED_TREES:
-        src = os.path.join(ROOT, rel)
-        if os.path.lexists(src):
-            os.symlink(src, os.path.join(d, rel))
+    symlink_shared_trees(d)
     return d
 
 

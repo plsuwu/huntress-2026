@@ -63,18 +63,25 @@ how to interpret various flags and the gameplay around the `time_trial` and `mas
 with the 'Hall of Fame' leaderboard.
 
 This repo is web-exploitation only (see `README.md`), so previous solutions are always Python.
-Before writing a new one, check `solver_py_scripts/day-*-web-exploitation/*/{solve.py,NOTES.md}`
-for a challenge that reused the same bug class, and `docs/web-worker-lessons.md` for the
-accumulated curriculum knowledge (recognized bug-class table, fed by every day's graded
-evidence).
+Before writing a new one, check `workers/web/solution-notes/` for a past challenge that used the
+same bug class - every file is `day-NN-slug.md`, one per curriculum day, with a YAML frontmatter
+`tags` list (short kebab-case bug-class/technique tags). `grep -l <tag> workers/web/solution-notes/*.md`
+finds candidates fast; `workers/web/past-solutions/day-NN-slug-*.py` holds the matching scripts,
+kept verbatim. Also check `docs/web-worker-lessons.md` for the accumulated curriculum knowledge
+(recognized bug-class table, fed by every day's graded evidence).
 
 ### Work-in-progress
 
-Your work-in-progress should go in `solver_py_scripts/day-[DD]-web-exploitation/[slug]/` that you
-create (following the format/layout of existing day directories). Keep this directory clean and
-well-organised, but retain all artifacts for future reference. After each solution, write
-`NOTES.md` with observations and anything that will matter to future agents or to the
-`recovery_lib.py` recoverers (see below).
+Write your solution's note directly to `workers/web/solution-notes/day-[DD]-[slug].md` and its
+script(s) to `workers/web/past-solutions/day-[DD]-[slug]-<name>.py` (e.g. `-solve.py`, and
+`-mastery.py` if mastery needed a separate script) - this is the single consolidated,
+git-tracked reference library for every day, not a new per-day directory. Use the frontmatter
+template at the top of any existing `day-*.md` file (`day`, `slug`, `lane: web-exploitation`,
+`modes`, `has_solve_py`, `tags`) and actually fill in `tags` yourself for your own new note -
+`workers/web/solution-notes/TAGGING-PROMPT.md` documents the tagging convention other notes were
+tagged with. Keep scripts verbatim once they answer correctly (no later "cleanup" edits - the
+point is an accurate historical record), and write the note with observations and anything that
+will matter to future agents or to the `recovery_lib.py` recoverers (see below).
 
 ### Python-first iteration
 

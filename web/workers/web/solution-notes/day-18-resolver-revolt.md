@@ -1,3 +1,12 @@
+---
+day: 18
+slug: "resolver-revolt"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # web-exploitation-day-18-resolver-revolt (release day 25)
 
 All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.
@@ -75,7 +84,7 @@ generic solver always sends a Chrome UA string.
     `GET /explore?q=<term>` search form. The real query is shaped like
     `WHERE (visible = 1 AND note LIKE '%<q>%')`; the group-closing payload
     `q = ') OR ('1'='1` (exact string, reused verbatim from
-    `day-19-web-exploitation/sqli/solve.py` and `day-24-web-exploitation/fetch-quest`)
+    `workers/web/past-solutions/day-03-sqli-solve.py` and `workers/web/solution-notes/day-15-fetch-quest.md`)
     turns the WHERE true for every row and surfaces the restricted record
     (`Record 8307`, note = `proof_f76abfd5fa634516a1ab0da740fd3a54`). Did not need
     to try comment-based or plain `' OR '1'='1` variants this time since the

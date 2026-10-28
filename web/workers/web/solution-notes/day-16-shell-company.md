@@ -1,3 +1,12 @@
+---
+day: 16
+slug: "shell-company"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # web-exploitation-day-16-shell-company (release day 25)
 
 All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.

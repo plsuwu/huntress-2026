@@ -6,10 +6,10 @@ month. The pipeline is `tools/web_rush.py` — the web adaptation of the main pi
 
 ## 0. Before 22:45
 
-- Commit everything to `master`. Workers commit their own day directories
-  (`solver_py_scripts/day-NN-web-exploitation/<slug>/`, with the usual Co-Authored-By
-  line); the coordinator commits shared-doc updates. Disjoint paths — no branches, no
-  merge step.
+- Commit everything to `master`. Workers commit their own note + script
+  (`workers/web/solution-notes/day-NN-slug.md` + `workers/web/past-solutions/day-NN-slug-*.py`,
+  with the usual Co-Authored-By line); the coordinator commits shared-doc updates. Disjoint
+  paths — no branches, no merge step.
 - `HUNTRESS_GM_TOKEN` is in `.env` (or exported). Never print it; it is never sent to a
   target.
 - Sanity: `python3 -m py_compile tools/web_rush.py tools/wk.py`, then
@@ -122,12 +122,15 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
   `curl 'https://2026.huntress.ctf.games/?op=status&challenge=<route>' -H "Authorization: Bearer $HUNTRESS_GM_TOKEN"`.
 - Runtime evidence (`start.json`, `targets.json`, `provisioning.json`, recon dumps,
   `answers.json`, `results.json`) lives in `workers/web/<base-id>/<mode>/` - git-ignored,
-  disposable once the day is graded. `NOTES.md`/`solve.py` go straight to
-  `solver_py_scripts/day-NN-web-exploitation/<slug>/` (git-tracked, per the worker's task
-  brief) - they are not scratch, they're the committed record, and nothing needs flattening
-  out of `workers/web/` for a day that followed this convention. See §4 for the handful of
-  pre-2026-10-24 days whose only surviving `solve.py`/`NOTES.md` lived in `workers/web/`
-  itself and have already been rescued into `workers/web/past-solutions/`/`solution-notes/`.
+  disposable once the day is graded. The note and script go straight to
+  `workers/web/solution-notes/day-NN-slug.md` + `workers/web/past-solutions/day-NN-slug-*.py`
+  (git-tracked, symlinked into the worker dir, per the worker's task brief) - they are not
+  scratch, they're the committed, taggable record (removed the older
+  `solver_py_scripts/day-NN-web-exploitation/<slug>/` convention on 2026-10-28, folding
+  everything that lived there - plus a handful of pre-2026-10-24 days whose only surviving
+  `solve.py`/`NOTES.md` lived in `workers/web/<base-id>/` itself - into this one place, with
+  day numbers corrected to the challenge's actual embedded/curriculum day via
+  `workers/web/.events` rather than whatever day it happened to be solved on).
 - **Shared scratch tmpfs can fill under concurrent slots.** Day 24 saw every Bash
   call (even `echo`) fail with ENOSPC on one worker's scratch tmpfs partway
   through a run with multiple slots active, then recover on its own after a
@@ -137,7 +140,7 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
 
 ## 4. After the night: merge the notes
 
-Workers commit their own day directories. The coordinator then (~10 min):
+Workers commit their own note + script. The coordinator then (~10 min):
 
 1. Fold new bug-class methods into `docs/web-worker-lessons.md`.
 2. Fold the day's outcome + next-day prediction into `docs/lane-patterns.md`.
@@ -146,12 +149,13 @@ Workers commit their own day directories. The coordinator then (~10 min):
    makes the next day's first pass stronger.
 4. Append a dated entry to `docs/history.md`.
 5. Commit the shared-doc updates (one commit per day is fine).
-6. Clear that day's disposable runtime state once everything above is done:
-   `workers/web/<base-id>/` (evidence only - `NOTES.md`/`solve.py` already live in
-   `solver_py_scripts/`, nothing is lost) and `workers/web/.rush-dNN/`. Routine cleanup,
-   not a flattening pass - that convention (§ README's `workers/web/` layout) only applied
-   to a handful of pre-2026-10-24 days whose `solve.py`/`NOTES.md` had nowhere else to live;
-   it's already done for those and shouldn't be needed again under the current convention.
+6. Clear that day's disposable runtime state once everything above is done and each
+   worker's `workers/web/solution-notes/day-NN-slug.md` +
+   `workers/web/past-solutions/day-NN-slug-*.py` are confirmed committed: remove
+   `workers/web/<base-id>/` (evidence only - nothing is lost, the note/script never lived
+   there) and `workers/web/.rush-dNN/`. Routine cleanup - there is no separate flattening
+   pass needed under this convention, since workers write directly into the consolidated
+   library rather than into a per-day directory that would later need folding in.
 
 ## 5. Standing rules (details in docs/policies.md)
 

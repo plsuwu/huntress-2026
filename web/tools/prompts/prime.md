@@ -8,7 +8,11 @@ Your worker directory is `{wt}` (your current directory). Work only there.
 Prepare (do these now, quietly):
 1. Read `AGENTS.md` (symlinked into your directory) and `docs/web-worker-lessons.md`.
 2. Read the web section of `docs/lane-patterns.md` and `solver_py_scripts/recovery_lib.py`.
-3. Skim the newest `solver_py_scripts/day-*-web-exploitation/*/NOTES.md` files.
+3. Skim `solution-notes/` (symlinked into your directory - one `day-NN-slug.md` per curriculum
+   day solved so far, YAML frontmatter with a `tags` list of bug classes/techniques). `grep -l`
+   a tag against `solution-notes/*.md` to find prior challenges that used the same bug class
+   before you've even seen your own brief; `past-solutions/` holds the matching `solve.py`
+   scripts, kept verbatim, named `day-NN-slug-<script>.py`.
 
 Then reply only "ready" and wait. When the day is released you will be told your challenge id
 and to read a brief that the automated first pass wrote for it (recon evidence, results).

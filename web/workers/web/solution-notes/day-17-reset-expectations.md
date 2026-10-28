@@ -1,3 +1,12 @@
+---
+day: 17
+slug: "reset-expectations"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # web-exploitation-day-17-reset-expectations (release day 25) — 🌐 Reset Expectations
 
 All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.
@@ -78,7 +87,7 @@ account id, stopping at the first JSON body containing `proof_<hex>`.
     `/lookup?q=` search surface and query shape as day-19/day-24's "Query Me This":
     a benign term returns "Nothing matched"; the group-closing payload
     `q = ') OR ('1'='1` (reused verbatim, exactly as documented in
-    `docs/web-worker-lessons.md` and `day-19-web-exploitation/sqli/solve.py`) turns
+    `docs/web-worker-lessons.md` and `workers/web/past-solutions/day-03-sqli-solve.py`) turns
     the WHERE true for every row and surfaces the hidden/restricted record with
     `proof_dea4753d662b45d8b3ca95f20c87f173`. Did not need to try comment-based or
     plain `' OR '1'='1` variants — the group-closing form worked first try, consistent
@@ -99,8 +108,8 @@ account id, and prints the first `proof_<hex>` found. It intentionally does **no
 try to classify or solve the other 3 mastery bug classes (backup exposure, IDOR,
 group-closing SQLi) — those are already covered by `recovery_lib.py` (`rec_backup`,
 `rec_idor`) and by the documented `') OR ('1'='1` payload for `/lookup`-style search
-surfaces (see `day-19-web-exploitation/sqli/solve.py` and
-`day-24-web-exploitation/fetch-quest/NOTES.md`'s suggested
+surfaces (see `workers/web/past-solutions/day-03-sqli-solve.py` and
+`workers/web/solution-notes/day-15-fetch-quest.md`'s suggested
 `rec_sqli_group_close(t, clues)` consolidation — this family's mastery is more
 evidence that payload generalizes).
 

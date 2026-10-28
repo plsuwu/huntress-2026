@@ -31,14 +31,14 @@ non-stdlib `websockets`/`certifi` packages - it lives in the sibling
 `recovery_lib_ws.py` instead, to keep this module's stdlib-only guarantee intact.
 
 `rec_sqli_group_close` promotes a payload that has now worked, verbatim and
-unmodified, against five independent live apps across three release days
-(day-19's own sqli/solve.py, day-24's fetch-quest mastery, and three of
-day-25's mastery targets) - always try this exact string first against any
+unmodified, against five independent live apps across multiple curriculum days
+(day-03's own sqli solver, day-15's fetch-quest mastery, and three of
+day-16/17/18's mastery targets) - always try this exact string first against any
 `/search`-, `/lookup`-, or `/explore`-style `?q=` surface before any other
 injection form.
 
-`rec_lfi` is ported unchanged from `day-20-web-exploitation/common.py` (it
-was the only graded recoverer not yet folded in here) - a 2026-10-25 scan of
+`rec_lfi` is ported unchanged from `workers/web/past-solutions/day-04-05-shared-common.py`
+(it was the only graded recoverer not yet folded in here) - a 2026-10-25 scan of
 every web solve.py for reusable patterns (`docs/web-solver-templates.md`)
 found it and promoted it; that same scan produced the drop-in worker starter
 and template modules under `solver_py_scripts/web_templates/`.
@@ -224,9 +224,10 @@ def rec_lfi(t, html, prompt=""):
     else a documented default. A bounded `../`-depth sweep (1-8) finds the right
     traversal depth without guessing the directory layout; one absolute-path
     fallback covers includes that also accept a leading slash.
-    Source: day-20-web-exploitation/common.py's `rec_lfi` (curriculum day 4,
-    release day 20) - promoted here unchanged after a 2026-10-25 template scan
-    found it was the only graded recoverer not yet folded into this module."""
+    Source: workers/web/past-solutions/day-04-05-shared-common.py's `rec_lfi`
+    (curriculum day 4, release day 20) - promoted here unchanged after a
+    2026-10-25 template scan found it was the only graded recoverer not yet
+    folded into this module."""
     link = re.search(r'href="([^"]*\.php)\?(\w+)=', html)
     endpoint, param = (link.group(1), link.group(2)) if link else ("/reader.php", "doc")
     objective = re.search(r"mounted at (/\S+)", prompt)
@@ -611,9 +612,10 @@ def rec_sqli_group_close(t, html):
     and plain `' OR '1'='1` payloads do NOT work against this app shape - the
     group-closing form is tried first and has been sufficient on every confirmed
     target so far; the others are kept only as a fallback.
-    Source: day-19-web-exploitation/sqli (curriculum day 19); reconfirmed verbatim,
-    unmodified, against five independent live apps across day-24's fetch-quest
-    mastery and three of day-25's mastery targets (Archive Atlas, Search Party x2)."""
+    Source: workers/web/past-solutions/day-03-sqli-solve.py (curriculum day 3);
+    reconfirmed verbatim, unmodified, against five independent live apps across
+    day-15's fetch-quest mastery and three of day-16/17/18's mastery targets
+    (Archive Atlas, Search Party x2)."""
     action_match = re.search(r"<form[^>]*action=['\"]([^'\"]+)['\"]", html)
     name_match = re.search(r"<input[^>]*name=['\"]([^'\"]+)['\"]", html)
     action = action_match.group(1) if action_match else "/search"

@@ -1,3 +1,12 @@
+---
+day: 22
+slug: "socket-to-me"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+---
+
 # web-exploitation-day-22-socket-to-me (release day 27)
 
 All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.
@@ -124,7 +133,7 @@ instead of 4). Each classified from its own live evidence, join
    path (`/run/huntress/objective.txt` - no "mounted at" hint in this
    mastery's generic prompt) found it ->
    `proof_35cbd7c6462948acae4c113b786dfa25`. Same as `recovery_lib.rec_lfi`
-   (ported unchanged from `day-20-web-exploitation/common.py` via
+   (ported unchanged from `workers/web/past-solutions/day-04-05-shared-common.py` via
    `recovery_lib.py`).
 5. **Target 5 - "Live Case Wire"** (Koa), this family's own **unauthorized
    event-stream subscription**. feature_route `/inspect-f8a2c6`,

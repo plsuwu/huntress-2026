@@ -302,6 +302,48 @@ grading-lessons.md, decisions to policies.md.
   clear a finished day's disposable state after folding its notes, rather than keeping it
   around indefinitely.
 
+## 2026-10-28: Absorbed solver_py_scripts into workers/web/past-solutions + solution-notes
+
+- At the user's direction, retired the `solver_py_scripts/day-NN-web-exploitation/<slug>/`
+  write/read convention entirely (not just the pre-2026-10-24 orphaned days folded in
+  earlier today). `solver_py_scripts/day-{05,19,20,21,22,24,25,26,27}-web-exploitation/`
+  held every remaining past solution - extracted every `solve.py`/`NOTES.md` and deleted
+  those directories; only `recovery_lib.py`, `recovery_lib_ws.py` and `web_templates/`
+  (shared library code, not per-challenge solutions) remain in `solver_py_scripts/`.
+- The real forensic work was day-number correction: `solver_py_scripts` directories were
+  named by **release day** (when solved), not the challenge's own **embedded/curriculum**
+  day (what `workers/web/.events` and every GM route id actually use), and the two
+  disagreed repeatedly - `day-27-web-exploitation/forwarded-misgivings` is curriculum day
+  23; `day-26-web-exploitation/trust-the-webhook` is curriculum day 19, the *same*
+  challenge as an already-rescued orphaned note (its single_solve was solved under the
+  pre-2026-10-24 pipeline, its time_trial/mastery much later) - merged rather than
+  duplicated; `day-21-web-exploitation`/`day-22-web-exploitation` turned out to be
+  independently-written, more condensed re-writeups of challenges already rescued
+  earlier today from raw old data (days 06-10) - appended as a second section rather than
+  creating competing files; days 01-05 used the web-exploitation lane's own original
+  internal day counter (not the main event's) and had never touched `workers/web/`
+  before. Verified every mapping against `.events` and the challenges' own route ids
+  before moving anything, not guessed.
+- `workers/web/solution-notes/` now holds one `day-NN-slug.md` per curriculum day, 01
+  through 23, every past-solutions `.py` copy byte-identity-verified against its source
+  before the source was deleted. Tag derivation (the frontmatter `tags` field) stayed out
+  of scope for the automated pass per the user's direction - left as `tags: []` with
+  `workers/web/solution-notes/TAGGING-PROMPT.md` as the handoff for a separate, cheaper
+  model to fill in.
+- Updated every live reference that pointed at the old paths: `tools/web_rush.py` now
+  symlinks `workers/web/past-solutions/` and `workers/web/solution-notes/` into every
+  worker/slot dir alongside the existing shared trees; `tools/prompts/{prime,task,task-done}.md`
+  write new solutions directly into the consolidated library (and explain the YAML
+  frontmatter/tagging convention) instead of a per-day `solver_py_scripts/` directory;
+  `AGENTS.md`/`README.md`/`docs/runbook.md`/`docs/policies.md`/`docs/web-worker-lessons.md`/
+  `docs/web-solver-templates.md`/`recovery_lib.py`'s own code comments, and several
+  consolidated notes' internal cross-references to each other, all repointed to the new
+  locations (and, where a comment had inherited the release-day/curriculum-day confusion
+  above, corrected to the right day number while doing so). `.gitignore` now explicitly
+  ignores the per-day runtime scratch (`.rush-d*/`, `routes-d*.json`, `web-exploitation-*/`)
+  that used to be covered by a blanket `workers/web/` ignore, now that the consolidated
+  library under the same root is deliberately git-tracked.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

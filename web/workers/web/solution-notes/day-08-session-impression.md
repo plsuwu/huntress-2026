@@ -290,3 +290,42 @@ total across three origins; no 5xx observed.
 - Target 2's IDOR read relies on the feed disclosing a foreign id; if a
   future variant's feed lists none, the solver reports the gap instead of
   enumerating ids.
+
+## Later consolidated reference (release day 21)
+
+A later, independent pass re-solved this family using the shared `recovery_lib.py` classifier and wrote this condensed reference, folded from the same per-attempt evidence as the section(s) above. Preserved verbatim (heading levels only demoted to nest under this section):
+
+### 08 — Session fixation
+
+`GET /api/clues` (Laravel app) discloses `feature_route`, `secondary_route`, `session_hint`. Visiting
+`feature_route?sid=<session_hint>` ("plant") makes the app **adopt the client-chosen id** as its
+session cookie (`{"ok":true,"session_established":true}`) instead of minting its own. Replaying that
+same planted id as `?sid=` on `secondary_route` ("stroll") returns
+`{"ok":true,"effect":"fixed_session_privilege_transfer","evidence":"proof_<hex>"}`.
+
+Example (attempt `0a4c7aa7-...`, 2026-10-22): `feature_route=/execute-f8a0ff`,
+`secondary_route=/status-744fd3`, `session_hint=88ca261cddf6` → `proof_21c5d60988494418b3446f8f334af689`.
+`recovery_lib.rec_session_fixation`.
+
+### Mastery is cumulative across curriculum days, not just within release day 21
+
+Each family's mastery mode had **3 targets mixing earlier bug classes**, confirming the lessons in
+`docs/web-worker-lessons.md`: 06's mastery mixed backup exposure (day-19 class) + its own
+reflect-callback; 07's mixed backup exposure + its own stored XSS; 08's mixed backup exposure + IDOR
+(day-19 class) + its own session fixation. Classify every target independently by joining
+`questions[].artifact` to `targets[].id` — never assume mastery repeats only the named family's bug.
+`recovery_lib.classify_and_recover` tries clues-driven classes, then IDOR, then backup exposure, in
+that order, and returns `None` (a real "unclassified" signal, not a bug) when nothing matches.
+
+### Carry-forward for future days
+
+- **Do not gate on `"/api/clues" in root_html`** before fetching the clues API: day-07's app only
+  discloses `/api/clues` via `/openapi.json`, never as literal text on the root page. Always attempt
+  `GET /api/clues` directly and treat a non-200 as "this app has no clues API" (this is how
+  `recovery_lib.classify_and_recover` is written now — an earlier draft that pre-filtered on the
+  substring silently misclassified a synthetic stored-XSS fixture in testing before this fix).
+- Cloudflare in front of these apps 403s (`error code 1010`) on urllib's default User-Agent; always
+  send a browser UA (`recovery_lib.UA`).
+- Route suffixes, nonces, session hints and backup filenames are per-attempt; a fresh variant always
+  re-derives them from the current `/api/clues`/`/robots.txt`/directory-index responses, never from a
+  saved value here.
