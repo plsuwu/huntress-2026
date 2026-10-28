@@ -46,6 +46,7 @@ pub enum T {
     Cp,
     Bf,
     Ook,
+    RevHex,
 }
 
 impl T {
@@ -75,6 +76,8 @@ impl T {
             T::Cp => codec::code_points(t),
             T::Bf => codec::brainfuck(t),
             T::Ook => codec::ook(t),
+            // Day 28 "Back in Sixteen": the hex digits are written backwards (`...e696e4` = "Nin").
+            T::RevHex => codec::text_any(&codec::hex(&codec::reverse(t))?),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -130,6 +133,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         25 => T::Cp, // "You Have a Point": Unicode code points `U+004E U+0069 ...` ("a code point, anyway")
         26 => T::Bf, // "Food for Thought": Brainfuck `+-.` on one cell ("a very small language")
         27 => T::Ook, // "Monkey Business": Ook! pairs -> Brainfuck ("Ook. Ook? Ook! Someone seems chatty.")
+        28 => T::RevHex, // "Back in Sixteen": hex, reversed character-wise ("our sixteen-fingered friend is walking backwards")
         _ => return None,
     })
 }
@@ -176,7 +180,7 @@ fn structured(frag: &str) -> Option<(T, String)> {
         return try_(T::Num).or_else(|| try_(T::Bin));
     }
     if v.len() % 2 == 0 && v.bytes().all(|b| b.is_ascii_hexdigit()) {
-        if let Some(r) = try_(T::Hex) {
+        if let Some(r) = try_(T::Hex).or_else(|| try_(T::RevHex)) {
             return Some(r);
         }
     }
@@ -489,6 +493,12 @@ pub fn solve_blob(text: &str) -> Outcome {
             t = n;
             continue;
         }
+        // Day 28 "Back in Sixteen": a structural layer written backwards (reversed hex).
+        let rev = codec::reverse(t.trim());
+        if let Some(n) = [T::Hex, T::B64, T::B32].iter().find_map(|k| k.apply(&rev).filter(|n| *n != rev)) {
+            t = n;
+            continue;
+        }
         // Letter transforms are self-inverse or cyclic: apply the best one only if it reads as more English.
         let now = codec::englishness(&t);
         let best = std::iter::once(codec::atbash(&t))
@@ -791,6 +801,16 @@ mod tests {
         assert_eq!(codec::ook(&prog).as_deref(), Some("A"));
         assert_eq!(codec::ook("Ook. Ook? Ook."), None);
         assert_eq!(codec::ook("Ook? Ook? Ook! Ook."), None);
+    }
+
+    #[test]
+    fn reversed_hex_blob() {
+        // Day 28 "Back in Sixteen": hex of the sentence, reversed character-wise.
+        let sentence = format!("{PREFIX}speedy-button-nugget-52");
+        let hex: String = sentence.bytes().map(|b| format!("{b:02x}")).collect();
+        assert!(matches!(solve_blob(&codec::reverse(&hex)), Outcome::Solved { slug, .. } if slug == "speedy-button-nugget-52"));
+        let rows = format!("01\tTmljZSB3b3Jr\n28\t{}\n", codec::reverse(&hex[18..]));
+        assert!(matches!(solve_rows(&rows, &BTreeMap::new()), Outcome::Solved { slug, .. } if slug == "speedy-button-nugget-52"));
     }
 
     #[test]
