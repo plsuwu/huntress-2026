@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-28-where-it-all-began/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0b775549-4d18-4471-acdb-33bc624dc348",
+  "started_at": "2026-10-28T13:02:46.852Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2092.280627,
+  "start_ttfb_ms": 2091.472305,
+  "clock": {
+    "start_sent": "2026-10-28T13:02:45.041Z",
+    "start_received": "2026-10-28T13:02:47.133Z",
+    "start_date_header": "2026-10-28T13:02:47.000Z",
+    "last_delivery": "2026-10-28T13:02:49.233Z",
+    "submit_sent": "2026-10-28T13:02:49.238Z",
+    "submit_received": "2026-10-28T13:02:51.101Z",
+    "submit_date_header": "2026-10-28T13:02:51.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-28-where-it-all-began-mastery.zip",
+      "bytes": 8036391,
+      "wire": 8036391,
+      "ttfb_ms": 1246.752394,
+      "total_ms": 2069.054721,
+      "done_at_ms": 4161.4657,
+      "analyse_ms": 30.488961
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-28-where-it-all-began",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "d42d2f29-2380-4164-9e42-609ad1a2a682",
+  "started_at": "2026-10-28T13:00:07.650Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2350.4445459999997,
+  "start_ttfb_ms": 2349.1146820000004,
+  "clock": {
+    "start_sent": "2026-10-28T13:02:18.646Z",
+    "start_received": "2026-10-28T13:02:20.996Z",
+    "start_date_header": "2026-10-28T13:02:20.000Z",
+    "last_delivery": "2026-10-28T13:02:22.476Z",
+    "submit_sent": "2026-10-28T13:02:22.476Z",
+    "submit_received": "2026-10-28T13:02:24.140Z",
+    "submit_date_header": "2026-10-28T13:02:24.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-28-evidence.zip",
+      "bytes": 606,
+      "wire": 606,
+      "ttfb_ms": 1245.253199,
+      "total_ms": 1478.640285,
+      "done_at_ms": 3829.415323,
+      "analyse_ms": 1.20173
+    }
+  ]
+}
