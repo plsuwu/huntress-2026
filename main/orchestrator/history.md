@@ -298,3 +298,20 @@ here after every release night.
   continued). **13 of 20 routes #1**, 2 at #2 (d26 mobile TT, d27 metadata TT), 4 at #3 (d26 warmups TT, d26 metadata
   TT, both binary masteries), 1 at #4 (d26 script mastery 2971 vs 2533). Binary TTs went #1 (d26 1648, d27 2652).
   Jumpbox 13 GB free after.
+
+## 2026-10-28: Day 28 release night
+
+- **Rush:** an earlier `rush.py all` (~22:40) had launched the agents, but the `huntress` tmux server and every lane pane
+  exited at 22:44:29; nothing was running at 22:50. Relaunched `rush.py all` at 22:50:48 (prep was a no-op, worktrees
+  already on `day28/*`), with the driver output tee'd to `runs-d28/rush/driver.log`. Released 23:00:01; every lane had its
+  routes within ~4.3 s. Web-exploitation days 24-25 listed; ignored per policy.
+  **Lesson:** before 22:55, check that `tmux -L huntress ls` still shows the `rush` session, not just that `runs-dNN/rush/`
+  exists.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - mobile 23:01:21 `protocol-reconstruction` (v1 packet codec, day 8 v2 in mastery): first pass COMPLETE; notes only.
+  - script 23:02:21 `terraform-cloud-timeline` (terraform_hcl polyglot): first pass COMPLETE; notes only.
+  - warmups 23:03:17 `back-in-sixteen` (reversed hex): small `warmups.rs` change.
+  - metadata 23:03:55 `where-it-all-began` (GPT/MBR disk images, partition start-LBA sequence): new `formats/disk.rs`.
+  - binary 23:09:59 `family-clustering` (new fields on old days, multi-word tags): `binary_re.rs` change; binary
+    replay 11.8 -> 16.0 s with the 3 new cases.
+- All five merged by ~23:11; 86 tests, replay clean; GM shows all 15 routes CORRECT. Not yet deployed.

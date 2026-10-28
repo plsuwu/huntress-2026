@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-28-protocol-reconstruction/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "750691c5-40a0-4a5f-862d-ce821ee63f94",
+  "started_at": "2026-10-28T13:00:16.334Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1359.131205,
+  "start_ttfb_ms": 1357.402864,
+  "clock": {
+    "start_sent": "2026-10-28T13:00:15.205Z",
+    "start_received": "2026-10-28T13:00:16.564Z",
+    "start_date_header": "2026-10-28T13:00:16.000Z",
+    "last_delivery": "2026-10-28T13:00:18.717Z",
+    "submit_sent": "2026-10-28T13:00:18.717Z",
+    "submit_received": "2026-10-28T13:00:20.556Z",
+    "submit_date_header": "2026-10-28T13:00:20.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "protocol_reconstruction_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1888.226319,
+      "total_ms": 2152.366919,
+      "done_at_ms": 3511.790789,
+      "analyse_ms": 0.349285
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-28-terraform-cloud-timeline",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a5cce82b-bdad-4675-8572-5ae4451a229b",
+  "started_at": "2026-10-28T13:00:07.508Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1187.5842910000001,
+  "start_ttfb_ms": 1177.565941,
+  "clock": {
+    "start_sent": "2026-10-28T13:00:06.668Z",
+    "start_received": "2026-10-28T13:00:07.855Z",
+    "start_date_header": "2026-10-28T13:00:07.000Z",
+    "last_delivery": "2026-10-28T13:00:09.877Z",
+    "submit_sent": "2026-10-28T13:00:09.886Z",
+    "submit_received": "2026-10-28T13:00:13.431Z",
+    "submit_date_header": "2026-10-28T13:00:12.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 154511,
+      "wire": 154511,
+      "ttfb_ms": 1751.014944,
+      "total_ms": 1999.920705,
+      "done_at_ms": 3187.7025310000004,
+      "analyse_ms": 22.090746000000003
+    }
+  ]
+}

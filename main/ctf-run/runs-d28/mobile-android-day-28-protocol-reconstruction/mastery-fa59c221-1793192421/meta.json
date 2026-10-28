@@ -1,0 +1,142 @@
+{
+  "challenge": "mobile-android-day-28-protocol-reconstruction/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "fa59c221-2334-439b-8164-af8ace45866e",
+  "started_at": "2026-10-28T13:00:22.982Z",
+  "deadline": null,
+  "shape": "artifacts[12]+downloads[12]",
+  "start_ms": 1585.4612889999999,
+  "start_ttfb_ms": 1585.157106,
+  "clock": {
+    "start_sent": "2026-10-28T13:00:21.619Z",
+    "start_received": "2026-10-28T13:00:23.204Z",
+    "start_date_header": "2026-10-28T13:00:23.000Z",
+    "last_delivery": "2026-10-28T13:00:25.482Z",
+    "submit_sent": "2026-10-28T13:00:25.482Z",
+    "submit_received": "2026-10-28T13:00:27.184Z",
+    "submit_date_header": "2026-10-28T13:00:27.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 8,
+      "name": "protocol_reconstruction_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1459.435776,
+      "total_ms": 1719.937153,
+      "done_at_ms": 3305.833564,
+      "analyse_ms": 0.340504
+    },
+    {
+      "delivery": 6,
+      "name": "protocol_reconstruction_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1499.092203,
+      "total_ms": 1729.899237,
+      "done_at_ms": 3315.747585,
+      "analyse_ms": 2.249525
+    },
+    {
+      "delivery": 3,
+      "name": "protocol_reconstruction_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1472.230253,
+      "total_ms": 1740.0074869999999,
+      "done_at_ms": 3325.7869969999997,
+      "analyse_ms": 3.1071530000000003
+    },
+    {
+      "delivery": 1,
+      "name": "protocol_reconstruction_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1508.902334,
+      "total_ms": 1740.059021,
+      "done_at_ms": 3325.76085,
+      "analyse_ms": 3.4946420000000002
+    },
+    {
+      "delivery": 11,
+      "name": "protocol_reconstruction_mastery_11.apks",
+      "bytes": 21535,
+      "wire": 21535,
+      "ttfb_ms": 1524.2273850000001,
+      "total_ms": 1740.6091529999999,
+      "done_at_ms": 3326.516214,
+      "analyse_ms": 2.866998
+    },
+    {
+      "delivery": 5,
+      "name": "protocol_reconstruction_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1508.816241,
+      "total_ms": 1747.6698050000002,
+      "done_at_ms": 3333.499817,
+      "analyse_ms": 0.295249
+    },
+    {
+      "delivery": 7,
+      "name": "protocol_reconstruction_mastery_07.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1806.989107,
+      "total_ms": 2221.104174,
+      "done_at_ms": 3806.963901,
+      "analyse_ms": 0.08592899999999999
+    },
+    {
+      "delivery": 9,
+      "name": "protocol_reconstruction_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1627.8586229999999,
+      "total_ms": 2221.4702169999996,
+      "done_at_ms": 3807.36415,
+      "analyse_ms": 0.37791199999999997
+    },
+    {
+      "delivery": 4,
+      "name": "protocol_reconstruction_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1793.010212,
+      "total_ms": 2221.5244979999998,
+      "done_at_ms": 3807.318546,
+      "analyse_ms": 0.7299230000000001
+    },
+    {
+      "delivery": 10,
+      "name": "protocol_reconstruction_mastery_10.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1812.6985229999998,
+      "total_ms": 2236.5589529999997,
+      "done_at_ms": 3822.474317,
+      "analyse_ms": 0.857727
+    },
+    {
+      "delivery": 2,
+      "name": "protocol_reconstruction_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 2015.8486940000003,
+      "total_ms": 2269.028068,
+      "done_at_ms": 3854.767636,
+      "analyse_ms": 0.771864
+    },
+    {
+      "delivery": 12,
+      "name": "protocol_reconstruction_mastery_12.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 2018.8738480000002,
+      "total_ms": 2277.8057679999997,
+      "done_at_ms": 3863.730418,
+      "analyse_ms": 0.08032600000000001
+    }
+  ]
+}

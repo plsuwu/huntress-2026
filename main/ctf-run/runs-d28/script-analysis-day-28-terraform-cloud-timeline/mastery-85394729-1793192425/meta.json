@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-28-terraform-cloud-timeline/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "85394729-0d02-4596-bce6-94c50d76097f",
+  "started_at": "2026-10-28T13:00:26.057Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2110.195647,
+  "start_ttfb_ms": 2063.585412,
+  "clock": {
+    "start_sent": "2026-10-28T13:00:25.117Z",
+    "start_received": "2026-10-28T13:00:27.227Z",
+    "start_date_header": "2026-10-28T13:00:27.000Z",
+    "last_delivery": "2026-10-28T13:00:30.499Z",
+    "submit_sent": "2026-10-28T13:00:30.923Z",
+    "submit_received": "2026-10-28T13:00:34.836Z",
+    "submit_date_header": "2026-10-28T13:00:34.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-28-terraform-cloud-timeline-mastery.zip",
+      "bytes": 2100661,
+      "wire": 2100661,
+      "ttfb_ms": 1508.161517,
+      "total_ms": 3037.237809,
+      "done_at_ms": 5147.530092,
+      "analyse_ms": 235.229037
+    }
+  ]
+}
