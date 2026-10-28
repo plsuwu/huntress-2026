@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-28-family-clustering",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "04a0d079-072b-419e-a52a-4d1e9728b300",
+  "started_at": "2026-10-28T13:00:07.685Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 989.0339369999999,
+  "start_ttfb_ms": 988.505962,
+  "clock": {
+    "start_sent": "2026-10-28T13:04:51.812Z",
+    "start_received": "2026-10-28T13:04:52.801Z",
+    "start_date_header": "2026-10-28T13:04:52.000Z",
+    "last_delivery": "2026-10-28T13:04:57.404Z",
+    "submit_sent": "2026-10-28T13:04:57.405Z",
+    "submit_received": "2026-10-28T13:04:59.230Z",
+    "submit_date_header": "2026-10-28T13:04:59.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35924041,
+      "wire": 35924041,
+      "ttfb_ms": 1251.0508419999999,
+      "total_ms": 4602.712225,
+      "done_at_ms": 5591.974432999999,
+      "analyse_ms": 0.24953799999999998
+    }
+  ]
+}
