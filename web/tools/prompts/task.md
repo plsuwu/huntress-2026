@@ -29,8 +29,8 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
    `recovery_lib.py` does not know, document the method precisely in NOTES.md; the
    coordinator folds new recoverers into the shared library.
 6. Commit your day directory - `git add solver_py_scripts/day-{day:02d}-web-exploitation/{slug} && git commit`, ending the message with the usual Co-Authored-By line.
-7. `touch {state}/done-{short}`, then report in a few lines: what changed, graded findings,
-   anything the coordinator must do.
+7. Report in a few lines: what changed, graded findings, anything the coordinator must do, then
+   stop - the driver marks your challenge done once this turn ends.
 
 Stay on your challenge: routes under `{chal}` only, never any other lane. If you are blocked
 for more than ~10 minutes on one question, record the exact reason in NOTES.md and move on.

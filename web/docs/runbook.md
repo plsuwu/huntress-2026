@@ -30,16 +30,20 @@ Start it at about 22:45. `all` runs three stages:
 1. **prep:** worker dirs `workers/web/<base-id>/` for every challenge in the route cache
    (usually none yet), the shared trees symlinked in (`AGENTS.md`, `docs/`,
    `solver_py_scripts/`, `tools/`), stale `.rush-dNN` markers cleared.
-2. **launch:** tmux `-L huntress-web`, session `web` — a `control` window plus one primed
-   Claude window per pre-warmed slot (`--workers N`, default 3). Each slot's agent reads
-   `tools/prompts/prime.md`, replies "ready" and waits for the release.
+2. **launch:** starts the shared `opencode serve` process (if not already up), then tmux
+   `-L huntress-web`, session `web` — a `control` window plus one `opencode attach` window
+   per pre-warmed slot (`--workers N`, default 3). Each slot's session is primed with
+   `tools/prompts/prime.md` (reads the docs, replies "ready") before its window opens, so
+   the pane shows that exchange already in the transcript.
 3. **watch:** polls `op=list&day=N&lane=web-exploitation` every 1 s from 22:59:50 and
    releases on two consecutive identical polls. At the release: one first-pass thread per
    challenge (pure automation over `solver_py_scripts/recovery_lib.py`, untimed only),
    a brief per challenge at `workers/web/.rush-dNN/brief-<chal>.md`, dispatched to its
-   agent as soon as that challenge's pass ends. Slot i gets challenge i; a day with more
-   challenges than slots gets extra windows on the spot, fewer stands the spares down.
-   Then the stall monitor runs.
+   session as soon as that challenge's pass ends. Slot i gets challenge i; a day with more
+   challenges than slots gets an extra session + window on the spot, fewer stands the
+   spares down (their window is just closed - nothing to tell an idle session). Each
+   dispatch is one blocking `opencode run` call covering the whole challenge; there is no
+   separate stall monitor - see §3.
 
 Watch the driver's log: `tmux attach -t web-driver`. Watch the agents:
 `tmux -L huntress-web attach -t web` (detach with Ctrl-b d).
@@ -51,8 +55,8 @@ Other subcommands:
 | `web_rush.py prep --day N` | Worker dirs + symlinks from the route cache, stale markers cleared |
 | `web_rush.py launch --day N [--workers N]` | The primed tmux session (refuses to run if it already exists) |
 | `web_rush.py watch --day N [--rehearse] [--no-agents]` | Release wait + first pass + briefs (+ dispatch) |
-| `web_rush.py status --day N` | First-pass results, done markers, stalled agents |
-| `web_rush.py takeover --day N --challenges <short>[,...]` | Fresh worker window + brief for a stalled challenge |
+| `web_rush.py status --day N` | First-pass results, agent state (done / timed out / working / not dispatched) |
+| `web_rush.py takeover --day N --challenges <short>[,...]` | Send one more message to a challenge's existing session |
 
 `--rehearse` skips the release wait and dispatches no agents: already-solved routes are
 recognised from GM status with zero starts, which makes it a safe preflight on a released
@@ -60,45 +64,57 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
 
 ## 2. Launcher details that matter
 
-- Workers get `--add-dir` for `docs/`, `solver_py_scripts/` and `tools/` only — never the
-  repo root: the jumpbox SSH key and `.env` live there, and workers never get them as cwd.
-- Workers get `--allowedTools "Bash(python3 <root>/tools/wk.py *)"` so the auto-mode
-  classifier cannot stall a submit (the Day 16 lesson). Everything else runs under
-  `--permission-mode auto`.
-- Workers are pinned to `--model claude-opus-4-8 --effort high` (their cwd carries no
-  settings file to inherit from; `--model` on `web_rush.py` overrides this per-run).
-- The GM token reaches a pane only through `tmux -e` (the session environment), and the
-  worker uses it only through `tools/wk.py`. The driver redacts it from its own error
-  messages.
-- Each pane's settings file has a `Stop` hook (writes `stopped-<chal>`) and a heartbeat
-  (`PostToolUse`/`UserPromptSubmit` write `active-<chal>`). Marker names resolve through
-  `slot-<slot>.chal`, so the prime turn's stops never start a stall clock. After the
-  briefs, an agent that stopped after its brief, shows no activity for 180 s and has no
-  `done-<chal>` marker is escalated to `stalled-<chal>.md` (pane tail + takeover command).
+- One shared `opencode serve` process (started by `launch`/`all`) hosts every session for
+  the day. Its own environment carries `HUNTRESS_GM_TOKEN`/`HUNTRESS_GM_URL`/
+  `WEB_UNTIMED_ONLY=1` - tool execution happens server-side, so every session's Bash tool
+  calls inherit it from there, not from a per-window flag. The driver redacts the token
+  from its own error messages regardless.
+- Workers get `--dir <worker-dir>` (never the repo root: the jumpbox SSH key and `.env`
+  live there). File-tree scoping beyond that is the same symlink trick as before
+  (`AGENTS.md`, `docs/`, `solver_py_scripts/`, `tools/` symlinked into each worker dir) -
+  no `--add-dir`/`--allowedTools` equivalent is needed.
+- No permission flag or config is passed. Confirmed live: plain bash tool calls already run
+  with zero friction under the environment's default policy, and
+  `--dangerously-skip-permissions` is both unneeded and a blanket bypass the auto-mode
+  classifier itself rejects. The guard that matters is still `tools/wk.py`'s own code.
+- Workers track opencode's own configured default model/effort unless `--model`/`--effort`
+  is passed to `web_rush.py` (their cwd carries no project config to override it).
+- **No stall detection.** Each challenge's dispatch is one blocking
+  `opencode run --attach <url> --session <id> "<brief>"` call that covers the whole
+  challenge (every mode, NOTES.md, the commit) - the call returning *is* "done". There is
+  no Stop/PostToolUse hook, no heartbeat, no stalled-`<chal>`.md escalation: confirmed that
+  opencode has no hook mechanism to build one from anyway, and the user judged it not worth
+  keeping. A challenge marked `running` in `status` just means its thread is still blocked
+  on that call - watch its tmux pane if you want to see what it's doing.
 - **Untimed only, everywhere:** the driver's first pass and `wk.py` send only
   `list`/`status`/`start`/`submit` — never `run_for_time`, `retry`, `practice`, `reset` or
   `switch_target`. Plain starts on dual-pool routes are free untimed regular attempts.
 - **Capacity:** a `409 web_target_limit_reached` on start waits (bounded) for a target
   slot; it never disturbs another family's target. An untimed target stops after 30 idle
   minutes, so the hand-off to the worker happens while the first pass's targets are warm.
-- **Takeover:** `web_rush.py takeover` writes a brief (pane tail + GM status per route +
-  worker-dir listing), kills the stalled window and launches a fresh worker whose prompt
-  is the brief. `wk.py begin` is idempotent, so the replacement reconnects to the same
-  attempt — no work is lost.
-- **Relaunch:** `all` kills the previous day's `web` session before relaunching.
+- **Takeover:** `web_rush.py takeover` sends one more message to the challenge's existing
+  session - nothing is lost, since the tmux window is already attached to that same live
+  session (no pane-tail capture, no fresh-window relaunch; `wk.py begin` is idempotent
+  regardless). Attaching tmux and typing into the pane directly works just as well - both
+  are just clients of the same session, and a human can type into a pane even while the
+  driver's own call is still in flight on it.
+- **Relaunch:** `all` kills the previous day's `web` session before relaunching (the
+  `opencode serve` process is left running and reused if it's already up on `OC_PORT`).
 
 ## 3. Watch the challenges
 
 - `python3 tools/web_rush.py status --day N` — one line per challenge: first-pass steps
-  plus agent state (`done` / `STOPPED N s ago` / `working` / `not dispatched`).
+  plus agent state (`done` / `TIMED OUT` / `working` / `not dispatched`).
 - Markers live in `workers/web/.rush-dNN/`: `brief-<chal>.md`, `firstpass-<chal>.json`,
-  `done-<chal>`, `stalled-<chal>.md`, `takeover-<chal>.md`.
-- **Messaging an agent by hand:** press Escape first — an open picker ("Teach auto
-  mode…") eats typed messages, which is why the driver's `send()` presses Escape first.
-  But don't press Escape while the agent runs a long oracle.
-- **Stalled agent:** either message it
-  (`tmux -L huntress-web send-keys -t web:<chal> ...`) or run
-  `python3 tools/web_rush.py takeover --day N --challenges <chal>`.
+  `<chal>.session` (the session id), `running-<chal>`, `done-<chal>`, `timedout-<chal>`.
+- **Messaging an agent by hand:** attach tmux (`tmux -L huntress-web attach -t web`) and
+  type directly into the pane - it's a live `opencode attach` view of the same session the
+  driver talks to, so nothing needs the old Escape-first-picker-dismissal or
+  `send-keys` tricks.
+- **A challenge that looks stuck:** either type into its pane directly, or run
+  `python3 tools/web_rush.py takeover --day N --challenges <chal>` to send a scripted
+  nudge to the same session. There's no stall detector flagging anything automatically -
+  this is purely "status says `working` for longer than seems right, go look."
 - **The worker's loop** (what each pane is doing):
   `python3 tools/wk.py begin <mode>` → `submit <mode>` → `status` / `next`,
   single_solve → time_trial → mastery, serial within the family.

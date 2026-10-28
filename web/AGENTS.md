@@ -112,6 +112,7 @@ Check `flake.nix` for a full list of tooling specific to this environment. Usefu
 Other tools that are globally installed:
 - `curl`
 - `tmux` (the release-night pipeline's only UI - see below)
+- `opencode` (the release-night pipeline's worker agent - see below)
 - `file`
 - `jq`
 - ripgrep (`rg`)

@@ -1,32 +1,44 @@
 #!/usr/bin/env python3
-"""Day-release orchestrator for the web lane: one agent per challenge (Claude Code in tmux) plus an automated first pass.
+"""Day-release orchestrator for the web lane: one opencode agent per challenge (a shared
+opencode server, tmux for human visibility) plus an automated first pass.
 
   web_rush.py all     [--day N] [--rehearse] [--workers N]  prep + launch + watch (start it ~22:45 AEST; see docs/runbook.md)
   web_rush.py prep    [--day N]                             worker dirs + shared-tree symlinks, stale markers cleared
-  web_rush.py launch  [--day N] [--workers N]               tmux session `web` (socket -L huntress-web): primed Claude per slot
+  web_rush.py launch  [--day N] [--workers N]                tmux session `web` (socket -L huntress-web) + the opencode server: primed agent per slot
   web_rush.py watch   [--day N] [--rehearse] [--no-agents]  wait for the release, first pass per challenge, dispatch briefs
-  web_rush.py status  [--day N]                             first-pass results, challenge done-markers, stalled agents
-  web_rush.py takeover --challenges a[,b] [--day N]         coordinator: fresh worker window + brief for a stalled challenge
-Options: --workers N (pre-warmed slots, default 3), --no-agents (watch: first pass + briefs only, no tmux dispatch),
-         --model NAME (worker Claude model, default claude-opus-4-8), --effort LEVEL (worker reasoning effort,
-         default high).
+  web_rush.py status  [--day N]                             first-pass results, challenge done-markers, agent state
+  web_rush.py takeover --challenges a[,b] [--day N]         coordinator: nudge a challenge's existing session
+Options: --workers N (pre-warmed slots, default 3), --no-agents (watch: first pass + briefs only, no dispatch),
+         --model NAME (worker opencode model, default unset - tracks opencode's own configured default),
+         --effort LEVEL (worker reasoning effort / opencode "variant", default unset).
 
 Release: 23:00 Australia/Brisbane; Day N = that date's day of the month. Work items are the day's web-exploitation
 challenges, discovered at release (op=list&day=N&lane=web-exploitation, grouped into base challenges). Pre-warmed slot i
-gets challenge i; more challenges than slots -> extra windows are primed on the spot, fewer -> spare slots stand down.
-The first pass is pure automation, no model: per challenge, single_solve -> time_trial -> mastery, each mode started
-only once its prerequisite is CORRECT, every start a plain untimed one. Each challenge's brief (routes, per-mode results,
-recon evidence, submit feedback, instructions) is written to .rush-dNN/brief-<chal>.md and its agent is told to read it -
-as soon as that challenge's first pass ends, not when all end. The first pass never sends run_for_time/retry/practice/
-reset/switch_target either: the only GM ops are list (route discovery), status, start and submit, and the worker's only
-GM door (tools/wk.py) has no timed code path at all. GM calls are direct - no lock, no proactive pacing (2026-10-24
-decision: solution speed over gating; both this driver and wk.py back off reactively on 429/5xx).
+gets challenge i; more challenges than slots -> extra sessions are created on the spot, fewer -> spare slots stand down
+(their tmux window is just closed - nothing to tell an idle agent). The first pass is pure automation, no model: per
+challenge, single_solve -> time_trial -> mastery, each mode started only once its prerequisite is CORRECT, every start a
+plain untimed one. Each challenge's brief (routes, per-mode results, recon evidence, submit feedback, instructions) is
+written to .rush-dNN/brief-<chal>.md and its agent is told to read it - as soon as that challenge's first pass ends, not
+when all end. The first pass never sends run_for_time/retry/practice/reset/switch_target either: the only GM ops are
+list (route discovery), status, start and submit, and the worker's only GM door (tools/wk.py) has no timed code path at
+all. GM calls are direct - no lock, no proactive pacing (2026-10-24 decision: solution speed over gating; both this
+driver and wk.py back off reactively on 429/5xx).
 Release detection: op=list&day=N&lane=web-exploitation every 1 s from 22:59:50 (the lane-filtered list answers in ~1 s;
-a full all=true list takes 4-10 s - avoid it), released once two consecutive polls agree. After the briefs, stalled agents
-(Stop hook after the brief, no tool activity since, no done marker, 180 s) are escalated to .rush-dNN/stalled-<chal>.md
-for the coordinator, who runs `takeover` (or nudges the agent). `all` kills the previous day's tmux session before
-relaunching. `--rehearse` skips the wait and replays the flow on an already-released day (solved routes are recognised
-from GM status; no agent is dispatched).
+a full all=true list takes 4-10 s - avoid it), released once two consecutive polls agree. `all` kills the previous day's
+tmux session before relaunching. `--rehearse` skips the wait and replays the flow on an already-released day (solved
+routes are recognised from GM status; no agent is dispatched).
+
+Agent architecture (2026-10-28, opencode): one shared `opencode serve` process hosts every session for the day (started
+by `launch`/`all`; its own environment carries HUNTRESS_GM_TOKEN/HUNTRESS_GM_URL/WEB_UNTIMED_ONLY, since tool calls run
+server-side - every session's Bash tool inherits it from there, not from a per-window flag). A tmux window per
+challenge runs `opencode attach <url> --session <id>` purely for human visibility/intervention - the coordinator can
+watch or type directly into the pane. The driver's own turns go over `opencode run --attach <url> --session <id>
+--format json "<message>"`, which blocks until the agent's turn ends: that block IS the "is it done" signal, so there
+is no hook/marker-based stall detection here (opencode has no Stop/PostToolUse hook equivalent anyway, and a shared
+`opencode serve` process runs multiple sessions' turns genuinely in parallel - confirmed live before this was written).
+No permission flag or config is passed either: plain bash tool calls run with zero permission friction under the
+environment's default policy, and `--dangerously-skip-permissions` is both unneeded and a blanket bypass this pipeline
+already rejects on principle (docs/policies.md). The real guards stay where they always lived: inside tools/wk.py.
 Attach: tmux -L huntress-web attach -t web
 """
 
@@ -55,10 +67,14 @@ SESSION = "web"
 LANE = "web-exploitation"
 LANE_PREFIX = "web-exploitation-"
 WORKER_SLOTS = 3
-WORKER_MODEL = "claude-sonnet-5"
-WORKER_EFFORT = "high"
+OC_PORT = 41099                        # fixed, distinct from opencode's own default port
+OC_URL = f"http://127.0.0.1:{OC_PORT}"
+WORKER_MODEL = None                    # unset: opencode's own configured default (openai/gpt-6.1-sol as of writing)
+WORKER_VARIANT = None                  # unset: opencode's own configured default reasoning effort
 NO_AGENTS = False
-STALL_GRACE_S = 180  # an agent waiting on a background recovery also ends its turn with no tool activity
+PRIME_TIMEOUT_S = 300                  # the prime turn is short: read docs, reply "ready", wait
+CHALLENGE_TIMEOUT_S = 60 * 60          # generous ceiling per challenge turn - not a stall detector
+SERVER_UP_WAIT_S = 30
 
 sys.path.insert(0, HERE)
 import wk  # noqa: E402  the worker's GM helper: one shared GM-call implementation
@@ -84,24 +100,16 @@ def token():
 
 def env():
     # WEB_UNTIMED_ONLY=1: wk.py refuses to run without it, and it has no timed/retry/practice
-    # code path at all. The token rides the tmux environment only; it is never sent to a target.
+    # code path at all. This is the opencode server's own environment - every session's Bash
+    # tool calls inherit it from there (tool execution happens server-side), not from a per-pane
+    # flag. The token is never sent to a target.
     return dict(
         os.environ, HUNTRESS_GM_TOKEN=token(), HUNTRESS_GM_URL=API, WEB_UNTIMED_ONLY="1"
     )
 
 
-def envflags():
-    e = env()
-    return sum(
-        (["-e", f"{k}={e[k]}"]
-         for k in ("HUNTRESS_GM_TOKEN", "HUNTRESS_GM_URL", "WEB_UNTIMED_ONLY")),
-        [],
-    )
-
-
 def redact(text):
-    """Never let the GM token reach a log line: the tmux argv carries it (-e), and a failed
-    tmux call's error message would otherwise print the whole command."""
+    """Never let the GM token reach a log line."""
     tok = os.environ.get("HUNTRESS_GM_TOKEN")
     if not tok:
         try:
@@ -114,8 +122,11 @@ def redact(text):
     return text.replace(tok, "<token>") if tok else text
 
 
-def sh(args, cwd=None, check=True, **kw):
-    r = subprocess.run(args, cwd=cwd, text=True, capture_output=True, **kw)
+def sh(args, cwd=None, check=True, timeout=None, **kw):
+    try:
+        r = subprocess.run(args, cwd=cwd, text=True, capture_output=True, timeout=timeout, **kw)
+    except subprocess.TimeoutExpired:
+        return None
     if check and r.returncode != 0:
         raise RuntimeError(f"{redact(' '.join(args))}: {redact(r.stderr.strip()[-400:])}")
     return r
@@ -238,7 +249,8 @@ def sleep_until(t):
 def ensure_worker_dir(day, base, rows):
     """Create workers/web/<base>/ with the read-only shared trees symlinked in and a family.json
     (wk.py's registry: the challenge id comes from here, never from the command line). The repo
-    root is never a worker's cwd or an --add-dir: it holds the jumpbox SSH key and .env."""
+    root is never a worker's cwd or an --add-dir equivalent: it holds the jumpbox SSH key and
+    .env."""
     wt = os.path.join(WORKERS, base)
     os.makedirs(wt, exist_ok=True)
     for rel in SHARED_TREES:
@@ -259,7 +271,7 @@ def prep(day):
     os.makedirs(WORKERS, exist_ok=True)
     sd = state_dir(day)
     if os.path.isdir(sd):
-        shutil.rmtree(sd)  # a same-day re-run must not inherit stale markers
+        shutil.rmtree(sd)  # a same-day re-run must not inherit stale markers/sessions
         os.makedirs(sd)
     for name in os.listdir(WORKERS):
         if re.fullmatch(r"\.slot-\d+", name):
@@ -271,6 +283,98 @@ def prep(day):
         made += 1
     if made:
         log(f"{made} worker dir(s) prepared from the route cache")
+
+
+# ---------------------------------------------------------------- opencode server + sessions
+
+
+def ensure_server(day):
+    """Start the shared opencode server if it isn't already answering. Its own environment is
+    what every session's Bash tool calls inherit - tool execution happens server-side - so the
+    GM token / WEB_UNTIMED_ONLY ride here once, rather than per tmux window."""
+    try:
+        urllib.request.urlopen(OC_URL + "/doc", timeout=2)
+        return
+    except Exception:  # noqa: BLE001
+        pass
+    logf = open(os.path.join(state_dir(day), "opencode-serve.log"), "a")
+    subprocess.Popen(
+        ["opencode", "serve", "--port", str(OC_PORT), "--hostname", "127.0.0.1"],
+        cwd=ROOT, env=env(), stdout=logf, stderr=subprocess.STDOUT, start_new_session=True,
+    )
+    deadline = time.time() + SERVER_UP_WAIT_S
+    while time.time() < deadline:
+        try:
+            urllib.request.urlopen(OC_URL + "/doc", timeout=2)
+            log(f"opencode serve up on {OC_URL}")
+            return
+        except Exception:  # noqa: BLE001
+            time.sleep(0.5)
+    sys.exit(f"opencode serve did not come up on {OC_URL} within {SERVER_UP_WAIT_S}s - "
+             f"see {os.path.join(state_dir(day), 'opencode-serve.log')}")
+
+
+def oc_cmd(session, cwd, message, extra=()):
+    args = ["opencode", "run", "--attach", OC_URL, "--format", "json"]
+    if session:
+        args += ["--session", session]
+    if cwd:
+        args += ["--dir", str(cwd)]
+    if WORKER_MODEL:
+        args += ["--model", WORKER_MODEL]
+    if WORKER_VARIANT:
+        args += ["--variant", WORKER_VARIANT]
+    args += list(extra)
+    args.append(message)
+    return args
+
+
+def oc_parse(raw):
+    """Parse `opencode run --format json`'s one-JSON-object-per-line stream. Returns
+    (session_id, events) - the session id comes off the first event that carries one."""
+    events, sid = [], None
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        events.append(ev)
+        if sid is None and isinstance(ev, dict) and ev.get("sessionID"):
+            sid = ev["sessionID"]
+    return sid, events
+
+
+def oc_run(session, message, cwd, timeout_s=CHALLENGE_TIMEOUT_S, extra=()):
+    """Send one turn to an existing session (or, with session=None plus a --title in extra,
+    create a fresh one); blocks until the agent's turn ends - that block is the only "is it done"
+    signal this pipeline needs. Returns (session_id, events); raises RuntimeError on a non-zero
+    exit or a timeout."""
+    r = sh(oc_cmd(session, cwd, message, extra), check=False, timeout=timeout_s)
+    if r is None:
+        raise RuntimeError(f"opencode run timed out after {timeout_s}s (session {session})")
+    if r.returncode != 0:
+        raise RuntimeError(f"opencode run exited {r.returncode}: "
+                            f"{redact(r.stderr.strip()[-400:])}")
+    sid, events = oc_parse(r.stdout)
+    return (sid or session), events
+
+
+def oc_new_session(title, message, cwd, timeout_s=PRIME_TIMEOUT_S):
+    sid, events = oc_run(None, message, cwd, timeout_s, extra=("--title", title))
+    if not sid:
+        raise RuntimeError(f"opencode run did not report a sessionID for title {title!r}")
+    return sid, events
+
+
+def attach_window(window_name, session_id, cwd):
+    """Open a tmux window that just shows (and lets a human type into) the session's live TUI -
+    the human-visibility half of the split; the driver's own turns go over oc_run, never
+    tmux send-keys."""
+    cmd = shlex.join(["opencode", "attach", OC_URL, "--session", session_id])
+    sh(TMUX + ["new-window", "-t", SESSION, "-n", window_name, "-c", cwd, cmd])
 
 
 # ---------------------------------------------------------------- launch
@@ -300,110 +404,39 @@ def prime_prompt(day, slot, n, wt):
     return tpl.format(i=slot, n=n, day=day, wt=wt)
 
 
-def agent_settings(sd, slot):
-    """Hooks that let the watcher see a worker stop: Stop touches stopped-<chal>; every tool call
-    and prompt touches active-<chal> (heartbeat). The marker name resolves through slot-<slot>.chal,
-    which holds "slot-<slot>" until the release assignment rewrites it with the challenge's short
-    name - so the prime turn's stops can never start a stall clock."""
-    chal = os.path.join(sd, f"slot-{slot}.chal")
-
-    def touch(kind):
-        return {
-            "type": "command",
-            "command": (f"touch {shlex.quote(os.path.join(sd, kind + '-'))}"
-                        f'"$(cat {shlex.quote(chal)} 2>/dev/null || echo slot-{slot})"'),
-        }
-
-    return {
-        "hooks": {
-            "Stop": [{"hooks": [touch("stopped")]}],
-            "PostToolUse": [{"matcher": "*", "hooks": [touch("active")]}],
-            "UserPromptSubmit": [{"hooks": [touch("active")]}],
-        }
-    }
-
-
-def agent_settings_direct(sd, name):
-    """The same hooks for a window whose challenge is already known (extra release windows,
-    takeover): the marker name is baked in."""
-
-    def touch(kind):
-        return {
-            "type": "command",
-            "command": f"touch {shlex.quote(os.path.join(sd, f'{kind}-{name}'))}",
-        }
-
-    return {
-        "hooks": {
-            "Stop": [{"hooks": [touch("stopped")]}],
-            "PostToolUse": [{"matcher": "*", "hooks": [touch("active")]}],
-            "UserPromptSubmit": [{"hooks": [touch("active")]}],
-        }
-    }
-
-
-def launcher_script(day, name, prompt_file, settings_file):
-    allow = f'"Bash(python3 {os.path.join(ROOT, "tools", "wk.py")} *)"'
-    adddir = "--add-dir " + " ".join(f'"{p}"' for p in (os.path.join(ROOT, "docs"),
-                                         os.path.join(ROOT, "solver_py_scripts"),
-                                         os.path.join(ROOT, "tools")))
-    return (
-        "#!/bin/sh\n"
-        # --add-dir: docs, the shared solver tree and tools/ - never the repo root (that holds
-        # the jumpbox SSH key and .env). Model/effort pinned here: the worker's cwd carries no
-        # settings file, so it would otherwise inherit whatever ~/.claude/settings.json says.
-        # --add-dir and --allowedTools are variadic: -n must follow them so the prompt stays
-        # positional. The wk.py rule covers the worker's only GM path so the auto-mode
-        # classifier cannot stall a submit (the Day 16 lesson).
-        f"exec claude --model {WORKER_MODEL} --effort {WORKER_EFFORT} --permission-mode auto {adddir} "
-        f"--allowedTools {allow} --settings {shlex.quote(settings_file)} "
-        f'-n "web-d{day:02d}-{name}" "$(cat {shlex.quote(prompt_file)})"\n'
-    )
-
-
 def launch(day, n_workers=WORKER_SLOTS):
     have = sh(TMUX + ["has-session", "-t", SESSION], check=False).returncode == 0
     if have:
         log("tmux session already exists - not relaunching "
             "(tmux -L huntress-web kill-session -t web to reset)")
         return
+    ensure_server(day)
     sd = state_dir(day)
-    sh(TMUX + ["new-session", "-d", "-s", SESSION, "-n", "control", "-c", WORKERS]
-       + envflags())
-    for slot in range(1, n_workers + 1):
+    sh(TMUX + ["new-session", "-d", "-s", SESSION, "-n", "control", "-c", WORKERS])
+
+    primed = {}
+
+    def prime_slot(slot):
         cwd = ensure_slot_dir(slot)
-        with open(os.path.join(sd, f"slot-{slot}.chal"), "w") as f:
-            f.write(f"slot-{slot}\n")  # pre-release marker name; the assignment rewrites it
-        prompt_file = os.path.join(sd, f"prime-{slot}.md")
-        with open(prompt_file, "w") as f:
-            f.write(prime_prompt(day, slot, n_workers, cwd))
-        settings_file = os.path.join(sd, f"settings-{slot}.json")
-        with open(settings_file, "w") as f:
-            json.dump(agent_settings(sd, slot), f, indent=1)
-        launcher = os.path.join(sd, f"launch-{slot}.sh")
-        with open(launcher, "w") as f:
-            f.write(launcher_script(day, f"slot-{slot}", prompt_file, settings_file))
-        os.chmod(launcher, 0o755)
-        sh(TMUX + ["new-window", "-t", SESSION, "-n", f"slot-{slot}", "-c", cwd]
-           + envflags() + [launcher])
-        log(f"slot {slot}: worker launched (window {SESSION}:slot-{slot}, cwd {cwd})")
+        try:
+            sid, _ = oc_new_session(f"web-d{day:02d}-slot-{slot}",
+                                    prime_prompt(day, slot, n_workers, cwd), cwd,
+                                    timeout_s=PRIME_TIMEOUT_S)
+            primed[slot] = (sid, cwd)
+        except Exception as e:  # noqa: BLE001  one slot's failure must not drop the others
+            log(f"slot {slot}: prime failed ({e!r})")
 
-
-def send(window, text):
-    # Claude Code can leave a picker open after the prime turn ("Teach auto mode about your
-    # environment?" - seen in the main pipeline's Day 17 smoke test). Typed text would answer it
-    # and Enter confirms, so the brief is lost. Dismiss only an open picker: Escape at a busy
-    # agent would interrupt it.
-    for _ in range(3):
-        pane = sh(TMUX + ["capture-pane", "-p", "-t", f"{SESSION}:{window}"],
-                  check=False).stdout
-        if "Esc to cancel" not in "\n".join(pane.rstrip().splitlines()[-12:]):
-            break
-        sh(TMUX + ["send-keys", "-t", f"{SESSION}:{window}", "Escape"])
-        time.sleep(0.5)
-    sh(TMUX + ["send-keys", "-t", f"{SESSION}:{window}", "-l", text])
-    time.sleep(0.3)
-    sh(TMUX + ["send-keys", "-t", f"{SESSION}:{window}", "Enter"])
+    threads = [threading.Thread(target=prime_slot, args=(slot,))
+               for slot in range(1, n_workers + 1)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    for slot, (sid, cwd) in sorted(primed.items()):
+        with open(os.path.join(sd, f"slot-{slot}.session"), "w") as f:
+            f.write(sid + "\n")
+        attach_window(f"slot-{slot}", sid, cwd)
+        log(f"slot {slot}: primed (session {sid}, window {SESSION}:slot-{slot})")
 
 
 # ---------------------------------------------------------------- first pass
@@ -463,7 +496,7 @@ def begin_route(token_, route, mode, wt, wait_s=300):
 
 def recon_target(url, mdir, tid):
     """Cheap recon per target: GET / (root html + headers) and GET /api/clues (clues.json).
-    Seeds the worker even when auto-recovery fails. Target traffic only - never the GM."""
+    Seeds the worker even when recovery fails. Target traffic only - never the GM."""
     slug = re.sub(r"[^a-z0-9]+", "-", str(tid).lower()).strip("-") or "target"
     out = {"target": tid, "url": url}
     base = url.rstrip("/")
@@ -637,7 +670,57 @@ def brief(day, report):
     return path, done
 
 
-# ---------------------------------------------------------------- watch
+# ---------------------------------------------------------------- watch / dispatch
+
+
+def run_turn(sd, short, session_id, message, wt, timeout_s=CHALLENGE_TIMEOUT_S):
+    """Block on one opencode turn for a challenge's session, marking running/done/timedout.
+    This marker trio replaces the old Stop-hook stall detection entirely: "done" means the call
+    returned, nothing more elaborate is tracked."""
+    for marker in (f"done-{short}", f"timedout-{short}"):
+        p = os.path.join(sd, marker)
+        if os.path.exists(p):
+            os.remove(p)
+    open(os.path.join(sd, f"running-{short}"), "w").close()
+    try:
+        oc_run(session_id, message, wt, timeout_s=timeout_s)
+        open(os.path.join(sd, f"done-{short}"), "w").close()
+        log(f"{short}: agent turn finished -> done-{short}")
+    except Exception as e:  # noqa: BLE001
+        open(os.path.join(sd, f"timedout-{short}"), "w").close()
+        log(f"{short}: turn failed/timed out ({e!r}) -> timedout-{short}")
+    finally:
+        try:
+            os.remove(os.path.join(sd, f"running-{short}"))
+        except OSError:
+            pass
+
+
+def dispatch_challenge(day, short, base, wt, brief_path, slot=None):
+    """Point a session (a pre-warmed slot, or a fresh one for an extra challenge) at its
+    challenge brief, then block on the whole challenge in one turn - single_solve through
+    mastery, NOTES.md and the commit all happen inside this one call."""
+    sd = state_dir(day)
+    message = (f"Day {day} is live. Your challenge is `{base}`. Your worker directory is "
+               f"`{wt}` - cd into it and work only there. Read {brief_path} and follow it.")
+    if slot is not None:
+        session_id = open(os.path.join(sd, f"slot-{slot}.session")).read().strip()
+        sh(TMUX + ["rename-window", "-t", f"{SESSION}:slot-{slot}", short], check=False)
+    else:
+        try:
+            session_id, _ = oc_new_session(
+                f"web-d{day:02d}-{short}",
+                "You are about to be assigned a web-exploitation challenge. Reply 'ready' and "
+                "wait for the next message.",
+                wt, timeout_s=60)
+        except Exception as e:  # noqa: BLE001
+            log(f"{short}: could not create a session ({e!r}) - brief is at {brief_path}")
+            return
+        attach_window(short, session_id, wt)
+    with open(os.path.join(sd, f"{short}.session"), "w") as f:
+        f.write(session_id + "\n")
+    log(f"{short}: dispatched (window {SESSION}:{short}, session {session_id})")
+    run_turn(sd, short, session_id, message, wt, timeout_s=CHALLENGE_TIMEOUT_S)
 
 
 def watch(day, rehearse, n_workers=WORKER_SLOTS):
@@ -660,15 +743,9 @@ def watch(day, rehearse, n_workers=WORKER_SLOTS):
         log("no tmux session - first pass and briefs only")
     if dispatch:
         for slot in range(len(fams) + 1, n_workers + 1):
-            log(f"slot {slot}: standing down (fewer challenges than slots)")
-            try:
-                send(f"slot-{slot}",
-                     f"Day {day} is live, but there are fewer web challenges than workers - "
-                     f"you are not needed. Stand down: reply 'stood down' and stop.")
-                time.sleep(2)
-                sh(TMUX + ["kill-window", "-t", f"{SESSION}:slot-{slot}"], check=False)
-            except Exception as e:  # noqa: BLE001
-                log(f"slot {slot}: stand-down failed ({e!r})")
+            log(f"slot {slot}: standing down (fewer challenges than slots) - "
+                f"closing its window (nothing to tell an idle session)")
+            sh(TMUX + ["kill-window", "-t", f"{SESSION}:slot-{slot}"], check=False)
 
     tok = token()
 
@@ -687,13 +764,8 @@ def watch(day, rehearse, n_workers=WORKER_SLOTS):
             f"in {time.time() - t:.0f} s -> {path}")
         if not dispatch:
             return
-        try:
-            if idx + 1 <= n_workers:
-                assign_window(day, idx + 1, short, base, frows, path)
-            else:
-                launch_extra(day, short, base, frows, path)
-        except Exception as e:  # noqa: BLE001
-            log(f"{short}: could not reach the agent pane ({e!r}) - brief is at {path}")
+        slot = idx + 1 if idx + 1 <= n_workers else None
+        dispatch_challenge(day, short, base, wt, path, slot=slot)
 
     threads = [threading.Thread(target=challenge_job, args=(i, b, r))
                for i, (b, r) in enumerate(fams)]
@@ -702,183 +774,54 @@ def watch(day, rehearse, n_workers=WORKER_SLOTS):
     for t in threads:
         t.join()
     if dispatch:
-        log("first pass finished for every challenge; agents are working - "
-            "`web_rush.py status` to follow")
-        monitor(day)
+        log("every web challenge agent has finished its turn (or timed out) - "
+            "`web_rush.py status` for the summary")
     else:
         log("first pass finished for every challenge; no agents dispatched")
 
 
-def assign_window(day, slot, short, base, rows, brief_path):
-    """Point a pre-warmed slot at its challenge: rewrite the slot's marker name, rename the
-    window, write the sent marker (the stall clock starts here), and send the assignment."""
+# ---------------------------------------------------------------- takeover
+
+
+def takeover(day, challenges):
+    """Send one more message to a challenge's existing session - nothing is lost, since the
+    tmux window is already attached to that same live session. A scripted alternative to just
+    attaching tmux and typing into the pane directly."""
     sd = state_dir(day)
-    wt = os.path.join(WORKERS, base)
-    title = rows[0].get("title") or rows[0].get("name") or base
-    with open(os.path.join(sd, f"slot-{slot}.chal"), "w") as f:
-        f.write(short + "\n")
-    sh(TMUX + ["rename-window", "-t", f"{SESSION}:slot-{slot}", short], check=False)
-    open(os.path.join(sd, f"sent-{short}"), "w").close()
-    send(short, f"Day {day} is live. Your challenge is `{base}` ({title}). Your worker "
-                f"directory is `{wt}` - cd into it and work only there. "
-                f"Read {brief_path} and follow it.")
-    log(f"{short}: assigned to slot {slot} (window {SESSION}:{short})")
+    threads = []
+    for short in challenges:
+        sess_path = os.path.join(sd, f"{short}.session")
+        if not os.path.exists(sess_path):
+            log(f"{short}: no recorded session (was it ever dispatched?) - nothing to take over")
+            continue
+        session_id = open(sess_path).read().strip()
+        base = LANE_PREFIX + short
+        wt = os.path.join(WORKERS, base)
+        if os.path.exists(os.path.join(sd, f"running-{short}")):
+            log(f"{short}: a turn looks like it may still be in flight - attaching tmux "
+                f"(tmux -L huntress-web attach -t web) and typing into the pane is safer than "
+                f"a concurrent nudge. Sending one anyway since takeover was requested.")
+        fp = os.path.join(sd, f"brief-{short}.md")
+        nudge = (f"Checking in on `{base}` in `{wt}`. "
+                 + (f"Re-read {fp} and " if os.path.exists(fp) else "")
+                 + "the mode directories, re-derive any wrong answers from the evidence, and "
+                   "keep going - do not sit idle. When every mode is CORRECT, write NOTES.md "
+                   "and commit your day directory. Report your status in a few lines.")
+        log(f"{short}: takeover nudge -> session {session_id}")
+        t = threading.Thread(target=run_turn,
+                             args=(sd, short, session_id, nudge, wt, CHALLENGE_TIMEOUT_S))
+        t.start()
+        threads.append(t)
+    for t in threads:
+        t.join()
 
 
-def launch_extra(day, short, base, rows, brief_path):
-    """A day released more challenges than pre-warmed slots: prime an extra worker window on the
-    spot (no pre-warm - the assignment prompt carries the challenge id)."""
-    sd = state_dir(day)
-    wt = os.path.join(WORKERS, base)
-    title = rows[0].get("title") or rows[0].get("name") or base
-    settings_file = os.path.join(sd, f"settings-{short}.json")
-    with open(settings_file, "w") as f:
-        json.dump(agent_settings_direct(sd, short), f, indent=1)
-    prompt_file = os.path.join(sd, f"assign-{short}.md")
-    with open(prompt_file, "w") as f:
-        f.write(f"Day {day} is live. Your challenge is `{base}` ({title}). Your worker "
-                f"directory is `{wt}` (your current directory - you are already in it). "
-                f"Read {brief_path} and follow it.\n")
-    launcher = os.path.join(sd, f"launch-{short}.sh")
-    with open(launcher, "w") as f:
-        f.write(launcher_script(day, short, prompt_file, settings_file))
-    os.chmod(launcher, 0o755)
-    sh(TMUX + ["new-window", "-t", SESSION, "-n", short, "-c", wt]
-       + envflags() + [launcher])
-    open(os.path.join(sd, f"sent-{short}"), "w").close()
-    log(f"{short}: extra worker launched (window {SESSION}:{short})")
-
-
-# ---------------------------------------------------------------- stalls / takeover
-
-
-def mtime(path):
-    try:
-        return os.path.getmtime(path)
-    except OSError:
-        return None
-
-
-def stall_since(sd, short, now=None):
-    """Seconds since the challenge's agent stopped without finishing, or None. Stalled = its last
-    Stop came after the brief was sent, no tool call / prompt since (active-<short>), and no done
-    marker."""
-    now = now or time.time()
-    sent, stop, act = (mtime(os.path.join(sd, f"{k}-{short}"))
-                       for k in ("sent", "stopped", "active"))
-    if (os.path.exists(os.path.join(sd, f"done-{short}"))
-            or sent is None or stop is None or stop < sent):
-        return None
-    if act is not None and act > stop:
-        return None
-    return now - stop
+# ---------------------------------------------------------------- status
 
 
 def day_challenges(day):
     """The day's challenge short names, from the route cache (assignment order = sorted base ids)."""
     return [short_name(b) for b, _ in group_challenges(cached_rows(day))]
-
-
-def monitor(day, until_s=90 * 60, every_s=10):
-    """Escalate stalled challenge agents to the coordinator (stalled-<chal>.md + log); never acts
-    on the worker dir itself: a false positive must not race a live agent. The coordinator runs
-    `web_rush.py takeover` (or nudges the agent)."""
-    sd, end, flagged = state_dir(day), time.time() + until_s, {}
-    while time.time() < end:
-        pending = [s for s in day_challenges(day)
-                   if not os.path.exists(os.path.join(sd, f"done-{s}"))]
-        if not pending:
-            log("every web challenge agent is done")
-            return
-        for short in pending:
-            idle = stall_since(sd, short)
-            stop = mtime(os.path.join(sd, f"stopped-{short}"))
-            if idle is not None and idle >= STALL_GRACE_S and flagged.get(short) != stop:
-                flagged[short] = stop
-                pane = sh(TMUX + ["capture-pane", "-p", "-t", f"{SESSION}:{short}",
-                                  "-S", "-60"], check=False).stdout
-                path = os.path.join(sd, f"stalled-{short}.md")
-                with open(path, "w") as f:
-                    f.write(f"# {short}: agent stopped {idle:.0f} s ago without "
-                            f"done-{short}\n\n"
-                            f"Take over: `python3 tools/web_rush.py takeover --day {day} "
-                            f"--challenges {short}` (or message the agent: "
-                            f"tmux -L huntress-web send-keys -t web:{short} ...)\n\n"
-                            "Pane tail:\n```\n"
-                            + "\n".join(pane.rstrip().splitlines()[-40:]) + "\n```\n")
-                log(f"{short}: STALLED (stopped {idle:.0f} s ago, no done marker) -> {path}")
-        time.sleep(every_s)
-    log("monitor window over")
-
-
-def takeover(day, challenges):
-    """Coordinator tool for a stalled challenge: capture the pane tail + GM status per route + a
-    listing of the worker dir, write a takeover brief, kill the stalled window, and launch a fresh
-    worker window whose prompt is the brief. wk.py begin is idempotent (a plain start reconnects),
-    so the replacement resumes the same attempt with no lost work."""
-    sd = state_dir(day)
-    tok = token()
-    for short in challenges:
-        base = LANE_PREFIX + short
-        wt = os.path.join(WORKERS, base)
-        lines = [f"# takeover: day {day} {short} ({wt})", ""]
-        pane = sh(TMUX + ["capture-pane", "-p", "-t", f"{SESSION}:{short}", "-S", "-80"],
-                  check=False).stdout
-        lines += ["## Pane tail", "```", *pane.rstrip().splitlines()[-40:], "```", ""]
-        routes = []
-        fam_path = os.path.join(wt, "family.json")
-        if os.path.exists(fam_path):
-            try:
-                fam = json.load(open(fam_path))
-                routes = [(r.get("mode"), r.get("id"))
-                          for r in fam.get("routes", []) if isinstance(r, dict)]
-            except ValueError:
-                lines.append(f"family.json is not valid JSON - rebuild it with prep")
-        for mode, route in routes:
-            try:
-                raw = wk.route_status(tok, route)
-                extra = ""
-                if isinstance(raw, dict):
-                    bits = [f"{k}={raw[k]}" for k in ("attempt_id",
-                                                      "ranked_attempts_remaining",
-                                                      "regular_variants_remaining")
-                            if k in raw]
-                    extra = f" [{', '.join(bits)}]" if bits else ""
-                lines.append(f"- {mode} `{route}`: gm state={wk.norm_state(raw)}{extra}")
-            except SystemExit as e:
-                lines.append(f"- {mode} `{route}`: wk.py exited {e.code} (see stderr)")
-        dirs = [wt] + [os.path.join(wt, m) for m, _ in routes
-                       if os.path.isdir(os.path.join(wt, m))]
-        listing = sh(["ls", "-la", *dirs], check=False)
-        lines += ["", "## Worker dir", "```",
-                  *((listing.stdout or listing.stderr).splitlines()[-40:]), "```", ""]
-        fp = os.path.join(sd, f"brief-{short}.md")
-        if os.path.exists(fp):
-            lines += [f"First-pass brief: `{fp}` - read it as well.", ""]
-        tpl = open(os.path.join(HERE, "prompts", "task.md")).read()
-        lines.append(tpl.format(chal=base, wt=wt, day=day, slug=bare_slug(base),
-                                state=sd, short=short))
-        path = os.path.join(sd, f"takeover-{short}.md")
-        with open(path, "w") as f:
-            f.write("\n".join(lines) + "\n")
-        log(f"{short}: takeover brief -> {path}")
-        settings_file = os.path.join(sd, f"settings-{short}.json")
-        with open(settings_file, "w") as f:
-            json.dump(agent_settings_direct(sd, short), f, indent=1)
-        launcher = os.path.join(sd, f"launch-{short}.sh")
-        with open(launcher, "w") as f:
-            f.write(launcher_script(day, short, path, settings_file))
-        os.chmod(launcher, 0o755)
-        try:
-            sh(TMUX + ["kill-window", "-t", f"{SESSION}:{short}"], check=False)
-            sh(TMUX + ["new-window", "-t", SESSION, "-n", short, "-c", wt]
-               + envflags() + [launcher])
-            log(f"{short}: fresh worker launched (window {SESSION}:{short})")
-        except Exception as e:  # noqa: BLE001
-            log(f"{short}: could not relaunch a window ({e!r}) - the brief is at {path}")
-
-
-# ---------------------------------------------------------------- status
 
 
 def status(day):
@@ -891,18 +834,14 @@ def status(day):
     for short in shorts:
         fp = os.path.join(sd, f"firstpass-{short}.json")
         steps = json.load(open(fp))["steps"] if os.path.exists(fp) else []
-        done = os.path.exists(os.path.join(sd, f"done-{short}"))
-        idle = stall_since(sd, short)
-        if done:
+        if os.path.exists(os.path.join(sd, f"done-{short}")):
             agent = "done"
-        elif idle is not None:
-            agent = f"STOPPED {idle:.0f} s ago (no done marker)"
-        elif mtime(os.path.join(sd, f"sent-{short}")) is None:
-            agent = "not dispatched"
-        else:
+        elif os.path.exists(os.path.join(sd, f"timedout-{short}")):
+            agent = "TIMED OUT - see driver log, or run takeover"
+        elif os.path.exists(os.path.join(sd, f"running-{short}")):
             agent = "working"
-        if not done and os.path.exists(os.path.join(sd, f"takeover-{short}.md")):
-            agent += " | takeover report written"
+        else:
+            agent = "not dispatched"
         summary = " | ".join("{}={}".format(s.get("mode"), s.get("result"))
                              for s in steps) or "-"
         print(f"{short:32} first pass: {summary}   agent: {agent}")
@@ -920,18 +859,18 @@ def main():
     rehearse = "--rehearse" in a
     n_workers = int(a[a.index("--workers") + 1]) if "--workers" in a else WORKER_SLOTS
     challenges = a[a.index("--challenges") + 1].split(",") if "--challenges" in a else None
-    global NO_AGENTS, WORKER_MODEL, WORKER_EFFORT
+    global NO_AGENTS, WORKER_MODEL, WORKER_VARIANT
     NO_AGENTS = "--no-agents" in a
     if "--model" in a:
         WORKER_MODEL = a[a.index("--model") + 1]
     if "--effort" in a:
-        WORKER_EFFORT = a[a.index("--effort") + 1]
+        WORKER_VARIANT = a[a.index("--effort") + 1]
     if not (1 <= day <= 31):
         sys.exit(f"day {day} outside the event")
     log(f"web_rush {cmd}: day {day}{' (rehearsal)' if rehearse else ''}")
     if cmd == "all" and not rehearse:
-        # The 22:45 run must relaunch fresh agents (new flags/hooks, new day): yesterday's
-        # session would otherwise make launch() a no-op, and prep clears its state dir.
+        # The 22:45 run must relaunch fresh agents (new day): yesterday's session would otherwise
+        # make launch() a no-op, and prep clears its state dir.
         if sh(TMUX + ["kill-session", "-t", SESSION], check=False).returncode == 0:
             log("killed the previous tmux session")
     if cmd in ("prep", "all"):

@@ -228,6 +228,43 @@ grading-lessons.md, decisions to policies.md.
   after confirming all 3 `agent: done` and GM status CORRECT on all 9 routes
   (3 families x 3 modes).
 
+## 2026-10-28: Migrated the agent from Claude Code to opencode
+
+- At the user's request, replaced every Claude-Code-specific piece of the launch/messaging
+  layer in `tools/web_rush.py` with opencode's client/server model: one shared
+  `opencode serve` process hosts every challenge's session for the day; a tmux window per
+  challenge runs `opencode attach <url> --session <id>` purely for human visibility/
+  intervention; the driver's own turns go over `opencode run --attach <url> --session <id>
+  --format json "<message>"`, never `tmux send-keys` (so the Escape-first picker-dismissal
+  hack is gone too). `tools/wk.py` needed no changes - it was always pure Python/GM-client
+  code with nothing Claude-specific in it.
+- Dropped stall detection outright, at the user's direction: opencode has no hook mechanism
+  equivalent to Claude's `Stop`/`PostToolUse`/`UserPromptSubmit` (confirmed against
+  opencode's config schema - no hooks field), and since `opencode run` blocks until the
+  agent's turn ends, "is it done" is just "has the call returned" - no marker-file
+  heartbeat, no `monitor()` polling loop. `takeover` is now just "send one more message to
+  the existing session" (or attach tmux and type into the pane directly - both are clients
+  of the same live session, so nothing needs a fresh window or a pane-tail capture).
+- Verified live before committing to this shape: (1) `opencode serve` + `opencode attach`/
+  `opencode run --attach` really do let a human-visible tmux pane and the driver's
+  programmatic calls share one session concurrently; (2) headless `ask` permissions are
+  unreliable (hang indefinitely under `--attach`, auto-reject after ~15s under a fresh
+  local server) but turned out unnecessary - plain bash tool calls already ran with zero
+  permission friction under the environment's default policy in every test, so no
+  permission flag or config was added (`--dangerously-skip-permissions` was tried and
+  rejected - the auto-mode classifier itself flags it, and it's the kind of blanket bypass
+  `docs/policies.md` already rejected on principle); (3) a single shared `opencode serve`
+  process runs multiple sessions' agent turns genuinely in parallel (a 3-way concurrent
+  batch took ~15.7s, about the same as one call alone at ~16.8s, not 3x) - confirming the
+  new one-shared-server design doesn't cost the pipeline any of its worker concurrency.
+- Model is left unset everywhere (`--model`/`--effort` on `web_rush.py` still override
+  per-run) so workers track opencode's own configured default rather than a hard-coded
+  string - a deliberate choice, since the old pipeline's history above shows the model
+  string needed hand-editing or a CLI override more than once.
+- Also fixed `AGENTS.md`, which had drifted to describe the sibling main pipeline's
+  pre-2026-10-24 layout (`ctf-run`, `orchestrator/`, `utils/solver_py_scripts`,
+  `attack_query.py`, the `previous-solution-research` skill) rather than this repo's own.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.
