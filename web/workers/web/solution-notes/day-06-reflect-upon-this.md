@@ -4,7 +4,7 @@ slug: "reflect-upon-this"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [reflected-xss, header-spoofing, backup-exposure, browser-callback, nonce-disclosure, user-agent-spoofing, referer-spoofing, trust-boundary-bypass, robots-txt, directory-listing, waf-user-agent, target-classification]
 ---
 
 ## single_solve

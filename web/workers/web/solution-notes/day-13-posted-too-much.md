@@ -4,7 +4,7 @@ slug: "posted-too-much"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [mass-assignment, privilege-escalation, backup-exposure, idor, unsafe-binding, privileged-property, parameter-discovery, persistent-state, authorization-oracle, waf-user-agent, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 ## single_solve

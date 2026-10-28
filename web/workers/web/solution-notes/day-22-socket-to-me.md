@@ -4,7 +4,7 @@ slug: "socket-to-me"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [websocket, broken-access-control, backup-exposure, idor, sqli, lfi, path-traversal, websocket-upgrade, unauthorized-subscription, parameter-discovery, event-stream, tls-certificate-trust, traversal-depth-sweep, group-closing, target-classification]
 ---
 
 # web-exploitation-day-22-socket-to-me (release day 27)

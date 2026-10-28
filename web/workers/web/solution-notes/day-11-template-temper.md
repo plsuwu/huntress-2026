@@ -4,7 +4,7 @@ slug: "template-temper"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [ssti, spel-injection, backup-exposure, idor, spring-boot, expression-evaluation, template-variable-disclosure, bytecode-inspection, command-injection, waf-user-agent, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 ## single_solve

@@ -65,10 +65,34 @@ with the 'Hall of Fame' leaderboard.
 This repo is web-exploitation only (see `README.md`), so previous solutions are always Python.
 Before writing a new one, check `workers/web/solution-notes/` for a past challenge that used the
 same bug class - every file is `day-NN-slug.md`, one per curriculum day, with a YAML frontmatter
-`tags` list (short kebab-case bug-class/technique tags). `grep -l <tag> workers/web/solution-notes/*.md`
-finds candidates fast; `workers/web/past-solutions/day-NN-slug-*.py` holds the matching scripts,
-kept verbatim. Also check `docs/web-worker-lessons.md` for the accumulated curriculum knowledge
-(recognized bug-class table, fed by every day's graded evidence).
+`tags` list (short kebab-case bug-class/technique tags). `workers/web/past-solutions/day-NN-slug-*.py`
+holds the matching scripts, kept verbatim. Also check `docs/web-worker-lessons.md` for the accumulated
+curriculum knowledge (recognized bug-class table, fed by every day's graded evidence).
+
+### Searching note frontmatter
+
+From the repository root, use `rg` against the frontmatter's single-line `tags:` lists. Search for
+approaches, challenge mechanics, and workarounds as well as vulnerability classes; read matching
+notes to understand the context and confirm applicability.
+
+Each note corresponds to Python solution material in the sibling `workers/web/past-solutions/`
+directory. A challenge may have multiple solution files: for `day-xx-challenge-name.md`, look for
+`workers/web/past-solutions/day-xx-*.py` and review the relevant files.
+
+```sh
+# Show matching tag lines and filenames for a keyword or partial tag.
+rg -n -g 'day-*.md' '^tags:.*traversal' workers/web/solution-notes/
+
+# List notes with an exact tag, without matching longer tags containing it.
+rg -l -g 'day-*.md' '^tags:.*[\[, ]ssrf[,\]]' workers/web/solution-notes/
+
+# Search for any of several related techniques.
+rg -n -g 'day-*.md' '^tags:.*(header-spoofing|reverse-proxy-trust|loopback-bypass)' workers/web/solution-notes/
+```
+
+The `^tags:` anchor targets tag-list lines, rather than incidental mentions in note bodies. Replace
+the example terms with relevant kebab-case tags or partial terms. Commands use repository-root
+paths; adjust them if running from another directory.
 
 ### Work-in-progress
 
@@ -133,4 +157,3 @@ pipeline), start with `README.md` for the architecture, then `docs/runbook.md` f
 step-by-step runbook and `docs/policies.md` for the standing rules. `docs/history.md` and
 `docs/lane-patterns.md` hold the dated per-day record; `docs/web-worker-lessons.md` holds the
 accumulated grading/bug-class lessons.
-

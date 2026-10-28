@@ -4,7 +4,7 @@ slug: "reset-expectations"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [password-reset, token-account-confusion, backup-exposure, idor, sqli, account-recovery, missing-token-binding, single-use-token, account-discovery, boolean-sqli, group-closing, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 # web-exploitation-day-17-reset-expectations (release day 25) — 🌐 Reset Expectations

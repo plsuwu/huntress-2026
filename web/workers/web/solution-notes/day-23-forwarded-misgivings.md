@@ -4,7 +4,7 @@ slug: "forwarded-misgivings"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [header-spoofing, auth-bypass, backup-exposure, idor, sqli, lfi, path-traversal, reverse-proxy-trust, x-forwarded-for, loopback-bypass, php-include, wrapper-prefix-block, recursive-include-crash, traversal-depth-sweep, group-closing, target-classification]
 ---
 
 # Day 27 - web-exploitation-day-23-forwarded-misgivings ("Forwarded Misgivings")

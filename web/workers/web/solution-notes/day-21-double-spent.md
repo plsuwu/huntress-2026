@@ -4,7 +4,7 @@ slug: "double-spent"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [race-condition, double-spend, backup-exposure, idor, sqli, check-then-act, concurrent-requests, non-atomic-update, one-shot-state, user-directed-reset, boolean-sqli, group-closing, target-classification]
 ---
 
 # web-exploitation-day-21-double-spent (release day 27)

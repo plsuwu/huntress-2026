@@ -4,7 +4,7 @@ slug: "ask-again-later"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [sqli, second-order-sqli, backup-exposure, idor, boolean-sqli, stored-input, delayed-query, parameter-discovery, suppressed-errors, json-input, waf-navigation-block, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 ## single_solve

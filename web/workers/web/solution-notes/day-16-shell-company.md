@@ -4,7 +4,7 @@ slug: "shell-company"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [command-injection, backup-exposure, idor, sqli, shell-command-chaining, command-substitution-blocked, environment-disclosure, arbitrary-file-read, boolean-sqli, group-closing, ownership-bypass, robots-txt, directory-listing, target-classification, target-teardown]
 ---
 
 # web-exploitation-day-16-shell-company (release day 25)

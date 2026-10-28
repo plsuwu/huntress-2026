@@ -4,7 +4,7 @@ slug: "administratively-speaking"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [auth-bypass, trailing-slash-bypass, backup-exposure, broken-access-control, route-authorization, django, route-discovery, randomized-paths, target-classification, classifier-ordering]
 ---
 
 ## Solve record

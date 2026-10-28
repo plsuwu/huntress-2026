@@ -4,7 +4,7 @@ slug: "forged-with-care"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [csrf, backup-exposure, idor, state-changing-get, csrf-token-bypass, samesite-lax, cross-site-navigation, header-spoofing, session-cookies, activity-feed-disclosure, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 ## single_solve

@@ -4,7 +4,7 @@ slug: "stored-xss"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [stored-xss, backup-exposure, moderator-bot, authenticated-browser, same-origin-exfiltration, receipt-channel, sequential-ids, openapi-discovery, route-template-discovery, waf-user-agent, robots-txt, directory-listing, target-classification]
 ---
 
 ## single_solve

@@ -4,7 +4,7 @@ slug: "lfi"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [lfi, path-traversal, backup-exposure, php-include, arbitrary-file-read, traversal-depth-sweep, absolute-path-fallback, endpoint-discovery, randomized-paths, target-classification]
 ---
 
 ## Solve record

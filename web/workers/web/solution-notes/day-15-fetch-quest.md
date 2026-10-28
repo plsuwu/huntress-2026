@@ -4,7 +4,7 @@ slug: "fetch-quest"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [ssrf, backup-exposure, idor, sqli, loopback-access, internal-service, port-discovery, url-parameter, boolean-sqli, group-closing, suppressed-errors, ownership-bypass, robots-txt, directory-listing, target-classification]
 ---
 
 # Fetch Quest (day-24 web-exploitation, curriculum day 15) — SSRF

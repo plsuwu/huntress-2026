@@ -4,7 +4,7 @@ slug: "resolver-revolt"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [graphql, broken-access-control, idor, backup-exposure, sqli, graphql-introspection, resolver-authorization, field-level-authorization, object-reference-disclosure, boolean-sqli, group-closing, waf-user-agent, robots-txt, directory-listing, target-classification]
 ---
 
 # web-exploitation-day-18-resolver-revolt (release day 25)

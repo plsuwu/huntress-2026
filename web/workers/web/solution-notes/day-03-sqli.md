@@ -4,7 +4,7 @@ slug: "sqli"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [sqli, backup-exposure, boolean-sqli, search-injection, group-closing, comment-filter-bypass, suppressed-errors, form-discovery, randomized-paths, target-classification, provisioning-failure]
 ---
 
 ## Solve record

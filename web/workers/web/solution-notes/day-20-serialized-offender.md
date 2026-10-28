@@ -4,7 +4,7 @@ slug: "serialized-offender"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [unsigned-state-tampering, privilege-escalation, backup-exposure, idor, sqli, client-side-state, base64url, json-state, role-tampering, role-discovery, missing-signature-validation, boolean-sqli, group-closing, target-classification, target-teardown]
 ---
 
 # web-exploitation-day-20-serialized-offender (release day 26)

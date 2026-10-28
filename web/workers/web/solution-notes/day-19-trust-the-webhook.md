@@ -4,7 +4,7 @@ slug: "trust-the-webhook"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [webhook-forgery, auth-bypass, backup-exposure, idor, sqli, unsigned-webhook, missing-signature-validation, parameter-discovery, payload-minimization, json-input, malformed-body-crash, boolean-sqli, group-closing, target-classification]
 ---
 
 ## single_solve

@@ -4,7 +4,7 @@ slug: "the-api-has-opinions"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [broken-access-control, backup-exposure, idor, field-level-authorization, action-authorization, export-bypass, api-inventory, parameter-discovery, ownership-bypass, activity-feed-disclosure, robots-txt, directory-listing, target-classification, target-teardown]
 ---
 
 # web-exploitation-day-14-the-api-has-opinions (release day 24)

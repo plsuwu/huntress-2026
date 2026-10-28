@@ -4,7 +4,7 @@ slug: "backup-exposure"
 lane: web-exploitation
 modes: [single_solve, time_trial, mastery]
 has_solve_py: [single_solve, time_trial, mastery]
-tags: []  # TODO: fill in descriptive kebab-case bug-class/technique tags, e.g. [reflected-xss, idor]
+tags: [backup-exposure, directory-listing, robots-txt, html-comments, information-disclosure, config-exposure, randomized-paths, target-classification, provisioning-failure]
 ---
 
 ## Solve record
