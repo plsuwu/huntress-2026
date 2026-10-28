@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, zip};
+use crate::formats::{apk, audio, cfb, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -604,6 +604,60 @@ fn pcap_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-disk-<field>` -> a raw disk image (MBR/GPT) field. d28 graded `partition-start-lba-sequence`: the GPT
+/// entries' starting LBAs in table order as a JSON array of integers. Other fields are unverified guesses; an
+/// unknown field fails with a disk facts dump.
+fn disk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-disk-")?;
+    let want = &key[i + 6..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("disk-").unwrap_or(want);
+    let Some(d) = disk::Disk::parse(b) else { return Some(Err(format!("no MBR/GPT; {}", facts("disk", b)))) };
+    let ints = |f: &dyn Fn(&disk::Partition) -> u64| Value::Arr(d.partitions.iter().map(|p| Value::Num(f(p).to_string())).collect()).to_json();
+    let strs = |f: &dyn Fn(&disk::Partition) -> String| compact_json(&d.partitions.iter().map(f).collect::<Vec<_>>());
+    let gpt = |f: &dyn Fn(&disk::GptHeader) -> String| d.gpt.as_ref().or(d.backup.as_ref()).map(f).unwrap_or_else(none);
+    let sec = d.sector as u64;
+    Some(Ok(match want {
+        "partition-start-lba-sequence" | "partition-start-lbas" | "start-lba-sequence" => ints(&|p| p.start_lba),
+        "partition-end-lba-sequence" | "partition-end-lbas" | "end-lba-sequence" | "partition-last-lba-sequence" => ints(&|p| p.end_lba),
+        "partition-sector-count-sequence" | "partition-size-sectors-sequence" | "partition-length-sequence" => ints(&|p| p.sectors()),
+        "partition-size-bytes-sequence" | "partition-byte-size-sequence" => ints(&|p| p.sectors() * sec),
+        "partition-start-offset-sequence" | "partition-offset-sequence" | "partition-start-byte-offset-sequence" | "partition-byte-offset-sequence" => ints(&|p| p.start_lba * sec),
+        "partition-type-guid-sequence" | "partition-type-sequence" => strs(&|p| p.kind.clone()),
+        "partition-guid-sequence" | "partition-unique-guid-sequence" => strs(&|p| p.guid.clone().unwrap_or_else(none)),
+        "partition-name-sequence" | "partition-names" | "partition-label-sequence" => strs(&|p| p.name.clone()),
+        "partition-count" => d.partitions.len().to_string(),
+        "partition-scheme" | "partition-table" | "partition-table-type" | "scheme" => d.scheme().into(),
+        "sector-size" | "logical-sector-size" => d.sector.to_string(),
+        "disk-guid" | "guid" => gpt(&|h| h.disk_guid.clone()),
+        "first-usable-lba" => gpt(&|h| h.first_usable.to_string()),
+        "last-usable-lba" => gpt(&|h| h.last_usable.to_string()),
+        "backup-header-lba" | "alternate-lba" | "backup-lba" => gpt(&|h| h.backup_lba.to_string()),
+        "partition-entry-count" | "entry-count" => gpt(&|h| h.entry_count.to_string()),
+        "header-crc-valid" | "gpt-header-crc-valid" => d.gpt.as_ref().map(|h| h.header_crc_ok.to_string()).unwrap_or_else(none),
+        "mbr-disk-signature" => format!("0x{:08x}", d.mbr_disk_signature),
+        _ => return Some(Err(format!("unknown disk field {want:?}; {}", disk_facts(&d)))),
+    }))
+}
+
+fn disk_facts(d: &disk::Disk) -> String {
+    let pk = |v: &[disk::Partition]| v.iter().map(|p| format!("#{} {}..{} {} {:?} {:?}", p.index, p.start_lba, p.end_lba, p.kind, p.guid, p.name)).collect::<Vec<_>>().join(", ");
+    format!(
+        "disk {} B sector {} scheme {} mbr sig {} [{}] gpt {:?} [{}] backup {:?} [{}]",
+        d.len,
+        d.sector,
+        d.scheme(),
+        d.mbr_signature,
+        pk(&d.mbr),
+        d.gpt,
+        pk(&d.partitions),
+        d.backup,
+        pk(&d.backup_partitions)
+    )
+}
+
 fn pcap_facts(c: &pcap::Capture, b: &[u8]) -> String {
     let pk: Vec<String> = c
         .packets
@@ -874,6 +928,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(c) = pcap::Capture::parse(b) {
         f.push(pcap_facts(&c, b));
     }
+    if let Some(d) = disk::Disk::parse(b) {
+        f.push(disk_facts(&d));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -984,6 +1041,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = pcap_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = disk_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {

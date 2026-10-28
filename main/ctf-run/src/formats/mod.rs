@@ -6,6 +6,7 @@ pub mod bytes;
 pub mod cfb;
 pub mod dalvik;
 pub mod dex;
+pub mod disk;
 pub mod dotnet;
 pub mod elf;
 pub mod email;
