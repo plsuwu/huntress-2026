@@ -315,3 +315,16 @@ here after every release night.
   - binary 23:09:59 `family-clustering` (new fields on old days, multi-word tags): `binary_re.rs` change; binary
     replay 11.8 -> 16.0 s with the 3 new cases.
 - All five merged by ~23:11; 86 tests, replay clean; GM shows all 15 routes CORRECT. Not yet deployed.
+
+## 2026-10-28: Day 27-28 ranked pass after the Day 28 deploy (user-approved)
+
+- **Prep:** deployed `bfb01cc7` (static); jumpbox 13 GB free, token 200. Survey `survey-d27-28.json`,
+  `plan-d27-28.json`: 20 routes, up to 43 runs, warmups/mobile/metadata first. Ran 23:32-~23:50 AEST.
+- **Result:** 35 runs, 34 CORRECT, 1 expired (d28 script TT run 3). **13 of 20 routes #1** (d28: warmups mastery 729,
+  mobile mastery 1201, metadata mastery 1280 + TT 487, binary TT 1900; every d27 #1 held), d27 metadata TT #2,
+  #3 on d28 warmups TT (552 vs 327), d28 script mastery (4015 vs 3111, flat across 3 runs: CPU-side) and d27 binary
+  mastery (9814 vs 8907), d28 script TT #4 (935 vs 760), d28 mobile TT #5 (503 vs 365), d28 binary mastery #6.
+- **GM submit stalls (~23:40-23:47):** the expiry was server-side: submit sent 2 s after start, 48 s before the
+  deadline, answered 50.7 s later. d28 binary mastery run 1 was ready to submit in 7.5 s but the submit
+  round trip took 57.9 s on run 1 (untimed earlier that night: 4.3 s); runs 2-3 were similarly slow (62.3/31.4 s). Starts also took 2-3.8 s.
+  Elapsed includes grading, so nothing on our side helps; re-roll d28 binary mastery (125 left) at a quiet hour.
