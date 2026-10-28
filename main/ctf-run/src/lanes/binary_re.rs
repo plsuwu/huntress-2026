@@ -106,12 +106,34 @@ pub struct Spec {
     pub hcfg_resource_size: Option<usize>,
     /// Jar: parsed `.json` members by path (`crash/trace.json`, d26).
     pub jar_json: BTreeMap<String, Value>,
+    /// ELF e_shnum (section-header entries, index 0 included).
+    pub section_count: Option<usize>,
+    /// PE: nonempty primary COFF symbol names in raw table order (auxiliary records skipped).
+    pub coff_symbols: Vec<String>,
+    /// Nonempty SHT_DYNSYM names (`symbols` holds the SHT_SYMTAB ones).
+    pub dynsym_names: Vec<String>,
+    /// ELF `.text`: 0x70..0x7f bytes plus 0x0f 0x80..0x8f pairs (d17 `conditional_branch_opcode_count`).
+    pub cond_branch_opcodes: Option<usize>,
+    /// Jar: central-directory entries ending `.class`.
+    pub class_count: Option<usize>,
+    /// .NET CLI header (MajorRuntimeVersion, MinorRuntimeVersion).
+    pub cli_runtime: Option<(u16, u16)>,
+    /// Final validated `PK19` overlay's packing keys (k1, k2).
+    pub packing_keys: Option<(u8, u8)>,
+    /// Which `NEEDLES` occur in the file bytes: (as Latin-1, as UTF-16LE).
+    pub needles: BTreeMap<&'static str, (bool, bool)>,
 }
+
+/// Texts the "true exactly when the final bytes contain X" predicates name (Day 28); a predicate naming
+/// anything else is refused, since the bytes are not kept past analysis.
+const NEEDLES: [&str; 5] = ["decoy", "NimString", "NimMain", "FPC", "__gnat"];
 
 /// One delivery: specimens grouped by day (`d01` -> primary specimen + sidecar files).
 pub struct Set {
     /// day -> (primary specimen, sidecar (name, sha256) pairs, every other specimen fully analysed).
     pub days: BTreeMap<String, (Spec, Vec<(String, String)>, Vec<Spec>)>,
+    /// day -> every member's (name, sha256) in central-directory order (`structural_*`, Day 28).
+    pub members: BTreeMap<String, Vec<(String, String)>>,
 }
 
 /// `prefix` followed by a digit (an Itanium-mangled name); stops at the first hit.
@@ -196,6 +218,8 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.section_names = e.sections.iter().map(|x| x.name.clone()).collect();
         s.has_hcfg_section = e.section(".hcfg").is_some();
         s.has_symtab = e.sections.iter().any(|x| x.kind == 2);
+        s.section_count = Some(e.sections.len());
+        s.cond_branch_opcodes = e.section(".text").and_then(|x| e.data(d, x)).map(cond_branch_opcodes);
         let syms = e.symbols(d, 2).unwrap_or_default();
         s.symbols = syms.iter().filter(|x| !x.name.is_empty()).map(|x| x.name.clone()).collect();
         for x in syms.iter().filter(|x| x.info & 0xf == 1 && !x.name.is_empty() && x.size > 0 && x.size <= 4096) {
@@ -216,6 +240,7 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
             }
         }
         let dynsyms = e.symbols(d, 11).unwrap_or_default();
+        s.dynsym_names = dynsyms.iter().filter(|x| !x.name.is_empty()).map(|x| x.name.clone()).collect();
         s.rust_mangled = syms.iter().chain(&dynsyms).any(|x| is_rust_mangled(&x.name));
         s.go_runtime = e.sections.iter().any(|x| x.name == ".gopclntab" || x.name == ".go.buildinfo");
         s.disassembly = Some(match syms.iter().find(|x| x.name == "recover_code") {
@@ -233,6 +258,10 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.section_names = p.sections.iter().map(|x| x.name.clone()).collect();
         s.has_hcfg_section = p.sections.iter().any(|x| x.name == ".hcfg");
         s.is_dotnet = p.is_dotnet();
+        s.section_count = Some(p.sections.len());
+        s.coff_symbols = coff_symbols(d, p.pe_off);
+        // IMAGE_COR20_HEADER: cb u32, MajorRuntimeVersion u16 @+4, MinorRuntimeVersion u16 @+6.
+        s.cli_runtime = p.dirs.get(14).filter(|(rva, _)| *rva != 0).and_then(|(rva, _)| p.rva_to_offset(*rva)).and_then(|o| Some((bytes::u16le(d, o + 4)?, bytes::u16le(d, o + 6)?)));
         s.go_runtime = p.sections.iter().any(|x| x.name == ".gopclntab" || x.name == ".go.buildinfo");
     } else if let Some(m) = macho::parse(d) {
         s.container = Some(Container::MachO);
@@ -252,6 +281,7 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
             m.sort();
             m.dedup();
             s.zip_methods = m;
+            s.class_count = Some(z.entries.iter().filter(|e| e.name.ends_with(".class")).count());
             s.coroutine_runtime = z.files().any(|e| e.name.starts_with("kotlin/coroutines/") || e.name.starts_with("kotlinx/coroutines/"));
             s.main_class = jar_main_class(&z);
             for e in z.files().filter(|e| e.name.ends_with(".json") && e.usize <= 1 << 20) {
@@ -282,10 +312,16 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.mangled_names = scan_mangled(d);
     }
     lap("cpp");
+    for n in NEEDLES {
+        let wide: Vec<u8> = n.bytes().flat_map(|b| [b, 0]).collect();
+        s.needles.insert(n, (bytes::find(d, n.as_bytes()).is_some(), bytes::find(d, &wide).is_some()));
+    }
+    lap("needles");
     // A packed (d19) or resource (d20) overlay carries the config: the HCFG record at offset 0 of the decoded bytes, ahead of any raw hit in the stub.
     let packed = (s.container != Some(Container::Jar)).then(|| overlay::last(d)).flatten();
     s.overlay = packed.as_ref().map(|o| (o.offset, d.len() - o.offset));
     s.hcfg_resource_size = packed.as_ref().and_then(|o| o.resource_size);
+    s.packing_keys = packed.as_ref().filter(|o| o.resource_size.is_none() && o.magic.starts_with("PK")).map(|o| (o.k1, o.k2));
     s.hcfg = if let Some(o) = &packed {
         hcfg::at(&o.unpacked, 0).map(|mut h| {
             h.source = "overlay";
@@ -304,6 +340,43 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
     }
     lap("hcfg");
     s
+}
+
+/// Primary COFF symbol names (long names via the string table after the symbols), auxiliary records skipped.
+fn coff_symbols(d: &[u8], pe_off: usize) -> Vec<String> {
+    let (Some(ptr), Some(n)) = (bytes::u32le(d, pe_off + 12), bytes::u32le(d, pe_off + 16)) else { return Vec::new() };
+    let (ptr, n) = (ptr as usize, n as usize);
+    let Some(strtab) = n.checked_mul(18).and_then(|x| x.checked_add(ptr)).filter(|&t| ptr != 0 && t <= d.len()) else { return Vec::new() };
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i < n {
+        let e = ptr + i * 18;
+        let name = if bytes::u32le(d, e) == Some(0) {
+            bytes::u32le(d, e + 4).and_then(|o| bytes::cstr(d, strtab + o as usize))
+        } else {
+            d.get(e..e + 8).map(|b| &b[..b.iter().position(|&c| c == 0).unwrap_or(8)])
+        };
+        if let Some(b) = name.filter(|b| !b.is_empty()) {
+            out.push(String::from_utf8_lossy(b).into_owned());
+        }
+        i += 1 + d.get(e + 17).copied().unwrap_or(0) as usize;
+    }
+    out
+}
+
+/// One left-to-right scan: every 0x70..0x7f byte (Jcc rel8) and every 0x0f 0x80..0x8f pair (Jcc rel32).
+fn cond_branch_opcodes(t: &[u8]) -> usize {
+    let (mut i, mut n) = (0, 0);
+    while i < t.len() {
+        if (0x70..=0x7f).contains(&t[i]) {
+            n += 1;
+        } else if t[i] == 0x0f && t.get(i + 1).is_some_and(|b| (0x80..=0x8f).contains(b)) {
+            n += 1;
+            i += 1;
+        }
+        i += 1;
+    }
+    n
 }
 
 /// NUL-terminated `_Z...` strings, kept whole when a COFF grouped-section prefix precedes the name
@@ -509,7 +582,7 @@ fn analyse_set(z: &zip::Zip, mut streamed: HashMap<u64, Streamed>) -> Result<Set
             slot.2.push(spec);
         }
     }
-    let days = days
+    let days: BTreeMap<_, _> = days
         .into_iter()
         .map(|(d, (p, mut side, mut others))| {
             side.sort_by_key(|(n, _)| order.get(n).copied());
@@ -517,7 +590,15 @@ fn analyse_set(z: &zip::Zip, mut streamed: HashMap<u64, Streamed>) -> Result<Set
             (d, (p.expect("primary specimen analysed"), side, others))
         })
         .collect();
-    Ok(Set { days })
+    let members = days
+        .iter()
+        .map(|(d, (p, side, _))| {
+            let mut all: Vec<(String, String)> = std::iter::once((p.name.clone(), p.sha256.clone())).chain(side.iter().cloned()).collect();
+            all.sort_by_key(|(n, _)| order.get(n).copied());
+            (d.clone(), all)
+        })
+        .collect();
+    Ok(Set { days, members })
 }
 
 /// Bytes of streamed member copies waiting or being analysed, across every delivery in flight. They come
@@ -753,6 +834,51 @@ fn trace_frames<'a>(s: &'a Spec, q: &Question) -> Result<Vec<&'a str>, String> {
     frames.iter().map(|f| f.as_str().ok_or_else(|| format!("{}: {path} frame {f:?} is not a string", s.name))).collect()
 }
 
+/// The `/regex/` a question quotes ("names matching /event_(success|decoy|failure)/.").
+fn question_regex(q: &Question) -> Result<crate::rx::Regex, String> {
+    let m = crate::re!(r"(?:^|\s)/(.+?)/(?=[\s.,;:)]|$)").search(&q.question).ok_or_else(|| format!("{}: no /regex/ in the question", q.id))?;
+    crate::rx::Regex::new(m.g(1))
+}
+
+/// Nonempty SHT_SYMTAB names, in table order.
+fn elf_names(s: &Spec) -> Result<&[String], String> {
+    if s.container != Some(Container::Elf) {
+        return Err(format!("{}: symbol-table question for a non-ELF ({:?})", s.name, s.container));
+    }
+    Ok(&s.symbols)
+}
+
+fn sha256_lines<'a>(mut v: Vec<&'a str>) -> String {
+    v.sort_unstable();
+    hex(&sha256(v.join("\n").as_bytes()))
+}
+
+/// "true exactly when the final bytes [interpreted as Latin-1 or UTF-16LE] contain [the case-sensitive text] X [or Y]
+/// [or any nonempty ELF symbol name contains Z]." (Day 28 runtime/decoy predicates). `None`: not this predicate.
+fn bytes_predicate(s: &Spec, q: &Question) -> Result<Option<bool>, String> {
+    let Some((_, rest)) = q.question.split_once("true exactly when the final bytes ") else { return Ok(None) };
+    let rest = rest.split(". ").next().unwrap_or(rest).trim_end().trim_end_matches('.');
+    let (on_bytes, on_syms) = match rest.split_once(" or any nonempty ELF symbol name contains ") {
+        Some((b, y)) => (b, Some(y)),
+        None => (rest, None),
+    };
+    let (wide, b) = match on_bytes.strip_prefix("interpreted as Latin-1 or UTF-16LE ") {
+        Some(b) => (true, b),
+        None => (false, on_bytes),
+    };
+    let b = b.strip_prefix("contain ").ok_or_else(|| format!("{}: unparsed predicate {rest:?}", q.id))?;
+    let b = b.strip_prefix("the case-sensitive text ").unwrap_or(b);
+    let mut hit = false;
+    for n in b.split(" or ") {
+        let (latin1, utf16) = s.needles.get(n).ok_or_else(|| format!("{}: predicate text {n:?} is not one of the scanned NEEDLES", s.name))?;
+        hit |= *latin1 || (wide && *utf16);
+    }
+    for n in on_syms.into_iter().flat_map(|y| y.split(" or ")) {
+        hit |= elf_names(s)?.iter().chain(&s.dynsym_names).any(|x| x.contains(n));
+    }
+    Ok(Some(hit))
+}
+
 fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -> Result<String, String> {
     let need = |o: Option<String>, what: &str| o.ok_or_else(|| format!("{}: no {what}", s.name));
     let h = || s.hcfg.as_ref().ok_or_else(|| format!("{}: no HCFG blob found", s.name));
@@ -847,10 +973,46 @@ fn answer_spec(field: &str, s: &Spec, side: &[(String, String)], q: &Question) -
             trace_frames(s, q)?.iter().all(|f| c.methods.iter().any(|m| m.0 == *f)).to_string()
         }
         "analysis_hcfg_storage" => hcfg_storage(s, h()?)?,
+        "analysis_section_count" => need(s.section_count.map(|n| n.to_string()), "ELF section headers")?,
+        "analysis_conditional_branch_opcode_count" => need(s.cond_branch_opcodes.map(|n| n.to_string()), "ELF .text section")?,
+        "analysis_class_count" => need(s.class_count.map(|n| n.to_string()), "jar central directory")?,
+        "analysis_class_name" => need(s.main_class.as_ref().map(|c| c.this_class.clone()), "Main-Class")?,
+        "analysis_method_names_sha256" => {
+            let c = s.main_class.as_ref().ok_or_else(|| format!("{}: no Main-Class", s.name))?;
+            let mut names: Vec<&str> = c.methods.iter().map(|m| m.0.as_str()).collect();
+            names.sort_unstable();
+            names.dedup();
+            sha256_lines(names)
+        }
+        "analysis_cli_runtime" => need(s.cli_runtime.map(|(a, b)| format!("{a}.{b}")), "CLI header")?,
+        f if f.starts_with("analysis_packing_key_") && f.ends_with("_hex") => {
+            let (k1, k2) = s.packing_keys.ok_or_else(|| format!("{}: no validated PK19 overlay", s.name))?;
+            match &f["analysis_packing_key_".len()..f.len() - "_hex".len()] {
+                "1" => format!("0x{k1:02x}"),
+                "2" => format!("0x{k2:02x}"),
+                n => return Err(format!("{}: no packing key {n:?}", s.name)),
+            }
+        }
+        "analysis_symbol_count" => elf_names(s)?.len().to_string(),
+        f if f.ends_with("_symbol_count") => {
+            let r = question_regex(q)?;
+            elf_names(s)?.iter().filter(|n| r.is_match(n)).count().to_string()
+        }
+        f if f.ends_with("_symbols_sha256") => {
+            let r = question_regex(q)?;
+            sha256_lines(elf_names(s)?.iter().map(String::as_str).filter(|n| r.is_match(n)).collect())
+        }
+        // ELF: SHT_SYMTAB entries; PE: primary COFF symbols (the d02 wording spells out both traversals).
+        f if f.ends_with("_symbol") && q.question.contains("first exact remaining name matching") => {
+            let r = question_regex(q)?;
+            let names = if s.container == Some(Container::Pe) { &s.coff_symbols[..] } else { elf_names(s)? };
+            need(names.iter().find(|n| r.is_match(n)).cloned(), "symbol matching the question's regex")?
+        }
         "analysis_overlay_offset" => need(s.overlay.map(|o| o.0.to_string()), "validated packed overlay")?,
         "analysis_overlay_size" => need(s.overlay.map(|o| o.1.to_string()), "validated packed overlay")?,
         "analysis_hcfg_resource_size" => need(s.hcfg_resource_size.map(|n| n.to_string()), "validated resource overlay")?,
         f if s.objects.contains_key(&f["analysis_".len().min(f.len())..]) => s.objects[&f["analysis_".len()..]].clone(),
+        f if f.starts_with("analysis_has_") && bytes_predicate(s, q)?.is_some() => bytes_predicate(s, q)?.unwrap_or_default().to_string(),
         other => return Err(format!("unknown field {other:?} for {} ({:?})", s.name, s.container)),
     })
 }
@@ -907,15 +1069,67 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
             }
         };
         let (spec, side, others) = set.days.get(day).ok_or_else(|| format!("no {day} specimen in the evidence"))?;
+        // Whole-member-set fields (Day 28): every dNN-- member in central-directory order.
+        if let Some(f) = field.strip_prefix("structural_") {
+            let m = set.members.get(day).ok_or_else(|| format!("no {day} members"))?;
+            return match f {
+                "artifact_count" => Ok(m.len().to_string()),
+                "ordered_set_sha256" => Ok(hex(&sha256(m.iter().map(|(_, h)| h.as_str()).collect::<Vec<_>>().join(":").as_bytes()))),
+                other => Err(format!("unknown structural field {other:?} for {day}")),
+            };
+        }
         // `analysis_<variant>_<field>` addresses the specimen whose name carries `-<variant>`
-        // (d15: `-stripped` / `-symbolized`).
+        // (d15: `-stripped` / `-symbolized`; d28: `-false-friend` -> `false_friend_`). The longest tag wins.
         if let Some(rest) = field.strip_prefix("analysis_") {
+            let mut best: Option<(usize, &Spec, &str)> = None;
             for s in std::iter::once(spec).chain(others) {
                 let stem = s.name.rsplit_once('.').map_or(s.name.as_str(), |(a, _)| a);
-                let Some((_, tag)) = stem.rsplit_once('-').filter(|(_, t)| t.bytes().any(|b| b.is_ascii_alphabetic())) else { continue };
-                if let Some(f) = rest.strip_prefix(tag).and_then(|f| f.strip_prefix('_')) {
-                    return answer_spec(&format!("analysis_{f}"), s, &[], q);
+                let Some((_, label)) = stem.split_once("--") else { continue };
+                let parts: Vec<&str> = label.split('-').collect();
+                for k in 1..=parts.len() {
+                    let tag = parts[parts.len() - k..].join("_");
+                    if !tag.bytes().any(|b| b.is_ascii_alphabetic()) || best.is_some_and(|(n, _, _)| n >= tag.len()) {
+                        continue;
+                    }
+                    if let Some(f) = rest.strip_prefix(tag.as_str()).and_then(|f| f.strip_prefix('_')) {
+                        best = Some((tag.len(), s, f));
+                    }
                 }
+            }
+            if let Some((_, s, f)) = best {
+                return answer_spec(&format!("analysis_{f}"), s, &[], q);
+            }
+            // "Decode X and Y and require their config objects to be byte-for-byte equal before using the common
+            // value; do not use Z" (d27: "both d27-- role members"): every named (else every) member must decode
+            // the same config.
+            if rest.starts_with("config_") && q.question.contains("byte-for-byte equal") {
+                let all: Vec<&Spec> = std::iter::once(spec).chain(others).filter(|s| !s.name.ends_with(".json")).collect();
+                let named = |text: &str| -> Vec<&Spec> {
+                    text.split_whitespace()
+                        .map(|t| t.trim_end_matches(['.', ',', ';', ':']))
+                        .filter(|t| t.len() >= 3 && t.contains(['.', '-']))
+                        .filter_map(|t| match all.iter().filter(|s| member_matches(&s.name, t)).collect::<Vec<_>>().as_slice() {
+                            [one] => Some(**one),
+                            _ => None,
+                        })
+                        .collect()
+                };
+                let head = q.question.split(" require ").next().unwrap_or("");
+                let skip = q.question.split_once("do not use ").map_or(Vec::new(), |(_, r)| named(r.split(". ").next().unwrap_or(r)));
+                let mut pick = named(head);
+                if pick.is_empty() {
+                    pick = all.clone();
+                }
+                pick.retain(|s| !skip.iter().any(|x| x.name == s.name));
+                let cfgs: Vec<(u32, String)> = pick
+                    .iter()
+                    .map(|s| s.hcfg.as_ref().map(|h| (h.crc, h.config.to_json())).ok_or_else(|| format!("{}: no HCFG blob found", s.name)))
+                    .collect::<Result<_, _>>()?;
+                if cfgs.is_empty() || cfgs.iter().any(|c| *c != cfgs[0]) {
+                    let names: Vec<&str> = pick.iter().map(|s| s.name.as_str()).collect();
+                    return Err(format!("{day}: configs of {names:?} are not equal (or none named)"));
+                }
+                return answer_spec(field, pick[0], &[], q);
             }
             // An untagged field whose text names another member (d21: `config_*` "Use the d21-- plugin.cmxs member;
             // the loader has no scored HCFG config") is answered from that member.
