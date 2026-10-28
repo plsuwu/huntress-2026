@@ -344,6 +344,29 @@ grading-lessons.md, decisions to policies.md.
   that used to be covered by a blanket `workers/web/` ignore, now that the consolidated
   library under the same root is deliberately git-tracked.
 
+## 2026-10-28: Day 28 web lane complete; worker reset and solution index added
+
+- Release day 28 released two web-exploitation families (`day-24-fail-open-friday`,
+  `day-25-if-a-breach-falls-in-a-log`; curriculum days 24-25). Both completed
+  single_solve/time_trial/mastery CORRECT and committed consolidated notes plus
+  generic solver scripts (`574775b`, `5851d4a`).
+- The first opencode dispatch failed with an OpenAI `cyber_policy` refusal under
+  the default worker model; the driver marked both turns done because the CLI
+  returned successfully with an error event. Workers were fixed externally to
+  Kimi K3 and resumed. This is recorded as a launch-readiness check for future
+  release nights.
+- New bug classes documented in `docs/web-worker-lessons.md` and mapped in
+  `workers/web/solution-notes/INDEX.md`: fail-open remote policy decoding and
+  missing audit-log event on a privileged action. Mastery on both families used
+  the same 5-target cumulative shape (backup exposure + IDOR + group-closing
+  SQLi + LFI + own class).
+- A trailing-slash `targets[].url` concatenation bug caused double-slash
+  404s/fallbacks and one self-inflicted target crash; a user-directed
+  coordinator `op=reset` recovered mastery. The user then directed that workers
+  get a guarded reset path: `tools/wk.py reset <mode>` is now implemented
+  (own family/mode, bounded, never on CORRECT routes), with policy/prompts/docs
+  updated to require `begin <mode>` and fresh answers afterward.
+
 <!-- ## YYYY-MM-DD: Day N
 - **Release** at HH:MM:SS. New lanes seen (not engaged): ...
 - **First pass:** <lane>: CORRECT / needs <what>.

@@ -6,7 +6,8 @@
 - **No timed runs.** The user requested avoiding calls that spend timed runs.
   There is no override in this implementation. Timed-by-default and one-shot
   routes are held. Dual-pool routes are eligible only for untimed regular play.
-  No retry/practice/reset/pair operation is implemented.
+  No retry/practice/pair operation is implemented. A bounded, own-family target
+  reset is implemented in `tools/wk.py reset <mode>` for crashed/burned targets.
 - **Initialization does not solve challenges.** Only read-only API inspection
   and offline tests were run during setup. Solves happen only through the
   release driver (`python3 tools/web_rush.py all --day N`) or a worker's
@@ -33,8 +34,11 @@
   a bounded number of times with backoff, other HTTP errors are recorded as evidence.
   Reintroduce a shared lock if rate limits are hit.
 - **Live target ownership.** Preparing targets are polled by status with a
-  bounded wait. No worker may reset/retry/switch targets. A target-capacity
-  conflict waits (bounded) for another family to finish; it never stops another family's site.
+  bounded wait. Workers may recover a crashed/burned target only through
+  `tools/wk.py reset <mode>` (own family/mode, bounded, never on an already-CORRECT
+  route), then must run `begin <mode>` and re-derive every answer from the fresh
+  target(s). No worker may retry/switch targets. A target-capacity conflict waits
+  (bounded) for another family to finish; it never stops another family's site.
   An untimed target stops after 30 idle minutes, so the hand-off to the worker
   happens while the first pass's targets are still warm.
 - **Release days are API metadata.** `day` selects release batches, not the
@@ -61,24 +65,25 @@
   ones. Workers submit as soon as an answer is ready, chain modes at once, and may wait (bounded)
   for scoring confirmation or for another family to free a target slot. The guards live in
   `tools/wk.py`, not in who holds the token: untimed only, exact answer ids, matching attempt,
-  bounded submissions, no retry/practice/reset/switch_target, own-family routes only. No
-  permission flag or allow-list is passed to opencode either - confirmed live that plain bash
-  tool calls already run with zero friction under the environment's default policy, and
+  bounded submissions, no retry/practice/switch_target, bounded own-family reset through
+  `wk.py`, own-family routes only. No permission flag or allow-list is passed to opencode
+  either - confirmed live that plain bash tool calls already run with zero friction under
+  the environment's default policy, and
   `--dangerously-skip-permissions` is both unneeded and a blanket bypass, which this pipeline
   already rejected on principle before opencode existed here. The token is never sent to a
   target.
-- **Undocumented `op=reset` is coordinator-only, human-directed (2026-10-27).**
+- **Undocumented `op=reset`: worker-scoped and guarded (2026-10-28).**
   The GM exposes an undocumented per-challenge `op=reset`
   (`POST / {"op":"reset","challenge":"<id-or-id/mode>"}`) that tears down a
   live target and re-provisions a fresh one on the same attempt, resetting
-  in-app state (e.g. a one-shot credit back to its starting value). It is not
-  in `AGENTS.md`'s operations table and has no code path in `wk.py` or
-  `web_rush.py` — the standing no-reset/retry/switch_target rule for workers
-  is unchanged. Used once, at the user's explicit direction, to recover
-  day-27 double-spent's `single_solve` attempt after its one-shot credit was
-  burned serially before the worker session reached it. Treat it as a
-  one-off coordinator recovery action for a specific stuck attempt, never as
-  a routine or automated path, and do not wire it into `wk.py`/`web_rush.py`.
+  in-app state (e.g. a one-shot credit back to its starting value). After the
+  day-27 coordinator-only recovery and day-28's repeated target-recovery
+  friction, the user directed that workers be able to reset when necessary.
+  The allowed path is `python3 tools/wk.py reset <mode>`: own family/mode only,
+  bounded per mode, never on an already-CORRECT route, and always followed by
+  `python3 tools/wk.py begin <mode>` plus re-derived answers before submit.
+  Workers never call raw `op=reset` directly. Direct coordinator reset remains
+  reserved for explicitly user-directed cases outside the worker guard.
 - **Rush-shaped pipeline (2026-10-24).** The lane runs the main pipeline's shape:
   `tools/web_rush.py` (all/prep/launch/watch/status/takeover) is the single driver —
   it prepares `workers/web/<base-id>/`, primes one opencode session per slot (visible via a
@@ -105,7 +110,9 @@
   as a write/read target is retired. Workers write directly to
   `workers/web/solution-notes/day-NN-slug.md` (YAML frontmatter: day/slug/lane/modes/
   has_solve_py/tags) and `workers/web/past-solutions/day-NN-slug-*.py`, both symlinked into
-  every worker dir, `day-NN` always the challenge's own embedded/curriculum day (from its GM
+  every worker dir. `workers/web/solution-notes/INDEX.md` is the worker-facing day/tag ->
+  note -> script map refreshed by the coordinator after each day. `day-NN` is always the
+  challenge's own embedded/curriculum day (from its GM
   route id / `workers/web/.events`), never the release day it happened to be solved on - the
   two can differ and did, repeatedly, under the old convention. `recovery_lib.py`/
   `recovery_lib_ws.py`/`web_templates/` are unaffected - they're shared library code, not

@@ -15,17 +15,18 @@ SSH, no run host.
 | Path | Role |
 |---|---|
 | `tools/web_rush.py` | The driver: `all\|prep\|launch\|watch\|status\|takeover [--day N] [--rehearse] [--workers N]`; also starts/talks to the shared `opencode serve` process |
-| `tools/wk.py` | The worker's only GM door: `begin\|submit\|status [--live]\|next`, guarded (untimed only, own family only) |
+| `tools/wk.py` | The worker's only GM door: `begin\|submit\|reset\|status [--live]\|next`, guarded (untimed only, own family only) |
 | `tools/prompts/` | `prime.md` (pre-release warm-up), `task.md` / `task-done.md` (brief tails) |
 | `solver_py_scripts/recovery_lib.py` | Shared target classifiers/recoverers — the automated first pass and the worker solvers both use it |
-| `workers/web/past-solutions/` + `workers/web/solution-notes/` | The consolidated, git-tracked solution library (layout below) - every day's `solve.py`/notes, past and future, live here |
+| `workers/web/past-solutions/` + `workers/web/solution-notes/` | The consolidated, git-tracked solution library (layout below) - every day's `solve.py`/notes, past and future, live here; `solution-notes/INDEX.md` is the worker-facing day/tag -> note -> script map |
 | `workers/web/` (everything else) | Per-run driver/worker scratch, git-ignored (layout below) |
 
 ```
 workers/web/
   past-solutions/        every day's solve.py script(s), kept verbatim, flat: day-NN-slug-<name>.py
   solution-notes/        one day-NN-slug.md per curriculum day, YAML frontmatter (day/slug/modes/
-                          has_solve_py/tags) for grep; TAGGING-PROMPT.md explains the tag field
+                          has_solve_py/tags) for grep; INDEX.md maps day/tag -> note -> scripts;
+                          TAGGING-PROMPT.md explains the tag field
   .slot-{1,2,3}/         pre-warmed worker dirs (shared trees + past-solutions/solution-notes symlinked
                           in), recreated on every real `launch`
   .events                cross-day log of route completions, appended to by tools/wk.py - never cleared
@@ -71,10 +72,12 @@ attempt); attaching tmux and typing into the pane directly works just as well.
 
 - **Web only.** The driver and the workers touch `web-exploitation-*` routes and nothing
   else — never list, query, start, download or submit any other lane.
-- **Untimed only.** No timed, ranked, retry, practice, reset or switch_target — there is
-  no override in this pipeline; plain starts on dual-pool routes are free untimed regular
-  attempts. GM calls are direct (no lock, no pacing — 2026-10-24 decision) with reactive
-  429/5xx backoff; a shared lock comes back if rate limits appear.
+- **Untimed only.** No timed, ranked, retry, practice or switch_target — there is no
+  override in this pipeline; plain starts on dual-pool routes are free untimed regular
+  attempts. Target recovery is allowed only through `tools/wk.py reset <mode>` (own
+  family/mode, bounded), followed by `begin <mode>` and fresh answers. GM calls are direct
+  (no lock, no pacing — 2026-10-24 decision) with reactive 429/5xx backoff; a shared lock
+  comes back if rate limits appear.
 - **The token stays guarded.** Workers hold `HUNTRESS_GM_TOKEN` (low-stakes, per user
   decision) and use it only through `tools/wk.py`; it is never printed and never sent to
   a target. Workers never get the repo root as cwd or `--add-dir` — the jumpbox SSH key

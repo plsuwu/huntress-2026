@@ -81,7 +81,7 @@ import wk  # noqa: E402  the worker's GM helper: one shared GM-call implementati
 sys.path.insert(0, os.path.join(ROOT, "solver_py_scripts"))
 import recovery_lib  # noqa: E402  the first pass's classifiers/recoverers
 
-SHARED_TREES = ("AGENTS.md", "docs", "solver_py_scripts", "tools")
+SHARED_TREES = ("AGENTS.md", "HOMEBASE.md", "docs", "solver_py_scripts", "tools")
 # Symlinked from WORKERS (workers/web/), not ROOT - the consolidated, tagged reference library
 # (past solve.py scripts + per-day notes; see workers/web/solution-notes/TAGGING-PROMPT.md).
 WORKER_SHARED_TREES = ("past-solutions", "solution-notes")

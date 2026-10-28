@@ -169,3 +169,41 @@ for this review.
   should now resolve 4 of any 5 mastery targets automatically (backup + IDOR
   + SQLi + LFI) via the first pass for any family whose cumulative pool has
   caught up to day-27's, leaving only that family's own class for the worker.
+
+## Day 28 outcome (2026-10-28)
+
+- **Prediction confirmed:** release day 28 continued from curriculum day 24 —
+  `fail-open-friday` (curriculum 24) and `if-a-breach-falls-in-a-log`
+  (curriculum 25); 2 families, 2 of 3 pre-warmed slots used, slot 3 stood down.
+  Both finished single_solve/time_trial/mastery CORRECT and committed
+  consolidated notes + generic solvers.
+- **Opencode migration issue:** the first dispatch turns failed immediately
+  with an OpenAI `cyber_policy` refusal under the then-default worker model,
+  and `web_rush.py status` misleadingly marked both challenges `done` because
+  `opencode run` returned cleanly with an error event. The workers were fixed
+  externally to Kimi K3 and resumed; future launches need an early pane check
+  that the primed model is the intended one before the release poll.
+- Two new bug classes this release, documented in `web-worker-lessons.md` and
+  `solution-notes/INDEX.md` (recoverer candidates not yet folded into
+  `recovery_lib.py`): fail-open remote policy decoding (`policy_format_route`
+  discloses param/prefix/encoding; an undecodable payload with a well-formed
+  prefix grants the effect) and missing audit-log event on a privileged action
+  (bare feature/secondary shape; read-only GET secondary_route discloses the
+  report schema and separates it from SSRF/double-spend).
+- **Mastery stayed at 5 targets on both families:** backup exposure + IDOR +
+  day-19 group-closing SQLi + day-20 LFI + that family's own class, one target
+  per class. The standard four recoveries plus the family's own classifier are
+  now the expected shape; still read `questions`/`targets` rather than
+  hard-coding the count.
+- **Target-recovery friction resolved for future days:** `targets[].url` has a
+  trailing slash; naive path concatenation caused double-slash 404s/fallbacks
+  and one self-inflicted container crash. A coordinator raw `op=reset` recovered
+  mastery at the user's request. Policy now allows workers to use
+  `python3 tools/wk.py reset <mode>` (own family/mode, bounded) when `begin`
+  cannot recover or a one-shot state was burned, followed by `begin` and
+  re-derived answers.
+- **Prediction:** curriculum days 24-25 seen; expect release day 29 to continue
+  from curriculum day 26. Expect the same 5-target mastery pool (backup + IDOR
+  + group-closing SQLi + LFI + one new class). Workers should read
+  `solution-notes/INDEX.md` during prep and check the trailing-slash lesson
+  before hand-rolling any target client.

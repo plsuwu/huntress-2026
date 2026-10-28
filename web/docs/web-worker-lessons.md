@@ -1,9 +1,10 @@
 # Web worker lessons from restored solutions
 
-These are historical, graded observations from the release Day 19/20/21/22/24/25
-notes and source in `solver_py_scripts/`. They are reference methods, never current
-proofs, target assignments or permission grants. Read this before investigating
-a new target. Do not infer that a new challenge uses an earlier bug.
+These are historical, graded observations from the release Day 19-28 notes and
+source in `solver_py_scripts/` and `workers/web/past-solutions/`. They are
+reference methods, never current proofs, target assignments or permission grants.
+Read this before investigating a new target. Do not infer that a new challenge
+uses an earlier bug.
 
 ## Mastery is cumulative
 
@@ -39,7 +40,12 @@ targets for the first time — the same three recurring classes **plus day-20's
 LFI** (newly appearing in this slot's cumulative pool) **plus** that family's
 own novel class, one target per class, no repeats. Do not hard-code an
 expected count of 4 — always read the actual `questions`/`targets` arrays; a
-family's cumulative pool can grow as the event's curriculum does.
+family's cumulative pool can grow as the event's curriculum does. Day 28
+(two families, release day 28; curriculum days 24-25) confirmed the new
+5-target shape on both families: backup exposure + IDOR + day-19's
+group-closing SQLi + day-20's LFI + that family's own novel class
+(fail-open policy decoding / missing audit-log event), one target per class,
+no repeats.
 
 Join `questions[].artifact` to `targets[].id` (for example `Target 2`) to find
 the correct URL. Do not rely on array order, curriculum number or title. Preserve
@@ -81,6 +87,8 @@ classes must remain unknown until supported by the page, behavior and question.
 | Credit double-spend (non-atomic check-then-act race) | `/api/clues` gives feature_route (POST; redeems one credit — reads the stored count, checks `> 0`, writes `count-1` back as two separate steps, no row lock/atomic UPDATE) + secondary_route (GET; reports the proof once the stored balance has gone negative) — the same bare two-key shape as SSRF above, with no clue field to tell them apart. A single serial POST behaves "correctly" and **permanently burns the target's one and only credit** (no in-app reset/topup); the bug only shows when ≥2 requests hit feature_route at the same wall-clock instant, so the race must be the very first touch of feature_route, never a solo probe. 12–16 concurrent racers via a thread pool was consistently enough (~5/16 `ok:true`). | `recovery_lib.py`, `rec_double_spend`; `workers/web/solution-notes/day-21-double-spent.md` |
 | Unauthorized event-stream subscription (WS upgrade, wrong query-param *name*) | `/api/clues` gives feature_route (a real WebSocket upgrade path, not a normal route — plain GET/POST without `Upgrade` headers returns 426) + stream_reference (a numeric id), no other feature_route-shaped key alongside. A well-formed WS handshake with no query, or with the clue's own key name (`stream_reference`/`ref`/`id`/`channel`), gets a 403 that *looks* like a role/auth rejection but isn't — the upgrade only succeeds when the query string names the stream with the bare, undisclosed key `stream`. Once connected, the server immediately pushes one proof-carrying event, never re-checking the caller's role/ownership of that stream. Needs the non-stdlib `websockets`/`certifi` packages (stdlib `urllib` can't do a clean WS handshake). | `recovery_lib_ws.py`, `rec_unauthorized_event_stream`; `workers/web/solution-notes/day-22-socket-to-me.md` |
 | Trusted-reverse-proxy header spoofing | `/api/clues` gives feature_route + current_role + `deployment: "trusted_reverse_proxy"` — no `secondary_route`/`inventory_route`/`protected_reference`, distinguishable by that key shape alone. feature_route decides "am I being called from loopback" from a client-supplied `X-Forwarded-For` header with **no actual upstream-proxy allowlist**: sending `X-Forwarded-For: 127.0.0.1` flips `evaluated_client` and returns the proof. `X-Real-IP`/`X-Forwarded-Host`/`X-Forwarded-Proto` do not affect the decision — XFF alone is necessary and sufficient. Stateless; safe to re-probe. | `recovery_lib.py`, `rec_proxy_trust_bypass`; `workers/web/solution-notes/day-23-forwarded-misgivings.md` |
+| Fail-open remote policy decoder | `/api/clues` gives feature_route + `policy_format_route` + `expected_behavior` (seen: ASP.NET Core Razor Pages). `policy_format_route` discloses the exact query-parameter name, per-attempt `remote:<hex>:` prefix, encoding (base64url UTF-8 JSON), and a valid public decision. A valid public decision only returns the standard policy response, but a token with the disclosed prefix plus an **undecodable payload** hits the decoder's exception path and grants the protected effect, returning the proof — the opposite of the disclosed expected failure-deny behavior. Stateless; derive the parameter and prefix live. | `workers/web/past-solutions/day-28-fail-open-friday-solve.py`; `workers/web/solution-notes/day-28-fail-open-friday.md` |
+| Missing audit-log event on a privileged action | `/api/clues` gives the same bare feature_route + secondary_route shape as SSRF/double-spend, but a read-only GET on secondary_route discloses `report.fields` (seen: Slim/PHP). POST feature_route performs a privileged export and returns an id/operation; GET secondary_route shows only a benign event for that id. POST secondary_route with the disclosed report body (`export_id`, `missing_event`, `observed_event`) returns the proof. Always GET secondary_route first: it separates this class from SSRF (403) and from double-spend (whose feature_route is one-shot and must never be probed serially). | `workers/web/past-solutions/day-28-if-a-breach-falls-in-a-log-solve.py`, `day-28-if-a-breach-falls-in-a-log-mastery.py`; `workers/web/solution-notes/day-28-if-a-breach-falls-in-a-log.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -97,6 +105,12 @@ differ by which *other* key is or isn't present), then IDOR, then a
 `<form>`-based SQLi gate, then backup exposure last (with a `<form>`-present
 SQLi retry and a backup-exposure retry as final fallbacks). Extend this evidence hierarchy for
 new classes; do not blindly copy its form=SQLi or fallback=backup assumptions.
+Day 28 adds two clue shapes not yet folded into `recovery_lib.py`:
+`policy_format_route` means the fail-open policy decoder, while a bare
+`feature_route` + `secondary_route` now needs a read-only GET on
+`secondary_route` before touching `feature_route` — `report.fields` means
+missing-audit-log, a 403 suggests SSRF, and a balance/one-shot view suggests
+double-spend (whose feature route must remain untouched until the race).
 
 When a target gives no error, reflection or timing oracle at all (day-12's
 second-order SQLi above), a one-variable-at-a-time sweep can look exhaustive
@@ -185,16 +199,18 @@ matrix.
   fast: re-requesting it afterward returns HTTP 410 `{"state":"completed"}`.
   Capture evidence *before* submitting, not after. Day 24.
 - A target you crash or lose mid-attempt (Cloudflare 500 / error 1101, or a
-  410 while the attempt is still `active`) is recovered by re-running
+  410 while the attempt is still `active`) is recovered first by re-running
   `python3 tools/wk.py begin <mode>` - NOT by sitting and polling the dead URL
   for an auto-restart. `begin` always re-POSTs `op=start`: on an active untimed
   attempt that re-provisions a fresh target under the same attempt_id (the GM
   rotates the target host); if the old attempt expired it transparently returns
-  a new one and warns you, so re-derive any stale answers. It is a plain untimed
-  start, not a reset/switch_target, so it is allowed. Better: don't crash it in
-  the first place - a malformed/non-object body can trip the origin into a 500
-  and take the container down for the whole attempt, so probe with well-formed
-  requests. Day 26 (trust-the-webhook).
+  a new one and warns you, so re-derive any stale answers. If `begin` cannot
+  recover it (still 500/410, or a one-shot state was burned), use the scoped
+  worker recovery `python3 tools/wk.py reset <mode>` once, then run `begin`
+  again and re-derive every answer from the fresh target(s). Better: don't
+  crash it in the first place - a malformed/non-object body can trip the origin
+  into a 500 and take the container down for the whole attempt, so probe with
+  well-formed requests. Day 26 (trust-the-webhook); reset path added Day 28.
 - A bare `Python-urllib/*` default User-Agent gets 403'd outright by the edge
   WAF/Cloudflare on at least one app (resolver-revolt's GraphQL endpoint,
   day 25) with no body hint that it's a UA issue — every request, including
@@ -216,13 +232,25 @@ matrix.
 - The GM exposes an **undocumented per-challenge `op=reset`**
   (`POST / {"op":"reset","challenge":"<id-or-id/mode>"}`) that tears down a
   live target and re-provisions a fresh one on the same attempt, resetting
-  in-app state. Not in `AGENTS.md`'s operations table and not implemented in
-  `wk.py`/`web_rush.py` — standing policy (`docs/policies.md`) is that no
-  worker may reset/retry/switch targets, and that still applies here: this is
-  a **coordinator-only, explicitly-user-directed** recovery for a specific
-  stuck attempt (used once, 2026-10-27, to recover double-spent's
-  serially-burned single_solve credit), never a routine or automated path.
-  Day 27.
+  in-app state. Workers may use it only through
+  `python3 tools/wk.py reset <mode>` (own family/mode only, bounded, never on
+  an already-CORRECT route), then must run `python3 tools/wk.py begin <mode>`
+  and re-derive every answer from the fresh target(s). Direct curl/raw reset
+  remains a coordinator-only, explicitly-user-directed recovery for cases the
+  worker guard cannot handle. Day 27 (first coordinator use); Day 28 (wired
+  into `wk.py` after repeated target-recovery friction).
+- `targets[].url` ends with a trailing slash. Strip it (`url.rstrip('/')`)
+  before concatenating any route. A double slash (`//cases/1`) is not harmless:
+  it 404s on the IDOR app, falls through to a catch-all fallback on the backup
+  app (making the real `/robots.txt` look missing), and reaches a broken
+  handler on the PHP LFI app that mimics a parameter-parsing bug. If every
+  route except `/` 404s, check for a double slash before deeper diagnosis.
+  `recovery_lib.Target` already strips it; hand-rolled clients must too. Day 28.
+- A different 404 size under `Accept: text/html` can be a Cloudflare-insights
+  rendering artifact, not routing evidence; an app's root `/robots.txt` can be
+  Cloudflare's boilerplate content-signals file with no `Disallow`. Proofs are
+  per-target-instance, so after any reset/re-provision re-derive all answers
+  before submitting. Day 28.
 - PHP `include()` built from raw string concatenation (`$pages_dir . $doc`,
   no path-join/validation) still only accepts a plain traversal path — a
   `php://filter/...` wrapper scheme prefix just produces the literal invalid

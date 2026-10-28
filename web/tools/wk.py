@@ -20,14 +20,18 @@ Commands (run from the worker directory, workers/web/<base-id>/):
                   saved to <mode>/status-gm.json).
   next            the first mode (single_solve, time_trial, mastery) whose
                   results.json has no CORRECT round.
+  reset [mode]    guarded recovery for a crashed/burned target: POSTs the GM's
+                  undocumented op=reset for this worker's own family/mode only,
+                  then requires begin <mode> and fresh answers before submit.
 
 Hard guards:
 
   * Untimed only. The only operations this script can ever send are
-    op=status (GET) for the worker's own routes and op=start / op=submit
-    (POST) with fixed untimed payloads. There is no code path for
-    run_for_time, retry, practice, reset, switch_target, artifact, download
-    or list, and WEB_UNTIMED_ONLY=1 must be set in the environment.
+    op=status (GET) for the worker's own routes and op=start / op=submit /
+    op=reset (POST) with fixed untimed payloads. reset is scoped to the current
+    family/mode and exists only to recover a crashed or burned target; there is
+    no code path for run_for_time, retry, practice, switch_target, artifact,
+    download or list, and WEB_UNTIMED_ONLY=1 must be set in the environment.
   * Own family only. The challenge id never comes from the command line; it
     comes from family.json in the worker directory and must be a
     web-exploitation route of that family.
@@ -73,6 +77,7 @@ BEGIN_WAIT_S = int(os.environ.get("WK_BEGIN_WAIT_S", "300"))
 BEGIN_POLL_S = 5
 LIMIT_POLL_S = 30                              # wait between web_target_limit_reached retries
 SUBMIT_CAP = 100                               # rounds per mode - a runaway-loop guard
+RESET_CAP = 3                                  # target resets per mode - recovery, not a loop
 
 EXIT_OK, EXIT_BLOCKED, EXIT_WAITING, EXIT_USAGE = 0, 1, 75, 2
 
@@ -430,6 +435,63 @@ def cmd_begin(wt, routes, mode, token):
               f"then: python3 tools/wk.py submit {mode}")
 
 
+def load_resets(mdir):
+    p = mdir / "resets.json"
+    if not p.is_file():
+        return []
+    try:
+        resets = json.loads(p.read_text())
+    except ValueError:
+        return []
+    return resets if isinstance(resets, list) else []
+
+
+def save_reset(mdir, response):
+    """Append one reset response to resets.json and refresh reset.json."""
+    resets = load_resets(mdir)
+    resets.append({"t": iso_now(), "response": response})
+    (mdir / "resets.json").write_text(json.dumps(resets, indent=2) + "\n")
+    (mdir / "reset.json").write_text(json.dumps(response, indent=2) + "\n")
+
+
+def cmd_reset(wt, routes, mode, token):
+    """Recover a crashed/burned target on the worker's own family/mode.
+
+    This is intentionally narrower than the GM's raw op=reset: no other lane, no
+    other family, no timed path, and no resetting an already-CORRECT route. The
+    caller must run begin afterward and re-derive every answer from fresh targets.
+    """
+    route = routes[mode]
+    mdir = wt / mode
+    if mode_correct(mdir):
+        print(f"{route}: already CORRECT - nothing to reset")
+        return
+    raw = route_status(token, route)
+    if is_correct(raw):
+        print(f"{route}: already CORRECT - nothing to reset")
+        return
+    state = norm_state(raw)
+    if state == "not_started":
+        die(f"no attempt on {route} - run: python3 tools/wk.py begin {mode}")
+    if not (mdir / "start.json").is_file():
+        die(f"no {mode}/start.json - run: python3 tools/wk.py begin {mode}")
+    resets = load_resets(mdir)
+    if len(resets) >= RESET_CAP:
+        die(f"reset cap ({RESET_CAP}) reached for {route} - stop and ask the coordinator")
+
+    status, body = gm_request(token, "POST", op="reset", challenge=route)
+    if status != 200:
+        die(f"op=reset for {route} -> HTTP {status}: {short(body)}")
+    if not isinstance(body, dict):
+        die(f"op=reset for {route} returned a non-JSON response: {short(body)}")
+    if body.get("error"):
+        die(f"op=reset for {route} failed: {short(body)}")
+    save_reset(mdir, body)
+    print(f"reset: {short(body)}")
+    print(f"next: python3 tools/wk.py begin {mode}; re-derive every answer from the "
+          f"fresh target(s) before submitting")
+
+
 def cmd_submit(wt, routes, mode, token):
     route = routes[mode]
     mdir = wt / mode
@@ -575,7 +637,7 @@ def main(argv=None):
         description="A web worker's only door to the Game Master "
                     "(untimed, own-family routes only).")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("begin", "submit"):
+    for name in ("begin", "submit", "reset"):
         p = sub.add_parser(name)
         p.add_argument("mode", nargs="?", default="single_solve", choices=MODES)
     p = sub.add_parser("status")
@@ -590,6 +652,8 @@ def main(argv=None):
         cmd_begin(wt, routes, args.mode, token)
     elif args.cmd == "submit":
         cmd_submit(wt, routes, args.mode, token)
+    elif args.cmd == "reset":
+        cmd_reset(wt, routes, args.mode, token)
     elif args.cmd == "status":
         cmd_status(wt, routes, args.live, token)
     elif args.cmd == "next":

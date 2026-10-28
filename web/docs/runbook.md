@@ -87,8 +87,9 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
   keeping. A challenge marked `running` in `status` just means its thread is still blocked
   on that call - watch its tmux pane if you want to see what it's doing.
 - **Untimed only, everywhere:** the driver's first pass and `wk.py` send only
-  `list`/`status`/`start`/`submit` — never `run_for_time`, `retry`, `practice`, `reset` or
-  `switch_target`. Plain starts on dual-pool routes are free untimed regular attempts.
+  `list`/`status`/`start`/`submit` plus the guarded worker `reset` — never
+  `run_for_time`, `retry`, `practice` or `switch_target`. Plain starts on dual-pool
+  routes are free untimed regular attempts.
 - **Capacity:** a `409 web_target_limit_reached` on start waits (bounded) for a target
   slot; it never disturbs another family's target. An untimed target stops after 30 idle
   minutes, so the hand-off to the worker happens while the first pass's targets are warm.
@@ -117,7 +118,10 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
   this is purely "status says `working` for longer than seems right, go look."
 - **The worker's loop** (what each pane is doing):
   `python3 tools/wk.py begin <mode>` → `submit <mode>` → `status` / `next`,
-  single_solve → time_trial → mastery, serial within the family.
+  single_solve → time_trial → mastery, serial within the family. If a target is
+  crashed/burned and `begin <mode>` cannot recover it, the worker may use
+  `python3 tools/wk.py reset <mode>`, then must `begin <mode>` again and
+  re-derive every answer from the fresh target(s).
 - **Check the GM directly (read-only):**
   `curl 'https://2026.huntress.ctf.games/?op=status&challenge=<route>' -H "Authorization: Bearer $HUNTRESS_GM_TOKEN"`.
 - Runtime evidence (`start.json`, `targets.json`, `provisioning.json`, recon dumps,
@@ -143,13 +147,15 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
 Workers commit their own note + script. The coordinator then (~10 min):
 
 1. Fold new bug-class methods into `docs/web-worker-lessons.md`.
-2. Fold the day's outcome + next-day prediction into `docs/lane-patterns.md`.
-3. Fold any new `rec_*` recoverer into `solver_py_scripts/recovery_lib.py`'s
+2. Refresh `workers/web/solution-notes/INDEX.md` so the day/tag -> note ->
+   script map includes the new note(s) and solver(s).
+3. Fold the day's outcome + next-day prediction into `docs/lane-patterns.md`.
+4. Fold any new `rec_*` recoverer into `solver_py_scripts/recovery_lib.py`'s
    `classify_and_recover` dispatch — after reviewing the graded evidence. This is what
    makes the next day's first pass stronger.
-4. Append a dated entry to `docs/history.md`.
-5. Commit the shared-doc updates (one commit per day is fine).
-6. Clear that day's disposable runtime state once everything above is done and each
+5. Append a dated entry to `docs/history.md`.
+6. Commit the shared-doc updates (one commit per day is fine).
+7. Clear that day's disposable runtime state once everything above is done and each
    worker's `workers/web/solution-notes/day-NN-slug.md` +
    `workers/web/past-solutions/day-NN-slug-*.py` are confirmed committed: remove
    `workers/web/<base-id>/` (evidence only - nothing is lost, the note/script never lived
@@ -160,9 +166,11 @@ Workers commit their own note + script. The coordinator then (~10 min):
 ## 5. Standing rules (details in docs/policies.md)
 
 - Web-exploitation routes only; never list, query, start, download or submit anything else.
-- Untimed only; no timed, ranked, retry, practice, reset or switch_target — there is no
-  override in this pipeline. Hall of Fame campaigns for web stay a coordinator decision
-  outside this pipeline.
+- Untimed only; no timed, ranked, retry, practice or switch_target — there is no override
+  in this pipeline. Workers may recover a crashed/burned target only through
+  `tools/wk.py reset <mode>` (own family/mode, bounded), then must begin again and
+  re-derive answers. Hall of Fame campaigns for web stay a coordinator decision outside
+  this pipeline.
 - The token is never printed, never sent to a target, and workers use it only through
   `tools/wk.py`.
 - Never use, attach to, signal or kill the sibling repo's `-L huntress` socket. Kill the

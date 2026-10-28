@@ -34,9 +34,12 @@ HUNTRESS_GM_TOKEN=gm1.a95b64788520105268362d42fbba9426.7a75c13939ce7b1ebdebee3c2
 | Submit challenge answers          | POST   | `/` - `{"op":"submit","challenge":"<id>","answers":{"<answer_id>":"<value>"}}` |
 | Retry challenge                   | POST   | `/` - `{"op":"retry","challenge":"<id>"}`                                      |
 | Continue legacy practice          | POST   | `/` - `{"op":"practice","challenge":"<id>"}`                                   |
+| Reset a live target (guarded)     | POST   | `/` - `{"op":"reset","challenge":"<id-or-id/mode>"}`                           |
 
 Hall of Fame / ranked campaigns are out of scope for this pipeline (see `docs/policies.md`) -
-there is no code path for `run_for_time`, `retry`, `practice`, `reset`, or `switch_target` here.
+there is no code path for `run_for_time`, `retry`, `practice`, or `switch_target` here.
+Workers use `op=reset` only through `tools/wk.py reset <mode>` (own family/mode, bounded),
+then re-run `begin <mode>` and re-derive answers.
 
 - Send `POST` requests with `Content-Type: application/json`.
 - The `run_for_time` property only applies to dual-pool challenges.
@@ -63,11 +66,13 @@ how to interpret various flags and the gameplay around the `time_trial` and `mas
 with the 'Hall of Fame' leaderboard.
 
 This repo is web-exploitation only (see `README.md`), so previous solutions are always Python.
-Before writing a new one, check `workers/web/solution-notes/` for a past challenge that used the
-same bug class - every file is `day-NN-slug.md`, one per curriculum day, with a YAML frontmatter
-`tags` list (short kebab-case bug-class/technique tags). `workers/web/past-solutions/day-NN-slug-*.py`
-holds the matching scripts, kept verbatim. Also check `docs/web-worker-lessons.md` for the accumulated
-curriculum knowledge (recognized bug-class table, fed by every day's graded evidence).
+Before writing a new one, read `docs/web-worker-lessons.md` (the single key-info document:
+recognized bug-class table, patterns, gimmicks and gotchas) and
+`workers/web/solution-notes/INDEX.md` (day/tag -> note -> solver script). Check
+`workers/web/solution-notes/` for the full notes - every file is `day-NN-slug.md`, one per
+curriculum day, with a YAML frontmatter `tags` list (short kebab-case bug-class/technique
+tags). `workers/web/past-solutions/day-NN-slug-*.py` holds the matching scripts, kept
+verbatim; reference, copy from, or adapt them when it speeds up a correct, generic solution.
 
 ### Searching note frontmatter
 
