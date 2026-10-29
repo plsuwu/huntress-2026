@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-29-white-box-key-recovery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "5ced5cf6-91bc-47e9-9735-7e62d112b825",
+  "started_at": "2026-10-29T13:00:08.261Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1031.358079,
+  "start_ttfb_ms": 1031.0718590000001,
+  "clock": {
+    "start_sent": "2026-10-29T13:01:00.754Z",
+    "start_received": "2026-10-29T13:01:01.786Z",
+    "start_date_header": "2026-10-29T13:01:01.000Z",
+    "last_delivery": "2026-10-29T13:01:03.280Z",
+    "submit_sent": "2026-10-29T13:01:03.280Z",
+    "submit_received": "2026-10-29T13:01:05.140Z",
+    "submit_date_header": "2026-10-29T13:01:05.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "white_box_key_recovery.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1332.615833,
+      "total_ms": 1493.4160590000001,
+      "done_at_ms": 2524.9748040000004,
+      "analyse_ms": 0.138763
+    }
+  ]
+}

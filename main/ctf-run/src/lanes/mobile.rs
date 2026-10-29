@@ -88,6 +88,20 @@ fn gather(b: &[u8], order: &[usize]) -> Option<Vec<u8>> {
     (order.len() == b.len()).then(|| order.iter().map(|&i| b.get(i).copied()).collect()).flatten()
 }
 
+/// d29 `table`: `data[i] = p[i] + key + step*i` (mod 256). The offset and step are derived from the known
+/// `ANS-` prefix (must form an arithmetic progression over its four bytes); `None` otherwise.
+fn untable(b: &[u8]) -> Option<Vec<u8>> {
+    if b.len() < 4 {
+        return None;
+    }
+    let d: Vec<u8> = b.iter().zip(b"ANS-").map(|(x, p)| x.wrapping_sub(*p)).collect();
+    let step = d[1].wrapping_sub(d[0]);
+    if (1..4).any(|i| d[i].wrapping_sub(d[i - 1]) != step) {
+        return None;
+    }
+    Some(b.iter().enumerate().map(|(i, x)| x.wrapping_sub(d[0].wrapping_add(step.wrapping_mul(i as u8)))).collect())
+}
+
 fn xor_with(b: &[u8], key: &[u8]) -> Vec<u8> {
     b.iter().enumerate().map(|(i, x)| x ^ key[i % key.len()]).collect()
 }
@@ -165,6 +179,7 @@ fn generic(p: &Value) -> Result<String, String> {
                 outs.extend(scatter(v, o));
                 outs.extend(gather(v, o));
             }
+            outs.extend(untable(v));
             outs.extend(codec::hex(&s));
             outs.extend(codec::base64(&s));
             outs.extend(codec::base32(&s));
@@ -237,6 +252,8 @@ pub fn decode(p: &Value) -> Result<String, String> {
         // Characters of `data` permuted: data[i] belongs at position order[i].
         "indexed" => order(p).and_then(|o| scatter(data.as_bytes(), &o)),
         "hex" => codec::hex(data),
+        // d29: hex bytes shifted by `key` + a per-position step (offset/step recovered from the `ANS-` prefix).
+        "table" => codec::hex(data).and_then(|b| untable(&b)),
         "reverse" => Some(codec::reverse(data).into_bytes()),
         "base64" => codec::base64(data),
         "caesar" => key.map(|k| data.chars().map(|c| (c as i64 - k).rem_euclid(256) as u8).collect()),
@@ -477,6 +494,10 @@ mod tests {
         assert_eq!(d(r#"{"codec":"reverse","data":"6667D24E8BC6DE39-SNA"}"#).unwrap(), "ANS-93ED6CB8E42D7666");
         assert_eq!(d(r#"{"codec":"caesar","data":"KX]7BKPOK?>:CCP=;:@O","key":10}"#).unwrap(), "ANS-8AFEA54099F3106E");
         assert_eq!(d(r#"{"codec":"hex","data":"414e532d31323334353637383941424344454630"}"#).unwrap(), "ANS-123456789ABCDEF0");
+        // d29 `table`: hex bytes + key + 3*i (graded CORRECT); also found by the search under another name.
+        let table = r#"{"codec":"table","data":"6a7a825f767a6c82787c8b8d8592948a9d9597a5","key":41}"#;
+        assert_eq!(d(table).unwrap(), "ANS-AB1D78DC8BA4D98C");
+        assert_eq!(d(&table.replace("\"table\"", "\"lut\"")).unwrap(), "ANS-AB1D78DC8BA4D98C");
         // Unknown codec: base64 of the reversed answer, found by search.
         let enc = {
             let r: String = "ANS-123456789ABCDEF0".chars().rev().collect();
