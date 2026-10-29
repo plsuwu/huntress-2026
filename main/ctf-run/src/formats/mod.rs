@@ -29,4 +29,5 @@ pub mod video;
 pub mod wasm;
 pub mod x64emu;
 pub mod x86;
+pub mod x509;
 pub mod zip;

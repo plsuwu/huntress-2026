@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-29-trust-issues/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "fe0871d6-6eec-44bc-94ae-a7fd42a1e1e2",
+  "started_at": "2026-10-29T13:02:24.899Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2833.12986,
+  "start_ttfb_ms": 2825.385472,
+  "clock": {
+    "start_sent": "2026-10-29T13:02:22.282Z",
+    "start_received": "2026-10-29T13:02:25.115Z",
+    "start_date_header": "2026-10-29T13:02:25.000Z",
+    "last_delivery": "2026-10-29T13:02:27.832Z",
+    "submit_sent": "2026-10-29T13:02:27.887Z",
+    "submit_received": "2026-10-29T13:02:30.474Z",
+    "submit_date_header": "2026-10-29T13:02:30.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-29-trust-issues-mastery.zip",
+      "bytes": 8948136,
+      "wire": 8948136,
+      "ttfb_ms": 1465.2861719999999,
+      "total_ms": 2638.613034,
+      "done_at_ms": 5472.069361,
+      "analyse_ms": 78.48619599999999
+    }
+  ]
+}
