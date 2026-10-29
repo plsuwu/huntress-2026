@@ -128,6 +128,8 @@ def prep(day):
     for where in [CTF] + [os.path.join(WT_ROOT, l, "ctf-run") for l in LANES]:
         t = time.time()
         sh(["cargo", "build", "--release", "--features", "tls"], cwd=where)
+        if where != CTF:  # lane agents iterate on debug builds (task.md): warm that cache too
+            sh(["cargo", "build", "--features", "tls"], cwd=where)
         log(f"built {where} in {time.time() - t:.0f} s")
 
 
@@ -157,8 +159,12 @@ def allowed_tools(lane):
     timed-by-default solves allowed, --timed HoF runs refused) - and an `env -u ...` / `VAR=... ` prefix no longer
     matches the rule."""
     return [
-        "Bash(./target/release/ctf-run *)",
-        f"Bash({os.path.join(WT_ROOT, lane, 'ctf-run', 'target', 'release', 'ctf-run')} *)",
+        rule
+        for profile in ("release", "debug")
+        for rule in (
+            f"Bash(./target/{profile}/ctf-run *)",
+            f"Bash({os.path.join(WT_ROOT, lane, 'ctf-run', 'target', profile, 'ctf-run')} *)",
+        )
     ]
 
 

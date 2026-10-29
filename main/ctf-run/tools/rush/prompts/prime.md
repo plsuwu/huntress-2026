@@ -21,8 +21,10 @@ Rules for the whole session:
   coordinator instead.
 - `CTF_NO_RANKED=hof` is set: ctf-run refuses only `--timed` (Hall of Fame runs on dual-pool routes). Never try to work
   around it - HoF campaigns, deploys, the jumpbox and merging belong to the coordinator. Solves come first: one-shot
-  and timed-by-default TT/mastery routes are yours to fire (see your brief), but only once single-solve is CORRECT
-  and your replay is clean - a one-shot is the route's only attempt.
+  and timed-by-default TT/mastery routes are yours to fire (see your brief), but only once single-solve is CORRECT -
+  a one-shot is the route's only attempt.
+- **Replay once, at the end.** Run `ctf-run replay` only after every mode is CORRECT (your brief's regression step) -
+  never between submits or modes, and not as a gate before a one-shot. Speed matters more than the extra check.
 - Edit freely: `ctf-run/src/lanes/{src}`, new files under `ctf-run/src/formats/` or `ctf-run/src/script/`, your lane's
   `NOTES.md`. Shared files (`codec.rs`, `formats/mod.rs`, `zip.rs`, other lanes): additive changes only (new functions,
   new `mod` lines), no signature changes. Never edit `run.rs`, `gm.rs`, `net/`, `main.rs`, `Cargo.toml` - if you need
