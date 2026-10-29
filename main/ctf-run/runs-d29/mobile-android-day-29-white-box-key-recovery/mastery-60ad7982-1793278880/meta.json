@@ -1,0 +1,152 @@
+{
+  "challenge": "mobile-android-day-29-white-box-key-recovery/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "60ad7982-dfac-4b89-939b-22f19de8604d",
+  "started_at": "2026-10-29T13:01:23.053Z",
+  "deadline": null,
+  "shape": "artifacts[13]+downloads[13]",
+  "start_ms": 2267.231589,
+  "start_ttfb_ms": 2264.866924,
+  "clock": {
+    "start_sent": "2026-10-29T13:01:20.974Z",
+    "start_received": "2026-10-29T13:01:23.241Z",
+    "start_date_header": "2026-10-29T13:01:23.000Z",
+    "last_delivery": "2026-10-29T13:01:25.157Z",
+    "submit_sent": "2026-10-29T13:01:25.157Z",
+    "submit_received": "2026-10-29T13:01:27.253Z",
+    "submit_date_header": "2026-10-29T13:01:27.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 8,
+      "name": "white_box_key_recovery_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1255.546306,
+      "total_ms": 1510.292965,
+      "done_at_ms": 3778.436565,
+      "analyse_ms": 1.967945
+    },
+    {
+      "delivery": 12,
+      "name": "white_box_key_recovery_mastery_12.apks",
+      "bytes": 21535,
+      "wire": 21535,
+      "ttfb_ms": 1276.3761470000002,
+      "total_ms": 1544.427141,
+      "done_at_ms": 3812.7059679999998,
+      "analyse_ms": 14.631049
+    },
+    {
+      "delivery": 9,
+      "name": "white_box_key_recovery_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1304.879181,
+      "total_ms": 1557.25475,
+      "done_at_ms": 3825.480884,
+      "analyse_ms": 2.3506709999999997
+    },
+    {
+      "delivery": 1,
+      "name": "white_box_key_recovery_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1305.1473389999999,
+      "total_ms": 1561.052974,
+      "done_at_ms": 3828.8236620000002,
+      "analyse_ms": 13.041523
+    },
+    {
+      "delivery": 5,
+      "name": "white_box_key_recovery_mastery_05.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1311.9788290000001,
+      "total_ms": 1560.7427409999998,
+      "done_at_ms": 3828.7640380000003,
+      "analyse_ms": 14.651005999999999
+    },
+    {
+      "delivery": 4,
+      "name": "white_box_key_recovery_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1312.317975,
+      "total_ms": 1569.357698,
+      "done_at_ms": 3837.2652289999996,
+      "analyse_ms": 9.226497
+    },
+    {
+      "delivery": 7,
+      "name": "white_box_key_recovery_mastery_07.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1282.9997680000001,
+      "total_ms": 1592.52588,
+      "done_at_ms": 3860.6596680000002,
+      "analyse_ms": 1.7003739999999998
+    },
+    {
+      "delivery": 11,
+      "name": "white_box_key_recovery_mastery_11.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1369.653657,
+      "total_ms": 1619.51736,
+      "done_at_ms": 3887.7397419999998,
+      "analyse_ms": 16.033347
+    },
+    {
+      "delivery": 3,
+      "name": "white_box_key_recovery_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1566.178636,
+      "total_ms": 1819.890135,
+      "done_at_ms": 4087.7763739999996,
+      "analyse_ms": 15.902473
+    },
+    {
+      "delivery": 13,
+      "name": "white_box_key_recovery_mastery_13.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1605.2931560000002,
+      "total_ms": 1854.7879269999999,
+      "done_at_ms": 4123.1082719999995,
+      "analyse_ms": 0.6542800000000001
+    },
+    {
+      "delivery": 2,
+      "name": "white_box_key_recovery_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1606.012,
+      "total_ms": 1858.421919,
+      "done_at_ms": 4126.281644,
+      "analyse_ms": 2.316776
+    },
+    {
+      "delivery": 10,
+      "name": "white_box_key_recovery_mastery_10.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1619.744453,
+      "total_ms": 1895.663117,
+      "done_at_ms": 4163.878895,
+      "analyse_ms": 6.052659
+    },
+    {
+      "delivery": 6,
+      "name": "white_box_key_recovery_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1654.920179,
+      "total_ms": 1914.407405,
+      "done_at_ms": 4182.531234,
+      "analyse_ms": 0.487381
+    }
+  ]
+}
