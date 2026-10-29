@@ -113,6 +113,10 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
   runs-hof/campaign-dNN.jsonl > runs-hof/campaign-dNN.log 2>&1 < /dev/null &'
 ```
 
+- **Latency gate (2026-10-29):** before launching, time a few warm status/download requests from the jumpbox (or fire
+  one ranked run on a big-pool server-bound route and check `tools/run_legs.py` on it). If download TTFB is far above
+  the hall-of-fame.md hour profile (e.g. ~900 ms instead of ~250), don't launch: on 2026-10-29 06:37 AEST a 421-run
+  pass at those latencies improved one route. Watch the first lane's runs too, and stop the campaign if none come close.
 - **Plans:** `hof_plan.py SURVEY OUT [--order warmups,mobile-android,metadata-forensics,...]` applies the standard
   budgets and skips HoF-ineligible routes. Put the server-bound lanes first when the run starts in the quiet
   afternoon window; filter the plan JSON for a single-lane pass.
@@ -156,5 +160,10 @@ timeout 15 ssh -i $K $H 'cd ~/ctf-run-v2 && setsid nohup python3 -u tools/hof_ca
 - **No tzdata in the coordinator shell:** `TZ=Australia/Brisbane date` silently falls back to UTC, and so does
   `TZ=Australia/Sydney`. On Day 25 this made a "sleep until 23:00 AEST" timer target 23:00 UTC. The machine's local
   zone is already AEST, so use plain `date` (e.g. `date -d "today 23:00" +%s`).
+- **The jumpbox clock is UTC**, not AEST: its `uptime`/`date` read 10 h behind (20:31 on the box was 06:31 AEST on
+  2026-10-29). Judge the quiet window from the local `date` only.
+- **`ls` is aliased** (eza-style) in the coordinator shell: piped into `rg`/`wc` it prints nothing, so `ls | rg key`
+  "finds" no `huntress-id_ed25519` even though it is in the repo root (gitignored). Test files with `test -e`/`stat`,
+  and pass the key to ssh by absolute path.
 - **`ls glob | wc -l` under `shopt -s nullglob`:** with no matches, the glob vanishes and `ls` lists the cwd instead,
   so a "5 done markers" check fired at once on Day 25. Count with an array: `m=($d/done-*); ${#m[@]}`.

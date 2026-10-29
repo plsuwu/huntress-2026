@@ -328,3 +328,36 @@ here after every release night.
   deadline, answered 50.7 s later. d28 binary mastery run 1 was ready to submit in 7.5 s but the submit
   round trip took 57.9 s on run 1 (untimed earlier that night: 4.3 s); runs 2-3 were similarly slow (62.3/31.4 s). Starts also took 2-3.8 s.
   Elapsed includes grading, so nothing on our side helps; re-roll d28 binary mastery (125 left) at a quiet hour.
+
+## 2026-10-29: full days 1-28 ranked pass, early morning (user-approved)
+
+- **Prep:** jumpbox booted ~06:27 AEST, token 200, no code change since the Day 28 deploy. Pruned 69 binary zips
+  (1.9 GB, 13 GB free). Survey `survey-full-1029.json` (280 routes), `plan-full-1029.json`: 214 routes / 421 runs,
+  standard budgets, warmups/mobile/metadata/script/binary order, **user rule: skip routes with <= 5 ranked attempts
+  left** (dropped mobile d13 TT+mastery, script d01 TT+mastery, binary masteries d08/d15/d16/d17/d19/d20).
+- **Ran 06:37-08:39 AEST.** 421 runs, **421 CORRECT**, no rc/503/disk trouble (7 GB free after). But **only one route
+  improved** (binary d28 mastery 10216 -> 8501 ms, #12 -> #4); #1 stayed 107/214 on every lane.
+- **Why: the GM was ~4x slower than the netprobe profile for those hours.** Per run: start TTFB ~1.8-2.2 s, download
+  TTFB ~850-950 ms (profile 06-08: p50 ~240), submit round trip ~1.2-1.8 s. Estimated elapsed was a median ~9-10x our
+  best on server-bound lanes and never better than ~2.2x. Nothing re-rollable could win in that window.
+- **Cost:** 420 attempts spent for no gain. Six more routes are now at <= 5 left: mobile d08 mastery (3), binary
+  masteries d21-d24 (4 each) and d25 (5), script d02 TT (5).
+- **Lesson:** gate a campaign on a latency probe (see runbook step 4), and stop it early if the first lane's runs are
+  all far off our bests. The per-route "3 non-improving" rule never fires when budgets are <= 3.
+
+## 2026-10-29: Day 27-28 pass, then full days 1-26 pass, evening (user-approved)
+
+- **Prep (18:22 AEST):** latency gate passed (warm status 170-390 ms). Pruned 211 binary zips (5.9 GB, 13 GB free).
+  Survey `survey-full-1029pm.json`; plans `plan-d27-28-1029pm.json` (20 routes / 43 runs) and `plan-full-1029pm.json`
+  (days 1-26, 187 routes / 366 runs), both skipping routes with <= 5 ranked attempts left (17 dropped from the full
+  plan). Chained on the box (`sh -c "...d27-28...; ...full..."`) from 18:24.
+- **Days 27-28:** 30 runs, all CORRECT; **#1 8 -> 16 of 20**, 16 routes faster. Not #1: script masteries d27 (#2, 2937
+  vs 2878) and d28 (#4, 3760 vs 2887), binary masteries d27 (#3, 9305 vs 8529) and d28 (#2, 6325 vs 5092). All four
+  are CPU-bound mastery gaps, not re-roll luck.
+- **Days 1-26:** 359 runs, 358 CORRECT; **#1 97 -> 103 of 187** (warmups 8 -> 13, binary 5 -> 6), 53 routes faster,
+  no #1 lost. Afternoon latency made the difference vs the morning pass (one gain in 421 runs).
+- **Lost attempt:** binary d26 mastery run 2 (10 x 36 MB sets): delivery 6 never landed (no download record, no
+  file), so ctf-run refused to submit (312 unanswered) ~9 s into a 660 s window. The cause is lost because
+  `hof_campaign.py` keeps only a 6-line stderr tail. Follow-ups: retry a failed download while the window allows,
+  and save the full stderr into the run dir. Route now has 10 attempts left.
+- Jumpbox 8.5 GB free after.
