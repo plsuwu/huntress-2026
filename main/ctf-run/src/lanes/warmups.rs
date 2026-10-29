@@ -47,6 +47,7 @@ pub enum T {
     Bf,
     Ook,
     RevHex,
+    RotB64,
 }
 
 impl T {
@@ -78,6 +79,8 @@ impl T {
             T::Ook => codec::ook(t),
             // Day 28 "Back in Sixteen": the hex digits are written backwards (`...e696e4` = "Nin").
             T::RevHex => codec::text_any(&codec::hex(&codec::reverse(t))?),
+            // Day 29 "Rotten Base": ROT13 over base64 text ("Sixty-four invited thirteen over").
+            T::RotB64 => codec::text_any(&codec::base64(&codec::rot(t, 13))?),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -134,6 +137,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         26 => T::Bf, // "Food for Thought": Brainfuck `+-.` on one cell ("a very small language")
         27 => T::Ook, // "Monkey Business": Ook! pairs -> Brainfuck ("Ook. Ook? Ook! Someone seems chatty.")
         28 => T::RevHex, // "Back in Sixteen": hex, reversed character-wise ("our sixteen-fingered friend is walking backwards")
+        29 => T::RotB64, // "Rotten Base": base64, then ROT13 over its letters ("Sixty-four invited thirteen over. Things got scrambled.")
         _ => return None,
     })
 }
@@ -499,6 +503,13 @@ pub fn solve_blob(text: &str) -> Outcome {
             t = n;
             continue;
         }
+        // Day 29 "Rotten Base": a structural layer under a letter transform (ROT13 over base64). The
+        // shift is not hard-coded; a structural decode of the wrong rotation is not printable.
+        let lettered = [T::Rot47, T::Atbash].into_iter().chain((1..26u8).map(T::Rot)).filter_map(|k| k.apply(t.trim()));
+        if let Some(n) = lettered.flat_map(|c| [T::B64, T::B32, T::Hex].into_iter().filter_map(move |k| k.apply(&c))).find(|n| *n != t) {
+            t = n;
+            continue;
+        }
         // Letter transforms are self-inverse or cyclic: apply the best one only if it reads as more English.
         let now = codec::englishness(&t);
         let best = std::iter::once(codec::atbash(&t))
@@ -811,6 +822,15 @@ mod tests {
         assert!(matches!(solve_blob(&codec::reverse(&hex)), Outcome::Solved { slug, .. } if slug == "speedy-button-nugget-52"));
         let rows = format!("01\tTmljZSB3b3Jr\n28\t{}\n", codec::reverse(&hex[18..]));
         assert!(matches!(solve_rows(&rows, &BTreeMap::new()), Outcome::Solved { slug, .. } if slug == "speedy-button-nugget-52"));
+    }
+
+    #[test]
+    fn rot13_base64_blob() {
+        // Day 29 "Rotten Base" single-solve: ROT13 over the base64 of the sentence.
+        let blob = "GzywMFO3o3WeVTEyL29xnJ5aVUEbnKZtq2SloKIjVFOHolOmo2k2MFjtp3IvoJy0VUEbnKZtMKuuL3DtLJ5mq2IlVUEiVUEbMFOULJ1yVR1up3Eypwbtnz92nJSfYJAioJI0YJ51M2qyqP0mZD==";
+        assert!(matches!(solve_blob(blob), Outcome::Solved { slug, .. } if slug == "jovial-comet-nugget-31"));
+        let rows = format!("01\tTmljZSB3b3JrIGRl\n29\t{}\n", &blob[16..]);
+        assert!(matches!(solve_rows(&rows, &BTreeMap::new()), Outcome::Solved { slug, .. } if slug == "jovial-comet-nugget-31"));
     }
 
     #[test]
