@@ -1137,7 +1137,17 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 let hits: Vec<&Spec> = std::iter::once(spec).chain(others).filter(|s| member_matches(&s.name, &m)).collect();
                 (hits.len() == 1).then(|| hits[0])
             }) {
-                return answer_spec(field, s, &[], q);
+                // A role tag that is not in the member name (d29: `analysis_optimized_*` for "basename ends O3.elf"):
+                // drop leading words of the field until it is a known one.
+                let words: Vec<&str> = rest.split('_').collect();
+                let mut r = answer_spec(field, s, &[], q);
+                for k in 1..words.len() {
+                    match &r {
+                        Err(e) if e.starts_with("unknown field") => r = answer_spec(&format!("analysis_{}", words[k..].join("_")), s, &[], q),
+                        _ => break,
+                    }
+                }
+                return r;
             }
         }
         answer_spec(field, spec, side, q)
