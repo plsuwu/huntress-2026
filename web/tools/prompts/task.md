@@ -36,11 +36,16 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
    `has_solve_py`, `tags: []`) - fill in everything except `tags`, which you should actually
    fill in yourself this time (short kebab-case bug-class/technique tags - see
    `solution-notes/TAGGING-PROMPT.md` for the convention other notes were tagged with). Below
-   the frontmatter, write what was new, what was graded, gotchas. Keep `solve.py` generic -
-   derive routes from the live target (e.g. `/api/clues`), never hard-code per-attempt
-   answers - then copy it verbatim into `past-solutions/day-{day:02d}-{slug}-solve.py`
-   (symlinked the same way; name any extra scripts, e.g. a separate mastery solver,
-   `past-solutions/day-{day:02d}-{slug}-mastery.py`). If you needed a bug class
+   the frontmatter, write what was new, what was graded, gotchas. A shared all-mode `solve.py`
+   is already provisioned in your worker directory: edit only `rec_this_family()`, then run
+   `python3 solve.py <mode>` after each `wk.py begin`. It supplies the scoped client, canonical
+   recoverers, mastery target mapping, evidence, and safe partial-answer reuse. Do not write a
+   second HTTP client or a separate mastery classifier unless this runner genuinely cannot
+   express the bug. Derive routes from the live target, never hard-code per-attempt answers -
+   then copy the resulting solver verbatim into
+   `past-solutions/day-{day:02d}-{slug}-solve.py`
+   (symlinked the same way). Only if an extra script was genuinely necessary, name it
+   `past-solutions/day-{day:02d}-{slug}-mastery.py`. If you needed a bug class
    `recovery_lib.py` does not know, document the method precisely in your note; the
    coordinator folds new recoverers into the shared library.
 6. Commit it - `git add solution-notes/day-{day:02d}-{slug}.md past-solutions/day-{day:02d}-{slug}-*.py && git commit`, ending the message with the usual Co-Authored-By line (the symlinked relative paths resolve to their real location under `workers/web/` - `git add` follows them correctly).

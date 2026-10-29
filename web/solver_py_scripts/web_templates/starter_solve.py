@@ -1,50 +1,35 @@
 #!/usr/bin/env python3
-"""Drop-in starter for a web worker's own solve.py - a TEMPLATE. Copy it in and
-edit ONE function; do not import this file directly as your job's solver.
+"""Shared all-mode web solver, automatically copied into each worker directory.
 
-Usage (from your worker directory, workers/web/<base-id>/, after
-`python3 tools/wk.py begin <mode>` has written `<mode>/start.json`):
+After `python3 tools/wk.py begin <mode>`, edit only `rec_this_family()` below, then:
 
-    cp solver_py_scripts/web_templates/starter_solve.py solve.py
-    # edit rec_this_family() below with this family's own bug - that is the
-    # only thing you should need to write.
-    python3 solve.py <mode>              # single_solve | time_trial | mastery
-                                          # writes <mode>/answers.json
-    python3 tools/wk.py submit <mode>
+    python3 solve.py single_solve
+    python3 tools/wk.py submit single_solve
 
-What this already does for you, for free, before you write anything:
-  - The HTTP client (`Target`, from recovery_lib.py): cookie jar, WAF-safe
-    User-Agent, pacing, evidence-saving, origin-scope guard. Never re-derive
-    this - every hand-rolled copy of it across 8 prior solve.py files turned
-    out identical.
-  - `classify_and_recover`: recognizes every class graded so far - backup
-    exposure, IDOR and SQL injection (group-closing) have each shown up
-    independently in every mastery set across 3+ release days running, plus
-    session fixation, reflected-XSS callback, stored-XSS bot, CSRF, upload
-    bypass, SSRF, field/action authorization bypass, OS command injection,
-    reset-token/account-id confusion, GraphQL field-level bypass, and LFI.
-    Run against a mastery set, this alone often solves 3 of 4 targets before
-    you write a single line - `rec_this_family` below only needs to cover the
-    one target that doesn't match anything on that list.
-  - Evidence: every request this makes is saved under <mode>/evidence/<target>/.
+Reuse the same file for time_trial and mastery. It supplies the scoped HTTP client,
+canonical recoverers, question/target mapping, evidence capture, strict answer IDs,
+and attempt-bound partial-answer reuse. Do not write another HTTP client or a
+separate mastery classifier.
 
-Read `docs/web-worker-lessons.md` before trusting any of this against your
-actual target - mastery is cumulative and never assumed from the challenge's
-own name, a form alone never proves SQLi, an unknown page alone never proves
-backup exposure. `recovery_lib.py` makes no GM calls and holds no credential,
-but per standing policy its output is reference, not an oracle: read the
-`rec_*` function for whatever class it reports before trusting the proof it
-returns. If your family turns out to be GraphQL-shaped, or needs to wait on
-an out-of-band callback/bot, read the sibling templates in this directory
-(`graphql_helpers.py`, `poll_patterns.py`) before writing a second HTTP client
-or a second polling loop - don't reimplement what's already there.
+`rec_this_family` must check the current target's clue shape before making requests
+and return None on a mismatch. This matters in mastery, where every target can be a
+different bug class. Canonical recovery runs after the local hook returns None.
+
+Answers recovered by the driver's first pass are reused only when answers.meta.json
+matches the current attempt_id and target URLs. A changed attempt or target therefore
+forces fresh derivation instead of accidentally reusing stale proofs.
 """
 import json
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent / "solver_py_scripts"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+RECOVERY_DIR = SCRIPT_DIR / "solver_py_scripts"
+if not RECOVERY_DIR.is_dir():
+    RECOVERY_DIR = SCRIPT_DIR.parent  # running from solver_py_scripts/web_templates
+sys.path.insert(0, str(RECOVERY_DIR))
 from recovery_lib import Target, classify_and_recover  # noqa: E402
+
 
 
 def rec_this_family(t, clues):
@@ -64,19 +49,55 @@ def rec_this_family(t, clues):
 
 
 def solve_target(t, prompt=""):
-    """Try this family's own class first (most likely fit for at least one
-    target), then fall back to the generic classifier. Returns
-    (proof_or_None, evidence_dict) - evidence_dict is also written into the
-    brief-style summary main() prints, so a worker can see at a glance which
-    path found (or missed) each target's proof."""
+    """Try the local family hook, then canonical recovery, reusing initial recon."""
     evidence = {}
-    _, clues = t.get_json("/api/clues", save="clues")
-    proof = rec_this_family(t, clues or {})
+    root_status, html = t.get("/", save="root")
+    clues_status, clues_body = t.get("/api/clues", save="clues")
+    try:
+        clues = json.loads(clues_body) if clues_status == 200 else {}
+    except (TypeError, ValueError):
+        clues = {}
+    evidence["root_status"] = root_status
+    if clues:
+        evidence["clues"] = clues
+    proof = rec_this_family(t, clues)
     if proof:
         evidence["classification"] = "this family's own class"
         return proof, evidence
-    proof = classify_and_recover(t, evidence, prompt)
+    initial = {"/": (root_status, html), "/api/clues": (clues_status, clues_body)}
+    proof = classify_and_recover(t, evidence, prompt, initial=initial)
     return proof, evidence
+
+
+def current_targets(start):
+    return {t["id"]: t["url"] for t in start.get("targets", [])
+            if isinstance(t, dict) and t.get("id") and t.get("url")}
+
+
+def load_reusable_answers(mode_dir, start):
+    """Load only first-pass answers bound to this exact attempt and target assignment."""
+    try:
+        meta = json.loads((mode_dir / "answers.meta.json").read_text())
+        raw = json.loads((mode_dir / "answers.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    if meta.get("attempt_id") != start.get("attempt_id"):
+        return {}
+    if meta.get("targets") != current_targets(start):
+        return {}
+    answers = raw.get("answers", raw) if isinstance(raw, dict) else {}
+    allowed = set(start.get("answer_ids") or [])
+    return {qid: value for qid, value in answers.items()
+            if qid in allowed and isinstance(value, str)}
+
+
+def save_answers(mode_dir, start, answers):
+    (mode_dir / "answers.json").write_text(
+        json.dumps({"answers": answers}, indent=2) + "\n")
+    (mode_dir / "answers.meta.json").write_text(json.dumps({
+        "attempt_id": start.get("attempt_id"),
+        "targets": current_targets(start),
+    }, indent=2) + "\n")
 
 
 def main():
@@ -85,14 +106,19 @@ def main():
               file=sys.stderr)
         return 2
     mode = sys.argv[1]
-    mode_dir = Path(mode)
+    mode_dir = SCRIPT_DIR / mode
     start = json.loads((mode_dir / "start.json").read_text())
-    targets_by_id = {t["id"]: t["url"] for t in start.get("targets", []) if isinstance(t, dict)}
+    targets_by_id = current_targets(start)
     prompt = start.get("prompt", "")
 
-    answers, all_evidence = {}, {}
+    answers = load_reusable_answers(mode_dir, start)
+    if answers:
+        print(f"reusing {len(answers)} answer(s) from the current attempt", file=sys.stderr)
+    all_evidence = {}
     for question in start.get("questions", []):
         qid, target_id = question["id"], question.get("artifact")
+        if qid in answers:
+            continue
         url = targets_by_id.get(target_id)
         if not url:
             print(f"{qid}: no target url for artifact {target_id!r}", file=sys.stderr)
@@ -108,7 +134,8 @@ def main():
 
     missing = [q["id"] for q in start.get("questions", []) if q["id"] not in answers]
     mode_dir.mkdir(parents=True, exist_ok=True)
-    (mode_dir / "answers.json").write_text(json.dumps({"answers": answers}, indent=2) + "\n")
+    save_answers(mode_dir, start, answers)
+    (mode_dir / "solver-evidence.json").write_text(json.dumps(all_evidence, indent=2) + "\n")
     if missing:
         print(f"missing proofs for: {missing} - fill in rec_this_family() and re-run",
               file=sys.stderr)

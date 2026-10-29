@@ -271,6 +271,10 @@ def ensure_worker_dir(day, base, rows):
     with open(os.path.join(wt, "family.json"), "w") as f:
         json.dump({"base": base, "release_day": day, "routes": rows}, f, indent=2)
         f.write("\n")
+    starter = os.path.join(ROOT, "solver_py_scripts", "web_templates", "starter_solve.py")
+    destination = os.path.join(wt, "solve.py")
+    if not os.path.exists(destination):
+        shutil.copyfile(starter, destination)
     return wt
 
 
@@ -629,6 +633,10 @@ def first_pass(token_, base, rows, wt):
             # Partial recovery is valuable hand-off state too: wk.submit still enforces the
             # complete answer-id set, but the worker must not have to rediscover these proofs.
             wk.save_answers(mdir, answers)
+            (mdir / "answers.meta.json").write_text(json.dumps({
+                "attempt_id": sj.get("attempt_id"),
+                "targets": {t.get("id"): t.get("url") for t in targets},
+            }, indent=2) + "\n")
         if answer_ids and not missing and set(answers) == set(answer_ids):
             status, body = gm(token_, "POST", op="submit", challenge=route,
                               payload={"answers": answers})

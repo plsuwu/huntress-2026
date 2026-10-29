@@ -11,10 +11,11 @@ follows and how it fits the earlier day-19/day-20/day-05 references.
 Stdlib only. Every function here only ever talks to the ONE target origin it is
 given (never the Game Master): no HUNTRESS_GM_TOKEN, no start/submit, no timed or
 retry switches. This file makes no network calls at import time and holds no
-credential of any kind. Port the recovery logic you need into your current job's
-own authored solver; do not import or execute this module against a live target
-without first reading it (per policy, treat its output as reference, not an
-oracle), and never edit this shared tree from a worker's job.
+credential of any kind. It is the canonical reviewed module imported by the
+automated first pass and the provisioned all-mode worker starter. Workers edit
+only their local `rec_this_family` hook; canonical library changes remain a
+coordinator-reviewed promotion. Historical files under `past-solutions/` are a
+separate, non-importable reference record.
 
 Mastery is cumulative: a target's bug class is never assumed from the challenge's
 own name. `classify_and_recover` tries each recognized class in the evidence-led

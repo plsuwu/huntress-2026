@@ -7,7 +7,7 @@ that scan that didn't already belong in `recovery_lib.py` proper.
 
 | File | What it is | When to use it |
 |---|---|---|
-| `starter_solve.py` | The drop-in worker starter. Copy it to your worker directory as `solve.py`, fill in one function (`rec_this_family`), run it against a mode. | Every new family, every mode. This is the default starting point - read it first. |
+| `starter_solve.py` | The shared all-mode worker solver. `web_rush.py` copies it to each new worker directory as `solve.py`; the worker fills in one function (`rec_this_family`) and reuses the same file for every mode. | Every new family, every mode. This is the default starting point - read it first. |
 | `graphql_helpers.py` | A thin `graphql()` POST wrapper (built on `recovery_lib.Target`) plus a standard introspection query and a helper to list a schema's Query fields. | Only if `/api/clues` (or the app itself) points you at a GraphQL endpoint. Not wired into `classify_and_recover` - only one GraphQL-shaped bug has been confirmed so far (day-18-resolver-revolt), so this is scaffolding for discovering the *next* one's shape, not a proven recoverer. |
 | `poll_patterns.py` | `poll_for_proof()` - a bounded GET-and-retry loop for a genuinely asynchronous bug (something else visits a URL on its own schedule; you can't just fetch a second route synchronously). | Only if your family's bug needs to wait on an out-of-band actor (a bot, a webhook, a queued job) rather than an immediate second request. Session fixation and reflected-XSS-callback are both synchronous two-step patterns and don't need this - only `rec_stored_xss_bot`'s shape does. |
 
@@ -41,11 +41,11 @@ If any of these get reconfirmed against a second independent app, that's the
 signal to promote them into a template here (or straight into `recovery_lib.py`,
 if they're already a complete recoverer like `rec_lfi` was).
 
-## Future: automatic hand-off
+## Automatic hand-off
 
-Today, a worker copies `starter_solve.py` in by hand. The natural next step
-(not yet built) is for `web_rush.py`'s brief-writing step to stamp a
-per-family copy of this starter directly into `workers/web/<base-id>/` at
-dispatch time - pre-filled with that family's already-fetched `/api/clues`
-response as a comment, so the worker doesn't even need the first GET to see
-what it's working with.
+`web_rush.py` stamps this starter into `workers/web/<base-id>/solve.py` at worker-directory
+creation, without overwriting an existing worker-authored solver. The starter reuses root and
+clues recon, imports the canonical recovery library, and handles every mode through the same
+local `rec_this_family` hook. First-pass partial answers are reused only when the accompanying
+metadata matches the current attempt ID and complete target-URL assignment; otherwise they are
+re-derived. Workers should not create another HTTP client or mastery dispatcher.
