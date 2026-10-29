@@ -301,12 +301,11 @@ here after every release night.
 
 ## 2026-10-28: Day 28 release night
 
-- **Rush:** an earlier `rush.py all` (~22:40) had launched the agents, but the `huntress` tmux server and every lane pane
-  exited at 22:44:29; nothing was running at 22:50. Relaunched `rush.py all` at 22:50:48 (prep was a no-op, worktrees
-  already on `day28/*`), with the driver output tee'd to `runs-d28/rush/driver.log`. Released 23:00:01; every lane had its
-  routes within ~4.3 s. Web-exploitation days 24-25 listed; ignored per policy.
-  **Lesson:** before 22:55, check that `tmux -L huntress ls` still shows the `rush` session, not just that `runs-dNN/rush/`
-  exists.
+- **Rush:** an earlier `rush.py all` (~22:40) had launched the agents; the user deliberately killed that session at
+  22:44:29 over an unrelated issue (not a crash, so there's no need to watch tmux liveness). Relaunched `rush.py all` at
+  22:50:48 (prep was a no-op, worktrees already on `day28/*`), with the driver output tee'd to
+  `runs-d28/rush/driver.log`. Released 23:00:01; every lane had its routes within ~4.3 s. Web-exploitation days 24-25
+  listed; ignored per policy.
 - **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
   - mobile 23:01:21 `protocol-reconstruction` (v1 packet codec, day 8 v2 in mastery): first pass COMPLETE; notes only.
   - script 23:02:21 `terraform-cloud-timeline` (terraform_hcl polyglot): first pass COMPLETE; notes only.
