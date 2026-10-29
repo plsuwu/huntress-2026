@@ -503,36 +503,43 @@ def begin_route(token_, route, mode, wt, wait_s=300):
 
 def recon_target(url, mdir, tid):
     """Cheap recon per target: GET / (root html + headers) and GET /api/clues (clues.json).
-    Seeds the worker even when recovery fails. Target traffic only - never the GM."""
+    Seeds the worker even when recovery fails. The private `_responses` entry lets the
+    automated recoverer reuse these bytes instead of immediately repeating both requests;
+    it is stripped before the report is persisted. Target traffic only - never the GM."""
     slug = re.sub(r"[^a-z0-9]+", "-", str(tid).lower()).strip("-") or "target"
-    out = {"target": tid, "url": url}
+    out = {"target": tid, "url": url, "_responses": {}}
     base = url.rstrip("/")
     try:
         req = urllib.request.Request(base + "/", headers={"User-Agent": recovery_lib.UA})
         with urllib.request.urlopen(req, timeout=30) as r:
+            body = r.read()
             out["root_status"] = r.status
-            (mdir / f"{slug}.root.html").write_bytes(r.read())
+            (mdir / f"{slug}.root.html").write_bytes(body)
             (mdir / f"{slug}.root.headers.json").write_text(
                 json.dumps(dict(r.headers.items()), indent=2) + "\n")
+            out["_responses"]["/"] = (r.status, body.decode("utf-8", "replace"))
     except Exception as e:  # noqa: BLE001
         out["root_status"] = f"error {e!r}"
     try:
         req = urllib.request.Request(base + "/api/clues",
                                      headers={"User-Agent": recovery_lib.UA})
         with urllib.request.urlopen(req, timeout=30) as r:
+            body = r.read()
             out["clues_status"] = r.status
-            (mdir / f"{slug}.clues.json").write_bytes(r.read())
+            (mdir / f"{slug}.clues.json").write_bytes(body)
+            out["_responses"]["/api/clues"] = (r.status, body.decode("utf-8", "replace"))
     except Exception as e:  # noqa: BLE001
         out["clues_status"] = f"error {e!r}"
     return out
 
 
-def recover_answers(mdir, sj):
+def recover_answers(mdir, sj, recon=None):
     """classify_and_recover per target, joining questions[].artifact to targets[].id (never array
-    order - mastery is cumulative and mixes earlier bug classes). Returns
-    ({answer_id: proof}, {answer_id: evidence}, missing answer ids)."""
+    order - mastery is cumulative and mixes earlier bug classes). Reuse recon's root/clues
+    responses when available. Returns ({answer_id: proof}, {answer_id: evidence}, missing ids)."""
     mdir = Path(mdir)
     by_id = {t.get("id"): t for t in (sj.get("targets") or []) if isinstance(t, dict)}
+    recon_by_id = {r.get("target"): r.get("_responses", {}) for r in (recon or [])}
     answers, evidence, missing = {}, {}, []
     for q in (sj.get("questions") or []):
         qid, tid = q.get("id"), q.get("artifact")
@@ -544,7 +551,8 @@ def recover_answers(mdir, sj):
         t = recovery_lib.Target(tgt["url"],
                                 mdir / "evidence" / str(tid).replace(" ", "_"))
         try:
-            proof = recovery_lib.classify_and_recover(t, ev, sj.get("prompt", ""))
+            proof = recovery_lib.classify_and_recover(
+                t, ev, sj.get("prompt", ""), initial=recon_by_id.get(tid))
         except Exception as e:  # noqa: BLE001  one target's crash must not discard the others
             proof, ev["error"] = None, repr(e)
         evidence[qid] = {"target": tid, "url": tgt["url"], **ev}
@@ -584,7 +592,9 @@ def first_pass(token_, base, rows, wt):
             report["steps"].append(step)
             correct = False
             continue
-        if code != 200 or not isinstance(raw, dict):
+        if code == 409 and isinstance(raw, dict) and raw.get("error") == "start_required":
+            pass  # a fresh route has no attempt yet; begin_route performs the plain untimed start
+        elif code != 200 or not isinstance(raw, dict):
             step["result"] = f"ERROR op=status -> HTTP {code}: {wk.short(raw)}"
             report["steps"].append(step)
             correct = False
@@ -608,13 +618,18 @@ def first_pass(token_, base, rows, wt):
         targets = [t for t in (sj.get("targets") or []) if isinstance(t, dict)]
         step["attempt_id"] = sj.get("attempt_id")
         step["targets"] = [t.get("id") for t in targets]
-        step["recon"] = [recon_target(t.get("url"), mdir, t.get("id"))
-                         for t in targets if t.get("url")]
-        answers, evidence, missing = recover_answers(mdir, sj)
+        recon = [recon_target(t.get("url"), mdir, t.get("id"))
+                 for t in targets if t.get("url")]
+        answers, evidence, missing = recover_answers(mdir, sj, recon)
+        step["recon"] = [{k: v for k, v in row.items() if k != "_responses"} for row in recon]
         step["evidence"] = evidence
         answer_ids = sj.get("answer_ids") or []
-        if answer_ids and not missing and set(answers) == set(answer_ids):
+        step["recovered_answer_ids"] = [qid for qid in answer_ids if qid in answers]
+        if answers:
+            # Partial recovery is valuable hand-off state too: wk.submit still enforces the
+            # complete answer-id set, but the worker must not have to rediscover these proofs.
             wk.save_answers(mdir, answers)
+        if answer_ids and not missing and set(answers) == set(answer_ids):
             status, body = gm(token_, "POST", op="submit", challenge=route,
                               payload={"answers": answers})
             wk.save_round(mdir, answers, body)
@@ -660,6 +675,9 @@ def brief(day, report):
             bits = [f"{r.get('target')}: root={r.get('root_status')} "
                     f"clues={r.get('clues_status')}" for r in s["recon"]]
             lines.append("recon: " + "; ".join(bits))
+        if s.get("recovered_answer_ids"):
+            lines.append("recovered answer ids saved in answers.json: "
+                         + ", ".join(s["recovered_answer_ids"]))
         for qid, ev in (s.get("evidence") or {}).items():
             cls = ev.get("classification") or ev.get("error") or "unclassified"
             lines.append(f"- {qid} [{ev.get('target')}] class={cls}")

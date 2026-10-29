@@ -15,7 +15,11 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
    directly. Better still, avoid crashing targets: send well-formed requests only, since a
    malformed/non-object body can 500 the origin and take the container down for the attempt.
 2. Solve whatever is not CORRECT, in order: single_solve, then time_trial, then mastery.
-   Submit with `python3 tools/wk.py submit <mode>` as soon as you have answers; on CORRECT,
+   The first pass may already have saved a partial `<mode>/answers.json` and per-target evidence.
+   On the same attempt, keep those recovered entries and solve only the missing answer IDs rather
+   than repeating known classifications. If `begin` reports a changed attempt, discard and
+   re-derive every saved answer. Submit with `python3 tools/wk.py submit <mode>` as soon as you
+   have the complete answer set; on CORRECT,
    begin the next mode at once. (`python3 tools/wk.py status` shows the local record per
    route, `status --live` the GM's current view; `python3 tools/wk.py next` names the
    first route that is not CORRECT.)

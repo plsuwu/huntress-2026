@@ -628,7 +628,7 @@ def rec_sqli_group_close(t, html):
     return None
 
 
-def classify_and_recover(t, evidence=None, prompt=""):
+def classify_and_recover(t, evidence=None, prompt="", initial=None):
     """Evidence-led dispatcher: GET / once, then try each recognized class in order.
 
     Mirrors the restored day-19/day-20 dispatcher order (admin/clues-driven apps
@@ -639,9 +639,12 @@ def classify_and_recover(t, evidence=None, prompt=""):
     if given; this function never talks to anything but `t`'s own origin. `prompt`
     is the challenge's own prompt text (optional) - only `rec_lfi` uses it, to find
     a "mounted at <path>" objective-file hint; omitting it falls back to the
-    documented default path."""
+    documented default path. `initial` may contain already-fetched `/` and
+    `/api/clues` `(status, body)` pairs, avoiding duplicate recon requests."""
     evidence = evidence if evidence is not None else {}
-    status, html = t.get("/", save="root")
+    initial = initial or {}
+    root = initial.get("/")
+    status, html = root if root else t.get("/", save="root")
     evidence["root_status"] = status
     if status != 200:
         evidence["classification"] = "root request failed"
@@ -649,9 +652,18 @@ def classify_and_recover(t, evidence=None, prompt=""):
 
     # Always try the clues API directly rather than gating on root HTML literally
     # containing "/api/clues": the day-07 app only discloses it via /openapi.json,
-    # not a root-page link, so a text pre-filter misses it. A non-200 here just
+    # not a root-page link. A non-200 here just
     # means this app has no clues API; fall through to the other classes.
-    clues_status, clues = t.get_json("/api/clues", save="clues")
+    cached_clues = initial.get("/api/clues")
+    if cached_clues:
+        clues_status, clues_body = cached_clues
+        try:
+            clues = json.loads(clues_body) if clues_status == 200 else None
+        except (TypeError, ValueError):
+            clues = None
+    else:
+        clues_status, clues = t.get_json("/api/clues", save="clues")
+
     if clues_status == 200 and clues:
         evidence["clues"] = clues
         if clues.get("session_hint") and clues.get("feature_route") and clues.get("secondary_route"):
