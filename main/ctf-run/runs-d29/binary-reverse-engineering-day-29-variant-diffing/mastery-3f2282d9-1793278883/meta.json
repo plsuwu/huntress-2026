@@ -1,0 +1,152 @@
+{
+  "challenge": "binary-reverse-engineering-day-29-variant-diffing/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "3f2282d9-6ee1-46f4-87cc-ad6ee909e6e9",
+  "started_at": "2026-10-29T13:01:27.220Z",
+  "deadline": null,
+  "shape": "artifacts[13]+downloads[13]",
+  "start_ms": 4109.937665,
+  "start_ttfb_ms": 4049.9403190000003,
+  "clock": {
+    "start_sent": "2026-10-29T13:01:23.897Z",
+    "start_received": "2026-10-29T13:01:28.007Z",
+    "start_date_header": "2026-10-29T13:01:27.000Z",
+    "last_delivery": "2026-10-29T13:01:49.174Z",
+    "submit_sent": "2026-10-29T13:01:49.252Z",
+    "submit_received": "2026-10-29T13:01:53.696Z",
+    "submit_date_header": "2026-10-29T13:01:53.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 16938165,
+      "wire": 16938165,
+      "ttfb_ms": 2005.1376329999998,
+      "total_ms": 10541.204347,
+      "done_at_ms": 14651.884818999999,
+      "analyse_ms": 3288.381392
+    },
+    {
+      "delivery": 9,
+      "name": "evidence.zip",
+      "bytes": 16938082,
+      "wire": 16938082,
+      "ttfb_ms": 1484.4190130000002,
+      "total_ms": 15268.37622,
+      "done_at_ms": 19378.65723,
+      "analyse_ms": 3439.2106679999997
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 16938371,
+      "wire": 16938371,
+      "ttfb_ms": 2003.63531,
+      "total_ms": 15930.950699,
+      "done_at_ms": 20041.585338,
+      "analyse_ms": 3390.371289
+    },
+    {
+      "delivery": 13,
+      "name": "evidence.zip",
+      "bytes": 16911208,
+      "wire": 16911208,
+      "ttfb_ms": 1486.429016,
+      "total_ms": 16373.657065,
+      "done_at_ms": 20483.89702,
+      "analyse_ms": 3210.368146
+    },
+    {
+      "delivery": 12,
+      "name": "evidence.zip",
+      "bytes": 16986652,
+      "wire": 16986652,
+      "ttfb_ms": 1969.23162,
+      "total_ms": 16702.566942,
+      "done_at_ms": 20812.754918,
+      "analyse_ms": 3263.895813
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 16882570,
+      "wire": 16882570,
+      "ttfb_ms": 1901.5463559999998,
+      "total_ms": 16885.003009999997,
+      "done_at_ms": 20995.596319,
+      "analyse_ms": 3431.260971
+    },
+    {
+      "delivery": 10,
+      "name": "evidence.zip",
+      "bytes": 16908069,
+      "wire": 16908069,
+      "ttfb_ms": 1509.066772,
+      "total_ms": 17146.566335,
+      "done_at_ms": 21257.216787,
+      "analyse_ms": 3388.286054
+    },
+    {
+      "delivery": 11,
+      "name": "evidence.zip",
+      "bytes": 17015759,
+      "wire": 17015759,
+      "ttfb_ms": 2485.553187,
+      "total_ms": 17141.975596,
+      "done_at_ms": 21252.641291,
+      "analyse_ms": 3502.845108
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 16937412,
+      "wire": 16937412,
+      "ttfb_ms": 1563.4647909999999,
+      "total_ms": 17283.67497,
+      "done_at_ms": 21394.312852,
+      "analyse_ms": 3495.8600579999998
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 16908077,
+      "wire": 16908077,
+      "ttfb_ms": 1611.5583199999999,
+      "total_ms": 17374.306266,
+      "done_at_ms": 21484.652349,
+      "analyse_ms": 3488.066742
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 16911832,
+      "wire": 16911832,
+      "ttfb_ms": 2302.540951,
+      "total_ms": 17482.485648,
+      "done_at_ms": 21592.817601,
+      "analyse_ms": 3451.7576879999997
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 16985987,
+      "wire": 16985987,
+      "ttfb_ms": 1809.7456200000001,
+      "total_ms": 17917.577919,
+      "done_at_ms": 22027.872312,
+      "analyse_ms": 3229.608291
+    },
+    {
+      "delivery": 8,
+      "name": "evidence.zip",
+      "bytes": 17012919,
+      "wire": 17012919,
+      "ttfb_ms": 1509.039792,
+      "total_ms": 17923.304903999997,
+      "done_at_ms": 22033.955881,
+      "analyse_ms": 3242.698231
+    }
+  ]
+}
