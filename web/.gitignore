@@ -8,9 +8,11 @@ __pycache__/
 *.ovpn
 
 # Per-day driver state and per-challenge runtime scratch - regenerated every release, never
-# meant to be committed. workers/web/past-solutions/, workers/web/solution-notes/, .events and
-# .slot-{1,2,3}/ are the consolidated reference library and ARE committed - see README.md.
+# meant to be committed. workers/web/past-solutions/, workers/web/solution-notes/ and .events
+# are the consolidated reference library and ARE committed - see README.md. A few legacy slot
+# symlinks are already tracked, but new prewarm contents stay ignored.
 workers/web/.rush-d*/
 workers/web/routes-d*.json
 workers/web/web-exploitation-*/
+workers/web/.slot-*/
 .pytest_cache/
