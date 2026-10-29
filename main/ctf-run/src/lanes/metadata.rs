@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, zip};
+use crate::formats::{apk, audio, cfb, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, x509, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -642,6 +642,67 @@ fn disk_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-x509-<field>` -> a certificate field. d29 graded `sha256-fingerprint`: SHA-256 of the DER encoding,
+/// lowercase hex. Certificates are found as PEM blocks or raw DER anywhere in the file; identical copies collapse,
+/// several distinct ones are an error. Other fields are unverified guesses; an unknown field fails with x509 facts.
+fn x509_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-x509-")?;
+    let want = &key[i + 6..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let want = want.strip_prefix("x509-").unwrap_or(want);
+    let all = x509::find_all(b);
+    let mut uniq: Vec<&x509::Cert> = Vec::new();
+    for c in &all {
+        if !uniq.iter().any(|u| u.der == c.der) {
+            uniq.push(c);
+        }
+    }
+    match want {
+        "certificate-count" | "cert-count" => return Some(Ok(all.len().to_string())),
+        "unique-certificate-count" | "unique-cert-count" | "distinct-certificate-count" => return Some(Ok(uniq.len().to_string())),
+        _ => {}
+    }
+    let c = match uniq.as_slice() {
+        [c] => *c,
+        [] => return Some(Err(format!("no certificate; {}", facts("x509", b)))),
+        _ => return Some(Err(format!("{} distinct certificates; {}", uniq.len(), x509_facts(&all)))),
+    };
+    let cn = |n: &[(String, String)]| x509::Cert::attr(n, "CN").map(str::to_string).unwrap_or_else(none);
+    Some(Ok(match want {
+        "sha256-fingerprint" | "fingerprint-sha256" | "sha256" => hex(&sha256(&c.der)),
+        "sha1-fingerprint" | "fingerprint-sha1" | "sha1" => hex(&sha1(&c.der)),
+        "md5-fingerprint" | "fingerprint-md5" | "md5" => hex(&md5(&c.der)),
+        "serial-number" | "serial" | "serial-hex" => c.serial.trim_start_matches("00").to_string(),
+        "subject-cn" | "subject-common-name" | "common-name" => cn(&c.subject),
+        "issuer-cn" | "issuer-common-name" => cn(&c.issuer),
+        "subject" | "subject-dn" => x509::Cert::dn(&c.subject),
+        "issuer" | "issuer-dn" => x509::Cert::dn(&c.issuer),
+        "not-before" | "valid-from" => c.not_before.clone(),
+        "not-after" | "valid-to" | "valid-until" | "expiry" => c.not_after.clone(),
+        "version" => c.version.to_string(),
+        "signature-algorithm" | "sig-alg" => c.sig_alg.clone(),
+        "public-key-algorithm" | "key-algorithm" => c.key_alg.clone(),
+        "san" | "subject-alt-names" | "san-dns-names" | "dns-names" => compact_json(&c.san),
+        "self-signed" | "is-self-signed" | "self-issued" => c.self_issued().to_string(),
+        _ => return Some(Err(format!("unknown x509 field {want:?}; {}", x509_facts(&all)))),
+    }))
+}
+
+fn x509_facts(all: &[x509::Cert]) -> String {
+    let f: Vec<String> = all
+        .iter()
+        .map(|c| {
+            format!(
+                "@{:#x} pem {} sha256 {} v{} serial {} sig {} key {} issuer [{}] subject [{}] {}..{} san {:?}",
+                c.offset, c.pem, hex(&sha256(&c.der)), c.version, c.serial, c.sig_alg, c.key_alg, x509::Cert::dn(&c.issuer), x509::Cert::dn(&c.subject), c.not_before, c.not_after, c.san
+            )
+        })
+        .collect();
+    format!("x509 {} cert(s): {}", all.len(), f.join(" | "))
+}
+
 fn disk_facts(d: &disk::Disk) -> String {
     let pk = |v: &[disk::Partition]| v.iter().map(|p| format!("#{} {}..{} {} {:?} {:?}", p.index, p.start_lba, p.end_lba, p.kind, p.guid, p.name)).collect::<Vec<_>>().join(", ");
     format!(
@@ -931,6 +992,10 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if let Some(d) = disk::Disk::parse(b) {
         f.push(disk_facts(&d));
     }
+    let certs = x509::find_all(b);
+    if !certs.is_empty() {
+        f.push(x509_facts(&certs));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -1044,6 +1109,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = disk_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = x509_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {
