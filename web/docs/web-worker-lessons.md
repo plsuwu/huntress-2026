@@ -1,6 +1,6 @@
 # Web worker lessons from restored solutions
 
-These are historical, graded observations from the release Day 19-28 notes and
+These are historical, graded observations from the release Day 19-29 notes and
 source in `solver_py_scripts/` and `workers/web/past-solutions/`. They are
 reference methods, never current proofs, target assignments or permission grants.
 Read this before investigating a new target. Do not infer that a new challenge
@@ -45,7 +45,9 @@ family's cumulative pool can grow as the event's curriculum does. Day 28
 5-target shape on both families: backup exposure + IDOR + day-19's
 group-closing SQLi + day-20's LFI + that family's own novel class
 (fail-open policy decoding / missing audit-log event), one target per class,
-no repeats.
+no repeats. Day 29 (two families; curriculum days 26-27) again confirmed the
+same five-target shape with unverified-update tampering and SSRF/internal-IDOR
+as the respective novel classes.
 
 Join `questions[].artifact` to `targets[].id` (for example `Target 2`) to find
 the correct URL. Do not rely on array order, curriculum number or title. Preserve
@@ -87,8 +89,10 @@ classes must remain unknown until supported by the page, behavior and question.
 | Credit double-spend (non-atomic check-then-act race) | `/api/clues` gives feature_route (POST; redeems one credit — reads the stored count, checks `> 0`, writes `count-1` back as two separate steps, no row lock/atomic UPDATE) + secondary_route (GET; reports the proof once the stored balance has gone negative) — the same bare two-key shape as SSRF above, with no clue field to tell them apart. A single serial POST behaves "correctly" and **permanently burns the target's one and only credit** (no in-app reset/topup); the bug only shows when ≥2 requests hit feature_route at the same wall-clock instant, so the race must be the very first touch of feature_route, never a solo probe. 12–16 concurrent racers via a thread pool was consistently enough (~5/16 `ok:true`). | `recovery_lib.py`, `rec_double_spend`; `workers/web/solution-notes/day-21-double-spent.md` |
 | Unauthorized event-stream subscription (WS upgrade, wrong query-param *name*) | `/api/clues` gives feature_route (a real WebSocket upgrade path, not a normal route — plain GET/POST without `Upgrade` headers returns 426) + stream_reference (a numeric id), no other feature_route-shaped key alongside. A well-formed WS handshake with no query, or with the clue's own key name (`stream_reference`/`ref`/`id`/`channel`), gets a 403 that *looks* like a role/auth rejection but isn't — the upgrade only succeeds when the query string names the stream with the bare, undisclosed key `stream`. Once connected, the server immediately pushes one proof-carrying event, never re-checking the caller's role/ownership of that stream. Needs the non-stdlib `websockets`/`certifi` packages (stdlib `urllib` can't do a clean WS handshake). | `recovery_lib_ws.py`, `rec_unauthorized_event_stream`; `workers/web/solution-notes/day-22-socket-to-me.md` |
 | Trusted-reverse-proxy header spoofing | `/api/clues` gives feature_route + current_role + `deployment: "trusted_reverse_proxy"` — no `secondary_route`/`inventory_route`/`protected_reference`, distinguishable by that key shape alone. feature_route decides "am I being called from loopback" from a client-supplied `X-Forwarded-For` header with **no actual upstream-proxy allowlist**: sending `X-Forwarded-For: 127.0.0.1` flips `evaluated_client` and returns the proof. `X-Real-IP`/`X-Forwarded-Host`/`X-Forwarded-Proto` do not affect the decision — XFF alone is necessary and sufficient. Stateless; safe to re-probe. | `recovery_lib.py`, `rec_proxy_trust_bypass`; `workers/web/solution-notes/day-23-forwarded-misgivings.md` |
-| Fail-open remote policy decoder | `/api/clues` gives feature_route + `policy_format_route` + `expected_behavior` (seen: ASP.NET Core Razor Pages). `policy_format_route` discloses the exact query-parameter name, per-attempt `remote:<hex>:` prefix, encoding (base64url UTF-8 JSON), and a valid public decision. A valid public decision only returns the standard policy response, but a token with the disclosed prefix plus an **undecodable payload** hits the decoder's exception path and grants the protected effect, returning the proof — the opposite of the disclosed expected failure-deny behavior. Stateless; derive the parameter and prefix live. | `workers/web/past-solutions/day-28-fail-open-friday-solve.py`; `workers/web/solution-notes/day-28-fail-open-friday.md` |
-| Missing audit-log event on a privileged action | `/api/clues` gives the same bare feature_route + secondary_route shape as SSRF/double-spend, but a read-only GET on secondary_route discloses `report.fields` (seen: Slim/PHP). POST feature_route performs a privileged export and returns an id/operation; GET secondary_route shows only a benign event for that id. POST secondary_route with the disclosed report body (`export_id`, `missing_event`, `observed_event`) returns the proof. Always GET secondary_route first: it separates this class from SSRF (403) and from double-spend (whose feature_route is one-shot and must never be probed serially). | `workers/web/past-solutions/day-28-if-a-breach-falls-in-a-log-solve.py`, `day-28-if-a-breach-falls-in-a-log-mastery.py`; `workers/web/solution-notes/day-28-if-a-breach-falls-in-a-log.md` |
+| Fail-open remote policy decoder | `/api/clues` gives feature_route + `policy_format_route` + `expected_behavior` (seen: ASP.NET Core Razor Pages). `policy_format_route` discloses the exact query-parameter name, per-attempt `remote:<hex>:` prefix, encoding (base64url UTF-8 JSON), and a valid public decision. A valid public decision only returns the standard policy response, but a token with the disclosed prefix plus an **undecodable payload** hits the decoder's exception path and grants the protected effect, returning the proof — the opposite of the disclosed expected failure-deny behavior. Stateless; derive the parameter and prefix live. | `recovery_lib.py`, `rec_fail_open_policy`; `workers/web/solution-notes/day-28-fail-open-friday.md` |
+| Missing audit-log event on a privileged action | `/api/clues` gives the same bare feature_route + secondary_route shape as SSRF/double-spend, but a read-only GET on secondary_route discloses `report.fields` (seen: Slim/PHP). POST feature_route performs a privileged export and returns an id/operation; GET secondary_route shows only a benign event for that id. POST secondary_route with the disclosed report body (`export_id`, `missing_event`, `observed_event`) returns the proof. Always GET secondary_route first: it separates this class from SSRF (403) and from double-spend (whose feature_route is one-shot and must never be probed serially). | `recovery_lib.py`, `rec_missing_log_event`; `workers/web/solution-notes/day-28-if-a-breach-falls-in-a-log.md` |
+| Unverified dependency update / hook tampering | `/api/clues` gives `feature_route`, `update_feed`, and `update_policy`. Copy a feed update, change only `artifact.hook` to a policy-declared restricted hook, and retain its original signed hash/signature. The updater activates the tampered artifact without verifying the disclosed integrity contract. Derive the package object and hook live. | `recovery_lib.py`, `rec_unverified_update`; `workers/web/solution-notes/day-29-trust-the-build.md` |
+| SSRF chained to internal IDOR | `/api/clues` gives `feature_route`, `topology_route`, `case_directory_route`, and `current_role`. Topology discloses an absolute loopback case-service URL; the case directory discloses a foreign id. Pass that internal URL with `id=<foreign id>` through the public fetch parameter (disclosed by the feature route's 400 response). | `recovery_lib.py`, `rec_internal_affairs`; `workers/web/solution-notes/day-29-internal-affairs.md` |
 
 The historical dispatcher checked admin clues **before generic API/IDOR signs**,
 then PHP viewer/LFI evidence, SQLi, IDOR, and finally investigated backup hints.
@@ -105,12 +109,11 @@ differ by which *other* key is or isn't present), then IDOR, then a
 `<form>`-based SQLi gate, then backup exposure last (with a `<form>`-present
 SQLi retry and a backup-exposure retry as final fallbacks). Extend this evidence hierarchy for
 new classes; do not blindly copy its form=SQLi or fallback=backup assumptions.
-Day 28 adds two clue shapes not yet folded into `recovery_lib.py`:
-`policy_format_route` means the fail-open policy decoder, while a bare
-`feature_route` + `secondary_route` now needs a read-only GET on
-`secondary_route` before touching `feature_route` — `report.fields` means
-missing-audit-log, a 403 suggests SSRF, and a balance/one-shot view suggests
-double-spend (whose feature route must remain untouched until the race).
+Day 28 and Day 29's classes are now folded into `recovery_lib.py`. For the ambiguous bare
+`feature_route` + `secondary_route` shape, the canonical dispatcher makes one read-only GET on
+`secondary_route`: `report.fields` selects missing-audit-log, a `credits` balance selects the
+one-shot double-spend race, and 403/`internal_service_only` selects SSRF. An unrecognized response
+fails closed for worker investigation rather than speculatively firing a state-changing exploit.
 
 When a target gives no error, reflection or timing oracle at all (day-12's
 second-order SQLi above), a one-variable-at-a-time sweep can look exhaustive
@@ -270,32 +273,24 @@ matrix.
 
 ## Reuse source, not the old execution workflow
 
-The most complete reference is now `solver_py_scripts/recovery_lib.py`: one
-shared, stdlib-only module folding every class above (`rec_backup`, `rec_idor`,
+The canonical executable module is `solver_py_scripts/recovery_lib.py`: one shared,
+stdlib-only module folding every HTTP class above (`rec_backup`, `rec_idor`, `rec_lfi`,
 `rec_session_fixation`, `rec_reflect_callback`, `rec_stored_xss_bot`, `rec_csrf`,
-`rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`,
-`rec_command_injection`, `rec_reset_account_confusion`,
-`rec_graphql_field_bypass`, `rec_forged_webhook_event`, `rec_sqli_group_close`,
-`rec_double_spend`, `rec_proxy_trust_bypass`)
-plus the `Target` HTTP client and `classify_and_recover` dispatcher behind it,
-shared by the two scripts now at `workers/web/past-solutions/day-06-07-08-shared-solve.py`
-and `day-09-10-shared-solve.py`
-(the day-14/15/16/17/18/20/21/22/23 family solvers ported their own classes directly rather
-than importing this module, per the rule below — `recovery_lib.py` itself
-folded them in afterward, from the graded evidence; `rec_sqli_group_close`
-folds in day-03's payload, now reconfirmed verbatim across five independent
-live apps; `rec_forged_webhook_event` folds in day-19's trust-the-webhook payload,
-binary-searched down to its minimal `{"event", "owner"}` form — see the lesson
-above on not stopping at an unverified kitchen-sink hit).
-`solver_py_scripts/recovery_lib_ws.py` is a sibling for the one class that needs
-a non-stdlib WebSocket client (`rec_unauthorized_event_stream`, day 22's
-socket-to-me) — kept separate so `recovery_lib.py` itself stays stdlib-only;
-install `websockets`+`certifi` into an ephemeral venv before importing it.
-Graded evidence (live targets, not a local fixture) backs the two newest
-`recovery_lib.py` classes and the one in `recovery_lib_ws.py`; everything else
-is verified against local HTTP fixtures for every class it recovers (not
-just read for plausibility), but a fixture is not a live target: still read it
-before trusting it against your assignment.
+`rec_upload_bypass`, `rec_ssrf`, `rec_field_action_bypass`, `rec_command_injection`,
+`rec_reset_account_confusion`, `rec_graphql_field_bypass`, `rec_forged_webhook_event`,
+`rec_sqli_group_close`, `rec_double_spend`, `rec_proxy_trust_bypass`,
+`rec_fail_open_policy`, `rec_missing_log_event`, `rec_unverified_update`, and
+`rec_internal_affairs`) plus the `Target` HTTP client and `classify_and_recover`
+dispatcher. It is imported directly by the automated first pass and the provisioned
+all-mode `solve.py`; workers do not copy these functions into another mastery script.
+`rec_sqli_group_close` folds in day-03's repeatedly graded payload, and
+`rec_forged_webhook_event` retains the minimal payload established by live minimization.
+`solver_py_scripts/recovery_lib_ws.py` is the sibling for the WebSocket class that needs
+non-stdlib `websockets`/`certifi`; install those only into an ephemeral venv before
+importing it. Offline regressions under `tests/` use mocks/local data and cover the
+first-pass lifecycle, latest recoverers, ambiguous clue shapes, and answer-reuse guards.
+Graded live evidence remains the basis for promoting a recoverer; a unit test alone does
+not establish that a new mechanism works.
 Earlier still: `workers/web/past-solutions/day-04-05-shared-common.py` (`sniff`,
 `rec_sqli`, `rec_lfi`, `rec_admin`) and `day-01-02-03-shared-solve_lane.py` (the earlier
 three-family dispatcher). Every note in `workers/web/solution-notes/` (including the
@@ -312,14 +307,10 @@ their original per-challenge directories, and some now have broken relative impo
 scripts need `requests`; most others use stdlib urllib.
 Relocated credential/root-path fallbacks are obsolete. Older clients also follow
 redirects by default and some recoverers contain guessed fallback paths.
-`recovery_lib.py` and the day-21/day-22 `solve.py` files are different in kind
-(no GM calls, no credentials, no timed/retry switches — they only ever talk to
-one target origin named in a `start.json` you already own) but the same
-discipline still applies: port the logic into your current job's authored
-solver rather than importing this shared module directly against your live
-assignment.
-
-Port only the needed parsing/recovery logic into your current job's authored
-solver. Use current assignments, scoped HTTP requests, explicit response-derived
-paths, the coordinator's submission flow, and the current untimed-only policy.
-Never edit the shared restored reference tree or run a saved challenge script.
+`recovery_lib.py` is deliberately different from those historical scripts: it is the
+reviewed canonical module, has no GM calls or credentials, and is intended for direct import
+by the current worker starter. Edit only the provisioned solver's `rec_this_family` hook,
+then reuse it for every mode. Canonical library changes are coordinator-reviewed and must
+pass `python3 -m unittest discover -s tests -v`; workers must not edit the shared library
+in place during a challenge. Continue to use current assignments, scoped HTTP requests,
+response-derived paths, the coordinator's submission flow, and the untimed-only policy.

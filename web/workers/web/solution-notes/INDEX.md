@@ -39,7 +39,9 @@ rg -n -g 'day-*.md' '^tags:.*(ssrf|traversal|policy|audit)' .
 | 24 | fail-open-friday | `day-28-fail-open-friday.md` | fail-open, policy-decoder, error-handling | `day-28-fail-open-friday-solve.py` |
 | 25 | if-a-breach-falls-in-a-log | `day-28-if-a-breach-falls-in-a-log.md` | missing-audit-log-event, broken-logging, security-event-suppression | `day-28-if-a-breach-falls-in-a-log-solve.py`, `day-28-if-a-breach-falls-in-a-log-mastery.py` |
 | 26 | trust-the-build | `day-29-trust-the-build.md` | unverified-update, dependency-tampering, integrity-check-bypass | `day-29-trust-the-build-solve.py`, `day-29-trust-the-build-mastery.py` |
+| 27 | internal-affairs | `day-29-internal-affairs.md` | ssrf, chained-exploitation, idor, loopback-access | `day-29-internal-affairs-solve.py`, `day-29-internal-affairs-mastery.py` |
 
-Note: the Day 28 and Day 29 file names use the release day, while their frontmatter and this
-index use the embedded curriculum day (24 through 26). Always trust the note's
-frontmatter `day`/`slug` and the challenge's own route id over the file name.
+Note: the Day 28 and Day 29 historical file names use the release day, while their frontmatter and this
+index use the embedded curriculum day (24 through 27). New briefs derive file names from the route's
+curriculum ID. Always trust the note's frontmatter `day`/`slug` and the challenge's own route id over
+the file name.

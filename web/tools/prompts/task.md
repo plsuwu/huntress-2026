@@ -29,7 +29,7 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
 4. Mastery assigns multiple targets mixing earlier bug classes. Classify every target
    independently (join each question's `artifact` field to `targets[].id`) - do not assume
    the challenge's own bug.
-5. Write `solution-notes/day-{day:02d}-{slug}.md` (symlinked into your directory - the real
+5. Write `solution-notes/{short}.md` (symlinked into your directory - the real
    path is `workers/web/solution-notes/`, the consolidated, tagged reference library every
    worker shares). Use the YAML frontmatter template already at the top of any existing
    `solution-notes/day-*.md` file (`day`, `slug`, `lane: web-exploitation`, `modes`,
@@ -43,12 +43,12 @@ The first pass above did not finish this challenge. Make every mode of `{chal}` 
    second HTTP client or a separate mastery classifier unless this runner genuinely cannot
    express the bug. Derive routes from the live target, never hard-code per-attempt answers -
    then copy the resulting solver verbatim into
-   `past-solutions/day-{day:02d}-{slug}-solve.py`
+   `past-solutions/{short}-solve.py`
    (symlinked the same way). Only if an extra script was genuinely necessary, name it
-   `past-solutions/day-{day:02d}-{slug}-mastery.py`. If you needed a bug class
+   `past-solutions/{short}-mastery.py`. If you needed a bug class
    `recovery_lib.py` does not know, document the method precisely in your note; the
    coordinator folds new recoverers into the shared library.
-6. Commit it - `git add solution-notes/day-{day:02d}-{slug}.md past-solutions/day-{day:02d}-{slug}-*.py && git commit`, ending the message with the usual Co-Authored-By line (the symlinked relative paths resolve to their real location under `workers/web/` - `git add` follows them correctly).
+6. Commit it - `git add solution-notes/{short}.md past-solutions/{short}-*.py && git commit`, ending the message with the usual Co-Authored-By line (the symlinked relative paths resolve to their real location under `workers/web/` - `git add` follows them correctly).
 7. Report in a few lines: what changed, graded findings, anything the coordinator must do, then
    stop - the driver marks your challenge done once this turn ends.
 

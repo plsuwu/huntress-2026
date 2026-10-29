@@ -87,11 +87,15 @@
 - **Rush-shaped pipeline (2026-10-24).** The lane runs the main pipeline's shape:
   `tools/web_rush.py` (all/prep/launch/watch/status/takeover) is the single driver —
   it prepares `workers/web/<base-id>/`, primes one opencode session per slot (visible via a
-  `tmux attach` window on `-L huntress-web`), runs an automated untimed first pass per
-  challenge at release (`solver_py_scripts/recovery_lib.py`), writes each brief and dispatches
+  `tmux attach` window on `-L huntress-web`), runs an automated untimed first pass per challenge at release
+  (`solver_py_scripts/recovery_lib.py`), writes each brief and dispatches
   it. `tools/wk.py` is the worker's only GM door. The old config-driven coordinator (`web.py`,
   `orchcfg.py`, `config.toml`, planners, playbooks, tests) was torn out on 2026-10-24 and must
-  not come back.
+  not come back. The reviewed recovery library is executable shared code and is imported by
+  the provisioned all-mode starter; only `past-solutions/` remains copy/reference-only. Workers
+  edit their local family hook, while canonical recoverer promotion stays coordinator-reviewed
+  and regression-tested.
+
 - **Opencode migration, no stall detection (2026-10-28).** The lane moved from Claude Code to
   `opencode`: one shared `opencode serve` process hosts every challenge's session for the day;
   the driver's own turns go over `opencode run --attach <url> --session <id>`, which blocks

@@ -18,6 +18,8 @@ SSH, no run host.
 | `tools/wk.py` | The worker's only GM door: `begin\|submit\|reset\|status [--live]\|next`, guarded (untimed only, own family only) |
 | `tools/prompts/` | `prime.md` (pre-release warm-up), `task.md` / `task-done.md` (brief tails) |
 | `solver_py_scripts/recovery_lib.py` | Shared target classifiers/recoverers — the automated first pass and the worker solvers both use it |
+| `solver_py_scripts/web_templates/starter_solve.py` | Canonical all-mode worker solver, automatically provisioned as `solve.py`; workers edit only `rec_this_family` |
+| `tests/` | Offline unittest regressions for first-pass lifecycle, recovery classification, and safe answer reuse |
 | `workers/web/past-solutions/` + `workers/web/solution-notes/` | The consolidated, git-tracked solution library (layout below) - every day's `solve.py`/notes, past and future, live here; `solution-notes/INDEX.md` is the worker-facing day/tag -> note -> script map |
 | `workers/web/` (everything else) | Per-run driver/worker scratch, git-ignored (layout below) |
 
@@ -30,7 +32,8 @@ workers/web/
   .slot-{1,2,3}/         pre-warmed worker dirs (shared trees + past-solutions/solution-notes symlinked
                           in), recreated on every real `launch`
   .events                cross-day log of route completions, appended to by tools/wk.py - never cleared
-  <base-id>/             per-challenge dir for the day in progress, created fresh at release; git-ignored
+  <base-id>/             per-challenge dir for the day in progress, created fresh at release;
+                           includes the provisioned all-mode solve.py; git-ignored
   .rush-dNN/             the current day's driver state (sessions, briefs, running/done/timedout markers);
                           cleared by the next day's `prep`, git-ignored
   routes-dNN.json        the current day's route cache, git-ignored
@@ -57,7 +60,10 @@ each started only once its prerequisite is CORRECT), writes a brief per challeng
 dispatches it to one primed opencode worker session per challenge (tmux socket
 `-L huntress-web`, session `web`, one `opencode attach` window per session for human
 visibility/intervention; more challenges than slots get extra sessions, fewer stand the
-spares down). Every worker session lives on one shared `opencode serve` process the
+spares down). Each worker directory contains the same provisioned all-mode `solve.py`;
+workers implement only a local `rec_this_family` hook, while canonical recoverers and
+attempt-bound partial answers are reused automatically across modes. Every worker session
+lives on one shared `opencode serve` process the
 driver starts - the driver's own turns go over `opencode run --attach ... --session ...`,
 never tmux keystrokes, and that call blocking until the agent's turn ends is the whole
 "is it done" signal (no stall-detection hooks - see `docs/policies.md`). The worker solves

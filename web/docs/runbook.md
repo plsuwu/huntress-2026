@@ -13,6 +13,7 @@ month. The pipeline is `tools/web_rush.py` — the web adaptation of the main pi
 - `HUNTRESS_GM_TOKEN` is in `.env` (or exported). Never print it; it is never sent to a
   target.
 - Sanity: `python3 -m py_compile tools/web_rush.py tools/wk.py`, then
+  `python3 -m unittest discover -s tests -v` (offline only), then
   `python3 tools/web_rush.py status --day N-1` — yesterday's challenges should read
   `done`, or the day was never run.
 - The tmux socket should be free: `tmux -L huntress-web ls` says "no server running"
@@ -29,7 +30,8 @@ Start it at about 22:45. `all` runs three stages:
 
 1. **prep:** worker dirs `workers/web/<base-id>/` for every challenge in the route cache
    (usually none yet), the shared trees symlinked in (`AGENTS.md`, `docs/`,
-   `solver_py_scripts/`, `tools/`), stale `.rush-dNN` markers cleared.
+   `solver_py_scripts/`, `tools/`), the all-mode `solve.py` starter provisioned without
+   overwriting worker edits, and stale `.rush-dNN` markers cleared.
 2. **launch:** starts the shared `opencode serve` process (if not already up), then tmux
    `-L huntress-web`, session `web` — a `control` window plus one `opencode attach` window
    per pre-warmed slot (`--workers N`, default 3). Each slot's session is primed with
@@ -117,8 +119,13 @@ day. `--no-agents` runs the first pass and writes briefs without any tmux dispat
   nudge to the same session. There's no stall detector flagging anything automatically -
   this is purely "status says `working` for longer than seems right, go look."
 - **The worker's loop** (what each pane is doing):
-  `python3 tools/wk.py begin <mode>` → `submit <mode>` → `status` / `next`,
-  single_solve → time_trial → mastery, serial within the family. If a target is
+  `python3 tools/wk.py begin <mode>` → `python3 solve.py <mode>` →
+  `python3 tools/wk.py submit <mode>` → `status` / `next`,
+  single_solve → time_trial → mastery, serial within the family. `solve.py` is the
+  automatically provisioned all-mode starter: the worker edits only `rec_this_family`
+  and imports the canonical recoverers instead of building another mastery dispatcher.
+  Partial first-pass answers are reused only when the saved attempt ID and target URLs
+  still match. If a target is
   crashed/burned and `begin <mode>` cannot recover it, the worker may use
   `python3 tools/wk.py reset <mode>`, then must `begin <mode>` again and
   re-derive every answer from the fresh target(s).

@@ -122,12 +122,21 @@ or Rust solver in this repo; Python is the final solution form here, not an inte
 
 ### Reusable modules
 
+- `solver_py_scripts/web_templates/starter_solve.py`: the canonical all-mode worker starter.
+  `web_rush.py` automatically provisions it as `solve.py` in each challenge directory without
+  overwriting worker edits. Edit only `rec_this_family`, then reuse that same file for
+  single_solve, time_trial, and mastery; do not create another HTTP client or mastery dispatcher.
+  It imports the reviewed recovery library and reuses partial answers only when the attempt ID and
+  target URLs still match.
 - `solver_py_scripts/recovery_lib.py` / `recovery_lib_ws.py`: shared target classifiers and
   recoverers (HTTP and WebSocket respectively) - the automated first pass in `tools/web_rush.py`
   and worker solutions both use these. When a solution finds a new bug class, fold a `rec_*`
   recoverer into `recovery_lib.py`'s `classify_and_recover` dispatch (a coordinator decision made
   after reviewing graded evidence, per `docs/policies.md`) so the next day's first pass can solve
-  it unaided.
+  it unaided. These canonical modules are importable by authored solvers; historical scripts in
+  `past-solutions/` remain reference-only and must not be imported or executed.
+- Offline regressions: run `python3 -m unittest discover -s tests -v` after changing the driver,
+  starter, or recovery library. Tests use mocks and local data only, never live GM/target calls.
 
 ### Research
 
