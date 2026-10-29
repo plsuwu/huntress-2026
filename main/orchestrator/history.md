@@ -360,3 +360,19 @@ here after every release night.
   `hof_campaign.py` keeps only a 6-line stderr tail. Follow-ups: retry a failed download while the window allows,
   and save the full stderr into the run dir. Route now has 10 attempts left.
 - Jumpbox 8.5 GB free after.
+
+## 2026-10-29: Day 29 release night
+
+- **Rush:** `rush.py all` started 22:28 (driver tee'd to `runs-d29/rush/driver.log`); prep ~3 min, agents up 22:31.
+  Released 23:00:01; every lane had its routes within ~4.3 s. Web-exploitation days 26-27 listed; ignored per policy.
+  VPN/jumpbox unreachable all evening (ssh timeout, `10.200.0.1` no ping): no deploy.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - script 23:00:39 `makefile-variant-diff`: first pass COMPLETE; notes only.
+  - warmups `warmups-day-29` (ROT13 over base64, "Rotten Base"); mastery row 29 = `T::RotB64`.
+  - metadata `trust-issues` (x509 certs, SHA-256 fingerprint of DER): new `formats/x509.rs`.
+  - mobile `white-box-key-recovery`: v1 "table" codec (hex + key + step*i, offset/step from the `ANS-` prefix); TT and
+    mastery v2 unchanged.
+  - (warmups, metadata, mobile all done by 23:03.)
+  - binary 23:06:30 `variant-diffing`: role tags named only by the question's member (`optimized` -> `O3.elf`).
+- First four merged ~23:05, binary 23:07; 88 tests, replay clean (binary_re 78 cases). GM shows all 15 routes CORRECT.
+  Not yet deployed (jumpbox down).
