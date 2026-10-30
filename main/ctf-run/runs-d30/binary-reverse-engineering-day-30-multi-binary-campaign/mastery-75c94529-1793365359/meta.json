@@ -1,0 +1,162 @@
+{
+  "challenge": "binary-reverse-engineering-day-30-multi-binary-campaign/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "75c94529-be61-4e4b-8637-e8ba46e1255e",
+  "started_at": "2026-10-30T13:02:42.296Z",
+  "deadline": null,
+  "shape": "artifacts[14]+downloads[14]",
+  "start_ms": 3385.349489,
+  "start_ttfb_ms": 3314.539338,
+  "clock": {
+    "start_sent": "2026-10-30T13:02:39.496Z",
+    "start_received": "2026-10-30T13:02:42.881Z",
+    "start_date_header": "2026-10-30T13:02:42.000Z",
+    "last_delivery": "2026-10-30T13:02:58.885Z",
+    "submit_sent": "2026-10-30T13:02:58.987Z",
+    "submit_received": "2026-10-30T13:03:02.395Z",
+    "submit_date_header": "2026-10-30T13:03:02.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 17069144,
+      "wire": 17069144,
+      "ttfb_ms": 1456.418924,
+      "total_ms": 7957.949808,
+      "done_at_ms": 11343.884441,
+      "analyse_ms": 3279.598251
+    },
+    {
+      "delivery": 4,
+      "name": "evidence.zip",
+      "bytes": 17040013,
+      "wire": 17040013,
+      "ttfb_ms": 1465.1223380000001,
+      "total_ms": 9224.846013,
+      "done_at_ms": 12610.354868,
+      "analyse_ms": 3313.763574
+    },
+    {
+      "delivery": 9,
+      "name": "evidence.zip",
+      "bytes": 16938062,
+      "wire": 16938062,
+      "ttfb_ms": 1497.2674459999998,
+      "total_ms": 10377.008264,
+      "done_at_ms": 13762.663955,
+      "analyse_ms": 3319.9915309999997
+    },
+    {
+      "delivery": 3,
+      "name": "evidence.zip",
+      "bytes": 16909811,
+      "wire": 16909811,
+      "ttfb_ms": 1974.492256,
+      "total_ms": 10897.751837,
+      "done_at_ms": 14283.256919,
+      "analyse_ms": 3373.4469219999996
+    },
+    {
+      "delivery": 12,
+      "name": "evidence.zip",
+      "bytes": 16964964,
+      "wire": 16964964,
+      "ttfb_ms": 1983.2484749999999,
+      "total_ms": 11072.40561,
+      "done_at_ms": 14458.493663000001,
+      "analyse_ms": 3362.23385
+    },
+    {
+      "delivery": 11,
+      "name": "evidence.zip",
+      "bytes": 16938790,
+      "wire": 16938790,
+      "ttfb_ms": 1960.1195040000002,
+      "total_ms": 11082.807721,
+      "done_at_ms": 14468.733192,
+      "analyse_ms": 3373.572314
+    },
+    {
+      "delivery": 5,
+      "name": "evidence.zip",
+      "bytes": 16909590,
+      "wire": 16909590,
+      "ttfb_ms": 1429.561079,
+      "total_ms": 11174.855735,
+      "done_at_ms": 14560.828221,
+      "analyse_ms": 3357.459219
+    },
+    {
+      "delivery": 2,
+      "name": "evidence.zip",
+      "bytes": 16938393,
+      "wire": 16938393,
+      "ttfb_ms": 1834.8277400000002,
+      "total_ms": 11707.770483999999,
+      "done_at_ms": 15093.275183,
+      "analyse_ms": 3265.414076
+    },
+    {
+      "delivery": 10,
+      "name": "evidence.zip",
+      "bytes": 17013506,
+      "wire": 17013506,
+      "ttfb_ms": 1475.345989,
+      "total_ms": 11706.138793999999,
+      "done_at_ms": 15091.852321999999,
+      "analyse_ms": 3349.218339
+    },
+    {
+      "delivery": 14,
+      "name": "evidence.zip",
+      "bytes": 16935942,
+      "wire": 16935942,
+      "ttfb_ms": 1582.0961499999999,
+      "total_ms": 11691.490943,
+      "done_at_ms": 15077.322905,
+      "analyse_ms": 3380.677223
+    },
+    {
+      "delivery": 8,
+      "name": "evidence.zip",
+      "bytes": 16937982,
+      "wire": 16937982,
+      "ttfb_ms": 1863.760701,
+      "total_ms": 12204.636753,
+      "done_at_ms": 15590.281406999999,
+      "analyse_ms": 3321.342876
+    },
+    {
+      "delivery": 6,
+      "name": "evidence.zip",
+      "bytes": 16935346,
+      "wire": 16935346,
+      "ttfb_ms": 1494.0540150000002,
+      "total_ms": 12232.469229999999,
+      "done_at_ms": 15618.409433,
+      "analyse_ms": 3330.788128
+    },
+    {
+      "delivery": 13,
+      "name": "evidence.zip",
+      "bytes": 16909597,
+      "wire": 16909597,
+      "ttfb_ms": 1830.020456,
+      "total_ms": 12472.589184,
+      "done_at_ms": 15858.400613,
+      "analyse_ms": 3368.187213
+    },
+    {
+      "delivery": 7,
+      "name": "evidence.zip",
+      "bytes": 16965161,
+      "wire": 16965161,
+      "ttfb_ms": 1800.1380330000002,
+      "total_ms": 12656.907928999999,
+      "done_at_ms": 16042.899836,
+      "analyse_ms": 3346.1838460000004
+    }
+  ]
+}
