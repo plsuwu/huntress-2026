@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-29-trust-issues",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "aea51114-b2cd-4b3a-b7dd-792de2198b64",
+  "started_at": "2026-10-29T13:00:07.476Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1153.276776,
+  "start_ttfb_ms": 1153.041385,
+  "clock": {
+    "start_sent": "2026-10-29T13:00:06.598Z",
+    "start_received": "2026-10-29T13:00:07.751Z",
+    "start_date_header": "2026-10-29T13:00:07.000Z",
+    "last_delivery": "2026-10-29T13:00:09.363Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-29-evidence.zip",
+      "bytes": 672,
+      "wire": 672,
+      "ttfb_ms": 1326.643328,
+      "total_ms": 1612.2898619999999,
+      "done_at_ms": 2765.8306829999997,
+      "analyse_ms": 0.01963
+    }
+  ]
+}

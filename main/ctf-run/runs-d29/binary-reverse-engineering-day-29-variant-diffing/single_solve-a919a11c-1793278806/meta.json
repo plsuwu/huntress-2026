@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-29-variant-diffing",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "a919a11c-c5d9-4133-8787-2829b7a264d1",
+  "started_at": "2026-10-29T13:00:07.506Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1178.275771,
+  "start_ttfb_ms": 1176.6888390000001,
+  "clock": {
+    "start_sent": "2026-10-29T13:00:06.661Z",
+    "start_received": "2026-10-29T13:00:07.839Z",
+    "start_date_header": "2026-10-29T13:00:07.000Z",
+    "last_delivery": "2026-10-29T13:00:12.414Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35956121,
+      "wire": 35956121,
+      "ttfb_ms": 1327.988666,
+      "total_ms": 4573.084446,
+      "done_at_ms": 5751.547782000001,
+      "analyse_ms": 1.9446890000000001
+    }
+  ]
+}

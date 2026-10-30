@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-29-makefile-variant-diff/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "4d3aa4f3-14f9-4d41-99ef-7d62e7a0b51a",
+  "started_at": "2026-10-29T13:00:28.517Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 4086.409205,
+  "start_ttfb_ms": 3970.5175609999997,
+  "clock": {
+    "start_sent": "2026-10-29T13:00:25.910Z",
+    "start_received": "2026-10-29T13:00:29.997Z",
+    "start_date_header": "2026-10-29T13:00:29.000Z",
+    "last_delivery": "2026-10-29T13:00:32.710Z",
+    "submit_sent": "2026-10-29T13:00:33.239Z",
+    "submit_received": "2026-10-29T13:00:39.568Z",
+    "submit_date_header": "2026-10-29T13:00:39.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-29-makefile-variant-diff-mastery.zip",
+      "bytes": 2333319,
+      "wire": 2333319,
+      "ttfb_ms": 2052.052984,
+      "total_ms": 2438.4886030000002,
+      "done_at_ms": 6525.135435,
+      "analyse_ms": 274.894029
+    }
+  ]
+}

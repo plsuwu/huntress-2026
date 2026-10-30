@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-29-makefile-variant-diff",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7cbcbd70-278f-4f7b-863e-5106e341d836",
+  "started_at": "2026-10-29T13:00:08.348Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1617.047365,
+  "start_ttfb_ms": 1601.6361610000001,
+  "clock": {
+    "start_sent": "2026-10-29T13:00:07.067Z",
+    "start_received": "2026-10-29T13:00:08.684Z",
+    "start_date_header": "2026-10-29T13:00:08.000Z",
+    "last_delivery": "2026-10-29T13:00:10.910Z",
+    "submit_sent": "2026-10-29T13:00:10.918Z",
+    "submit_received": "2026-10-29T13:00:14.447Z",
+    "submit_date_header": "2026-10-29T13:00:14.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 159137,
+      "wire": 159137,
+      "ttfb_ms": 1517.2033649999998,
+      "total_ms": 2201.689796,
+      "done_at_ms": 3819.101019,
+      "analyse_ms": 23.498869
+    }
+  ]
+}

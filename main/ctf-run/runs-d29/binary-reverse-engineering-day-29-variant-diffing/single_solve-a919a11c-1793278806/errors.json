@@ -1,0 +1,10 @@
+{
+  "d29_analysis_optimized_format": "unknown field \"analysis_optimized_format\" for d29--sample-O3.elf (Some(Elf))",
+  "d29_analysis_optimized_machine": "unknown field \"analysis_optimized_machine\" for d29--sample-O3.elf (Some(Elf))",
+  "d29_analysis_unoptimized_format": "unknown field \"analysis_unoptimized_format\" for d29--sample-O0.elf (Some(Elf))",
+  "d29_analysis_unoptimized_machine": "unknown field \"analysis_unoptimized_machine\" for d29--sample-O0.elf (Some(Elf))",
+  "d29_analysis_optimized_config_campaign": "unknown field \"analysis_optimized_config_campaign\" for d29--sample-O3.elf (Some(Elf))",
+  "d29_analysis_optimized_config_domain": "unknown field \"analysis_optimized_config_domain\" for d29--sample-O3.elf (Some(Elf))",
+  "d29_analysis_optimized_config_mutex": "unknown field \"analysis_optimized_config_mutex\" for d29--sample-O3.elf (Some(Elf))",
+  "d29_analysis_optimized_config_url": "unknown field \"analysis_optimized_config_url\" for d29--sample-O3.elf (Some(Elf))"
+}
