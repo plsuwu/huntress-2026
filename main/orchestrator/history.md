@@ -376,3 +376,23 @@ here after every release night.
   - binary 23:06:30 `variant-diffing`: role tags named only by the question's member (`optimized` -> `O3.elf`).
 - First four merged ~23:05, binary 23:07; 88 tests, replay clean (binary_re 78 cases). GM shows all 15 routes CORRECT.
   Not yet deployed (jumpbox down).
+
+## 2026-10-30: Day 30 release night
+
+- **Rush:** `rush.py all` started 22:43 (driver tee'd to `runs-d30/rush/driver.log`); prep ~3 min, agents up 22:46.
+  Prep stashed a dirty warmups worktree before resetting it (stash kept in `../wt/warmups`). Released 23:00:01; every
+  lane had its routes within ~3.8 s. VPN/jumpbox unreachable again (ssh timeout, `10.200.0.1` no ping): no deploy.
+- **Coordinator gotcha:** a Monitor script's `for f in done-*` aborted under zsh (`no matches found`) before any
+  marker existed. Wrap marker loops in `bash -c` with `shopt -s nullglob`.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - warmups 23:01:14 `percent-percent`: first pass COMPLETE; notes only.
+  - script 23:02:00 `beanshell-jsp-graph`: first pass COMPLETE; notes only.
+  - mobile 23:02:52 `layered-protections`: layered codec (base64 -> xor key+i -> reverse) + generic xor-ramp step.
+  - metadata 23:05:09 `seeing-double`: identical-sha256 clusters of manifest ids, new `formats/cluster.rs`.
+  - binary 23:09:53 `multi-binary-campaign`: Neko container and HGRF campaign-graph reader.
+- All merged by ~23:12; 88 tests, replay clean (binary_re 81, metadata 82, mobile 130). GM shows all 15 routes CORRECT.
+- **Second binary challenge:** `binary-reverse-engineering-day-30-sha1-hulud` ("SHA1-Hulud", single-solve only, one
+  `flag` answer) came back in the binary lane's search (4 routes); the first pass and brief ignore routes outside the
+  lane's main challenge. It's a hand-made anti-analysis Rust Windows exe (encrypted strings, debugger/VM checks, ~36 KB
+  encrypted blob, maybe a small VM). The binary agent paused on it after its done marker; the coordinator told it to keep
+  going statically (no execution), marker `done-binary-hulud`.
