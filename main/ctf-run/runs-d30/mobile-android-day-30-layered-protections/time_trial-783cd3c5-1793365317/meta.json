@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-30-layered-protections/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "783cd3c5-e32a-4d3f-a251-2b5914129672",
+  "started_at": "2026-10-30T13:01:59.382Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2261.087716,
+  "start_ttfb_ms": 2259.6488400000003,
+  "clock": {
+    "start_sent": "2026-10-30T13:01:57.452Z",
+    "start_received": "2026-10-30T13:01:59.713Z",
+    "start_date_header": "2026-10-30T13:01:59.000Z",
+    "last_delivery": "2026-10-30T13:02:01.203Z",
+    "submit_sent": "2026-10-30T13:02:01.203Z",
+    "submit_received": "2026-10-30T13:02:03.451Z",
+    "submit_date_header": "2026-10-30T13:02:03.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "layered_protections_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1237.176331,
+      "total_ms": 1488.256161,
+      "done_at_ms": 3749.697222,
+      "analyse_ms": 1.641797
+    }
+  ]
+}

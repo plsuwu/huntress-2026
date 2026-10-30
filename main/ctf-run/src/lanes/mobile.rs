@@ -102,6 +102,25 @@ fn untable(b: &[u8]) -> Option<Vec<u8>> {
     Some(b.iter().enumerate().map(|(i, x)| x.wrapping_sub(d[0].wrapping_add(step.wrapping_mul(i as u8)))).collect())
 }
 
+/// XOR counterpart of `untable`: `data[i] = p[i] ^ (k + step*i)`, with `k` and `step` recovered from the `ANS-` prefix.
+fn unxor_ramp(b: &[u8]) -> Option<Vec<u8>> {
+    if b.len() < 4 {
+        return None;
+    }
+    let d: Vec<u8> = b.iter().zip(b"ANS-").map(|(x, p)| x ^ p).collect();
+    let step = d[1].wrapping_sub(d[0]);
+    if step == 0 || (1..4).any(|i| d[i].wrapping_sub(d[i - 1]) != step) {
+        return None;
+    }
+    Some(b.iter().enumerate().map(|(i, x)| x ^ d[0].wrapping_add(step.wrapping_mul(i as u8))).collect())
+}
+
+/// d30 `layered`: base64, then byte `i` XOR `(key + i)`, then reversed.
+fn unlayer(data: &str, key: i64) -> Option<Vec<u8>> {
+    let b = codec::base64(data)?;
+    Some(b.iter().enumerate().map(|(i, x)| x ^ (key as u8).wrapping_add(i as u8)).rev().collect())
+}
+
 fn xor_with(b: &[u8], key: &[u8]) -> Vec<u8> {
     b.iter().enumerate().map(|(i, x)| x ^ key[i % key.len()]).collect()
 }
@@ -180,6 +199,7 @@ fn generic(p: &Value) -> Result<String, String> {
                 outs.extend(gather(v, o));
             }
             outs.extend(untable(v));
+            outs.extend(unxor_ramp(v));
             outs.extend(codec::hex(&s));
             outs.extend(codec::base64(&s));
             outs.extend(codec::base32(&s));
@@ -254,6 +274,7 @@ pub fn decode(p: &Value) -> Result<String, String> {
         "hex" => codec::hex(data),
         // d29: hex bytes shifted by `key` + a per-position step (offset/step recovered from the `ANS-` prefix).
         "table" => codec::hex(data).and_then(|b| untable(&b)),
+        "layered" => key.and_then(|k| unlayer(data, k)),
         "reverse" => Some(codec::reverse(data).into_bytes()),
         "base64" => codec::base64(data),
         "caesar" => key.map(|k| data.chars().map(|c| (c as i64 - k).rem_euclid(256) as u8).collect()),
@@ -498,6 +519,10 @@ mod tests {
         let table = r#"{"codec":"table","data":"6a7a825f767a6c82787c8b8d8592948a9d9597a5","key":41}"#;
         assert_eq!(d(table).unwrap(), "ANS-AB1D78DC8BA4D98C");
         assert_eq!(d(&table.replace("\"table\"", "\"lut\"")).unwrap(), "ANS-AB1D78DC8BA4D98C");
+        // d30 `layered`: base64 -> xor (key + i) -> reverse; also found by the search (ramp from the prefix).
+        let layered = r#"{"codec":"layered","data":"TU49OyInJlUlJSQkKilcKDFOUF4=","key":12}"#;
+        assert_eq!(d(layered).unwrap(), "ANS-3F023201F46243CA");
+        assert_eq!(d(&layered.replace("\"layered\"", "\"onion\"")).unwrap(), "ANS-3F023201F46243CA");
         // Unknown codec: base64 of the reversed answer, found by search.
         let enc = {
             let r: String = "ANS-123456789ABCDEF0".chars().rev().collect();
