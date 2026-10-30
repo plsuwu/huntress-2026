@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-30-seeing-double/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "ee969a2b-c592-49ce-8dc3-569e1a4ce553",
+  "started_at": "2026-10-30T13:03:26.606Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3037.4629959999997,
+  "start_ttfb_ms": 3033.524517,
+  "clock": {
+    "start_sent": "2026-10-30T13:03:23.871Z",
+    "start_received": "2026-10-30T13:03:26.908Z",
+    "start_date_header": "2026-10-30T13:03:26.000Z",
+    "last_delivery": "2026-10-30T13:03:29.461Z",
+    "submit_sent": "2026-10-30T13:03:29.522Z",
+    "submit_received": "2026-10-30T13:03:31.207Z",
+    "submit_date_header": "2026-10-30T13:03:31.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-30-seeing-double-mastery.zip",
+      "bytes": 9763197,
+      "wire": 9763197,
+      "ttfb_ms": 1493.6382429999999,
+      "total_ms": 2464.840076,
+      "done_at_ms": 5502.489398,
+      "analyse_ms": 87.492672
+    }
+  ]
+}

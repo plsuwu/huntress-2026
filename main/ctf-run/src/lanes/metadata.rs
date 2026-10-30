@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, x509, zip};
+use crate::formats::{apk, audio, cfb, cluster, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, x509, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -690,6 +690,49 @@ fn x509_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-relation-<field>` -> a relation across an artifact cluster zip (`artifacts/*` + `delivery-manifest.json`).
+/// d30 graded `identical-sha256-groups`: groups (2+) of manifest ids with byte-identical content, ids sorted,
+/// groups by first id, compact JSON. Other fields are unverified guesses; an unknown field fails with cluster facts.
+fn relation_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-relation-")?;
+    let want = &key[i + 10..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let Some(c) = cluster::Cluster::parse(b) else { return Some(Err(format!("no artifact cluster; {}", facts("cluster", b)))) };
+    let groups = |g: Vec<Vec<String>>| Value::Arr(g.into_iter().map(|ids| Value::Arr(ids.into_iter().map(Value::Str).collect())).collect()).to_json();
+    Some(Ok(match want {
+        "identical-sha256-groups" | "exact-identity-groups" | "identical-groups" | "sha256-groups" => groups(c.identical_groups()),
+        "semantic-identity-groups" | "semantic-groups" | "semantically-identical-groups" => groups(c.semantic_groups()),
+        "identical-sha256-group-count" => c.identical_groups().len().to_string(),
+        "claim-mismatch-ids" | "manifest-mismatch-ids" | "unsupported-claims" => compact_json(&c.claim_mismatches()),
+        "containment-pairs" | "contains" | "containment" => Value::Arr(c.containment().into_iter().map(|(a, b)| Value::Arr(vec![Value::Str(a), Value::Str(b)])).collect()).to_json(),
+        _ => return Some(Err(format!("unknown relation field {want:?}; {}", cluster_facts(&c)))),
+    }))
+}
+
+fn cluster_facts(c: &cluster::Cluster) -> String {
+    let a: Vec<String> = c
+        .artifacts
+        .iter()
+        .map(|a| {
+            format!(
+                "{} {} fam {} prod {} claim {}/{:?} real {}/{:?} sem {}",
+                a.id,
+                a.path,
+                a.family,
+                a.producer,
+                &a.claimed_sha256[..a.claimed_sha256.len().min(12)],
+                a.claimed_size,
+                &a.sha256[..a.sha256.len().min(12)],
+                a.bytes.as_ref().map(|b| b.len()),
+                a.bytes.as_deref().map(|b| hex(&sha256(&cluster::semantic_key(b)))[..12].to_string()).unwrap_or_default()
+            )
+        })
+        .collect();
+    format!("cluster manifest {} {} artifact(s): {}", c.manifest, c.artifacts.len(), a.join(" | "))
+}
+
 fn x509_facts(all: &[x509::Cert]) -> String {
     let f: Vec<String> = all
         .iter()
@@ -996,6 +1039,9 @@ pub fn facts(name: &str, b: &[u8]) -> String {
     if !certs.is_empty() {
         f.push(x509_facts(&certs));
     }
+    if let Some(c) = cluster::Cluster::parse(b).filter(|c| c.manifest) {
+        f.push(cluster_facts(&c));
+    }
     if let Some(l) = lnk::parse(b) {
         f.push(format!("lnk {l:?}"));
     }
@@ -1112,6 +1158,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = x509_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = relation_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {

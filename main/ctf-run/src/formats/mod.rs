@@ -4,6 +4,7 @@ pub mod apk;
 pub mod audio;
 pub mod bytes;
 pub mod cfb;
+pub mod cluster;
 pub mod dalvik;
 pub mod dex;
 pub mod disk;

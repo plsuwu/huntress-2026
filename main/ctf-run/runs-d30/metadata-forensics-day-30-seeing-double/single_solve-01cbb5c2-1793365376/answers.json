@@ -1,0 +1,5 @@
+{
+  "answers": {
+    "d30-cluster-001-relation-identical-sha256-groups": "[[\"alpha-01\",\"alpha-02\",\"alpha-03\",\"alpha-04\",\"alpha-05\",\"alpha-06\"],[\"bravo-01\",\"bravo-02\",\"bravo-03\",\"bravo-04\",\"bravo-05\",\"bravo-06\"],[\"charlie-01\",\"charlie-02\",\"charlie-03\",\"charlie-04\",\"charlie-05\",\"charlie-06\"],[\"delta-01\",\"delta-02\",\"delta-03\",\"delta-04\",\"delta-05\",\"delta-06\"],[\"echo-01\",\"echo-02\",\"echo-03\",\"echo-04\",\"echo-05\",\"echo-06\"]]"
+  }
+}

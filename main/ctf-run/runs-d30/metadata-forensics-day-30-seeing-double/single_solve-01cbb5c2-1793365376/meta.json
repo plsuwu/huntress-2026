@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-30-seeing-double",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "01cbb5c2-c56a-4475-ac8e-3b8b1ade9c56",
+  "started_at": "2026-10-30T13:00:06.382Z",
+  "deadline": null,
+  "shape": "artifacts[1] (from status)",
+  "start_ms": 2135.977892,
+  "start_ttfb_ms": 2135.149485,
+  "clock": {
+    "start_sent": "2026-10-30T13:02:56.437Z",
+    "start_received": "2026-10-30T13:02:58.573Z",
+    "start_date_header": "2026-10-30T13:02:58.000Z",
+    "last_delivery": "2026-10-30T13:03:01.258Z",
+    "submit_sent": "2026-10-30T13:03:01.258Z",
+    "submit_received": "2026-10-30T13:03:02.785Z",
+    "submit_date_header": "2026-10-30T13:03:02.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-30-evidence.zip",
+      "bytes": 2040,
+      "wire": 2040,
+      "ttfb_ms": 1234.573155,
+      "total_ms": 1465.540477,
+      "done_at_ms": 4820.580439,
+      "analyse_ms": 0.256108
+    }
+  ]
+}
