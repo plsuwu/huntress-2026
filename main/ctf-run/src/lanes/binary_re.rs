@@ -58,6 +58,8 @@ pub enum Container {
     Jar,
     MachO,
     Wasm,
+    /// NekoVM bytecode (`NEKO` magic; Haxe `.n`, Day 30).
+    Neko,
     Other,
 }
 
@@ -122,6 +124,8 @@ pub struct Spec {
     pub packing_keys: Option<(u8, u8)>,
     /// Which `NEEDLES` occur in the file bytes: (as Latin-1, as UTF-16LE).
     pub needles: BTreeMap<&'static str, (bool, bool)>,
+    /// Last CRC-valid `HGRF` campaign-graph record (HCFG layout, whole JSON object; Day 30).
+    pub graph: Option<hcfg::Hcfg>,
 }
 
 /// Texts the "true exactly when the final bytes contain X" predicates name (Day 28); a predicate naming
@@ -274,6 +278,8 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
         s.machine = Some(w.arch());
         s.section_names = w.custom_names.clone();
         s.has_hcfg_section = w.custom_names.iter().any(|n| n.trim_start_matches('.') == "hcfg");
+    } else if d.starts_with(b"NEKO") {
+        s.container = Some(Container::Neko);
     } else if zip::is_zip(d) {
         s.container = Some(Container::Jar);
         if let Ok(z) = zip::Zip::parse(d) {
@@ -338,6 +344,7 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
     if let (Some(h), Some(e)) = (&s.hcfg, (s.container == Some(Container::Elf)).then(|| elf::Elf::parse(d)).flatten()) {
         s.hcfg_section = e.sections.iter().find(|x| x.kind != 8 && x.size > 0 && (x.offset..x.offset + x.size).contains(&(h.offset as u64))).map(|x| x.name.clone());
     }
+    s.graph = hcfg::last_record(d, b"HGRF");
     lap("hcfg");
     s
 }
@@ -803,6 +810,7 @@ fn container_label(s: &Spec, q: &Question) -> Result<String, String> {
         Some(Container::Jar) => (if exact { "jar" } else { "JAR" }).into(),
         Some(Container::MachO) if !exact => "Mach-O".into(),
         Some(Container::Wasm) => (if exact { "wasm" } else { "WASM" }).into(),
+        Some(Container::Neko) if exact => "neko_bytecode".into(),
         other => return Err(format!("no graded label known for container {other:?} (format {:?}: {syntax:?})", q.format_kind)),
     })
 }
@@ -1052,6 +1060,20 @@ fn enum_checked(q: &Question, a: String) -> Result<String, String> {
     }
 }
 
+/// A role tag that is not in the member name (d29: `analysis_optimized_*` for "basename ends O3.elf"; d30:
+/// `config_capsule_format` for `-config.n`): drop leading words of the field until it is a known one.
+fn answer_dropping(rest: &str, s: &Spec, q: &Question) -> Result<String, String> {
+    let words: Vec<&str> = rest.split('_').collect();
+    let mut r = answer_spec(&format!("analysis_{rest}"), s, &[], q);
+    for k in 1..words.len() {
+        match &r {
+            Err(e) if e.starts_with("unknown field") => r = answer_spec(&format!("analysis_{}", words[k..].join("_")), s, &[], q),
+            _ => break,
+        }
+    }
+    r
+}
+
 fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, String> {
     {
         let (day, field) = q.key.split_once('_').ok_or_else(|| format!("unexpected id {:?}", q.key))?;
@@ -1078,6 +1100,38 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 other => Err(format!("unknown structural field {other:?} for {day}")),
             };
         }
+        // "Submit the exact JSON string at loader.n decoded HGRF JSON property graph.config.url" (Day 30): the path is
+        // read from the named member's graph record (`graph` = the record's JSON root).
+        if let Some(m) = crate::re!(r"at (\S+) decoded HGRF JSON property ([A-Za-z0-9_.]+?)[,.]?(?:\s|$)").search(&q.question) {
+            let members: Vec<&Spec> = std::iter::once(spec).chain(others).collect();
+            let s = match members.iter().filter(|s| member_matches(&s.name, m.g(1))).collect::<Vec<_>>().as_slice() {
+                [one] => **one,
+                hits => return Err(format!("{day}: {} matches {} members", m.g(1), hits.len())),
+            };
+            let g = s.graph.as_ref().ok_or_else(|| format!("{}: no CRC-valid HGRF record", s.name))?;
+            // "after confirming all three canonical campaign graphs match when this_role is omitted".
+            if q.question.contains("graphs match when this_role is omitted") {
+                let canon = |s: &Spec| {
+                    s.graph.as_ref().map(|g| match &g.config {
+                        Value::Obj(kv) => Value::Obj(kv.iter().filter(|(k, _)| k != "this_role").cloned().collect()).to_json(),
+                        v => v.to_json(),
+                    })
+                };
+                let all: Vec<Option<String>> = members.iter().filter(|s| !s.name.ends_with(".json")).map(|s| canon(s)).collect();
+                if all.iter().any(|c| c.is_none() || *c != all[0]) {
+                    return Err(format!("{day}: campaign graphs differ (this_role omitted) or are missing"));
+                }
+            }
+            let mut path: Vec<&str> = m.g(2).split('.').collect();
+            if path.first() == Some(&"graph") && g.config.get("graph").is_none() {
+                path.remove(0);
+            }
+            let mut v = &g.config;
+            for k in &path {
+                v = v.get(k).ok_or_else(|| format!("{}: HGRF JSON has no {:?}", s.name, m.g(2)))?;
+            }
+            return Ok(config_value(v));
+        }
         // `analysis_<variant>_<field>` addresses the specimen whose name carries `-<variant>`
         // (d15: `-stripped` / `-symbolized`; d28: `-false-friend` -> `false_friend_`). The longest tag wins.
         if let Some(rest) = field.strip_prefix("analysis_") {
@@ -1097,7 +1151,7 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 }
             }
             if let Some((_, s, f)) = best {
-                return answer_spec(&format!("analysis_{f}"), s, &[], q);
+                return answer_dropping(f, s, q);
             }
             // "Decode X and Y and require their config objects to be byte-for-byte equal before using the common
             // value; do not use Z" (d27: "both d27-- role members"): every named (else every) member must decode
@@ -1137,17 +1191,7 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 let hits: Vec<&Spec> = std::iter::once(spec).chain(others).filter(|s| member_matches(&s.name, &m)).collect();
                 (hits.len() == 1).then(|| hits[0])
             }) {
-                // A role tag that is not in the member name (d29: `analysis_optimized_*` for "basename ends O3.elf"):
-                // drop leading words of the field until it is a known one.
-                let words: Vec<&str> = rest.split('_').collect();
-                let mut r = answer_spec(field, s, &[], q);
-                for k in 1..words.len() {
-                    match &r {
-                        Err(e) if e.starts_with("unknown field") => r = answer_spec(&format!("analysis_{}", words[k..].join("_")), s, &[], q),
-                        _ => break,
-                    }
-                }
-                return r;
+                return answer_dropping(rest, s, q);
             }
         }
         answer_spec(field, spec, side, q)

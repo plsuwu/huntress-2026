@@ -22,7 +22,18 @@ pub struct Hcfg {
 
 /// Validates a blob whose magic starts at `i`.
 pub fn at(d: &[u8], i: usize) -> Option<Hcfg> {
-    if d.get(i..i + 4)? != b"HCFG" || *d.get(i + 4)? != 1 {
+    record_at(d, i, b"HCFG")
+}
+
+/// The last CRC-valid record with the HCFG layout under another 4-byte magic (`HGRF` campaign graph, Day 30),
+/// found by scanning backward from the end.
+pub fn last_record(d: &[u8], magic: &[u8; 4]) -> Option<Hcfg> {
+    find_all(d, magic).into_iter().rev().find_map(|i| record_at(d, i, magic))
+}
+
+/// A record with the HCFG layout whose 4-byte `magic` starts at `i`.
+pub fn record_at(d: &[u8], i: usize, magic: &[u8; 4]) -> Option<Hcfg> {
+    if d.get(i..i + 4)? != magic || *d.get(i + 4)? != 1 {
         return None;
     }
     let key = d[i + 5];
