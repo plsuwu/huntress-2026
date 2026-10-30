@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-30-seeing-double/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "1dff7b87-ceec-45f0-a6e4-c38d231ff9aa",
+  "started_at": "2026-10-30T13:03:13.088Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3085.3379680000003,
+  "start_ttfb_ms": 3084.575135,
+  "clock": {
+    "start_sent": "2026-10-30T13:03:10.270Z",
+    "start_received": "2026-10-30T13:03:13.356Z",
+    "start_date_header": "2026-10-30T13:03:13.000Z",
+    "last_delivery": "2026-10-30T13:03:15.083Z",
+    "submit_sent": "2026-10-30T13:03:15.087Z",
+    "submit_received": "2026-10-30T13:03:17.027Z",
+    "submit_date_header": "2026-10-30T13:03:17.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 633768,
+      "wire": 633768,
+      "ttfb_ms": 1455.756654,
+      "total_ms": 1721.50315,
+      "done_at_ms": 4807.020528999999,
+      "analyse_ms": 5.557823
+    }
+  ]
+}
