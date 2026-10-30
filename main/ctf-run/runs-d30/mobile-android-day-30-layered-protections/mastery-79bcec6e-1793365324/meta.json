@@ -1,0 +1,162 @@
+{
+  "challenge": "mobile-android-day-30-layered-protections/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "79bcec6e-c11f-4037-bd29-d1acd79c67f3",
+  "started_at": "2026-10-30T13:02:06.978Z",
+  "deadline": null,
+  "shape": "artifacts[14]+downloads[14]",
+  "start_ms": 2440.751588,
+  "start_ttfb_ms": 2440.1999729999998,
+  "clock": {
+    "start_sent": "2026-10-30T13:02:04.783Z",
+    "start_received": "2026-10-30T13:02:07.224Z",
+    "start_date_header": "2026-10-30T13:02:07.000Z",
+    "last_delivery": "2026-10-30T13:02:09.976Z",
+    "submit_sent": "2026-10-30T13:02:09.976Z",
+    "submit_received": "2026-10-30T13:02:12.042Z",
+    "submit_date_header": "2026-10-30T13:02:12.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 9,
+      "name": "layered_protections_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1238.918533,
+      "total_ms": 2577.214762,
+      "done_at_ms": 5018.134297,
+      "analyse_ms": 0.931433
+    },
+    {
+      "delivery": 6,
+      "name": "layered_protections_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1246.463237,
+      "total_ms": 2577.7422140000003,
+      "done_at_ms": 5018.628919,
+      "analyse_ms": 0.553496
+    },
+    {
+      "delivery": 8,
+      "name": "layered_protections_mastery_08.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1230.809561,
+      "total_ms": 2579.551647,
+      "done_at_ms": 5020.472881,
+      "analyse_ms": 0.455411
+    },
+    {
+      "delivery": 13,
+      "name": "layered_protections_mastery_13.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1241.65032,
+      "total_ms": 2579.460112,
+      "done_at_ms": 5020.408561,
+      "analyse_ms": 0.7056779999999999
+    },
+    {
+      "delivery": 2,
+      "name": "layered_protections_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1548.872083,
+      "total_ms": 2602.036688,
+      "done_at_ms": 5042.89866,
+      "analyse_ms": 6.502738999999999
+    },
+    {
+      "delivery": 5,
+      "name": "layered_protections_mastery_05.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1257.296503,
+      "total_ms": 2604.913893,
+      "done_at_ms": 5045.795202,
+      "analyse_ms": 4.368979
+    },
+    {
+      "delivery": 10,
+      "name": "layered_protections_mastery_10.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1298.792106,
+      "total_ms": 2605.071109,
+      "done_at_ms": 5045.990774,
+      "analyse_ms": 6.014597
+    },
+    {
+      "delivery": 12,
+      "name": "layered_protections_mastery_12.apks",
+      "bytes": 21535,
+      "wire": 21535,
+      "ttfb_ms": 1567.177811,
+      "total_ms": 2611.0675969999998,
+      "done_at_ms": 5052.008907,
+      "analyse_ms": 4.2675860000000005
+    },
+    {
+      "delivery": 3,
+      "name": "layered_protections_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1511.5962779999998,
+      "total_ms": 2604.9282749999998,
+      "done_at_ms": 5045.795198000001,
+      "analyse_ms": 12.680351
+    },
+    {
+      "delivery": 7,
+      "name": "layered_protections_mastery_07.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1608.1062419999998,
+      "total_ms": 2743.619185,
+      "done_at_ms": 5184.516843,
+      "analyse_ms": 0.590649
+    },
+    {
+      "delivery": 1,
+      "name": "layered_protections_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1576.918488,
+      "total_ms": 2741.9277749999997,
+      "done_at_ms": 5182.789253,
+      "analyse_ms": 3.1282520000000003
+    },
+    {
+      "delivery": 14,
+      "name": "layered_protections_mastery_14.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1647.565073,
+      "total_ms": 2748.272122,
+      "done_at_ms": 5189.239512,
+      "analyse_ms": 0.413366
+    },
+    {
+      "delivery": 4,
+      "name": "layered_protections_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1686.1684070000001,
+      "total_ms": 2744.395405,
+      "done_at_ms": 5185.270807,
+      "analyse_ms": 4.516376
+    },
+    {
+      "delivery": 11,
+      "name": "layered_protections_mastery_11.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1670.3197599999999,
+      "total_ms": 2744.995395,
+      "done_at_ms": 5185.921384,
+      "analyse_ms": 6.6681550000000005
+    }
+  ]
+}

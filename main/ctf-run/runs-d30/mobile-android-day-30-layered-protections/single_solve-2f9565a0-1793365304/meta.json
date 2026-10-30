@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-30-layered-protections",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "2f9565a0-79df-4912-9766-57ba6b2957e2",
+  "started_at": "2026-10-30T13:00:06.901Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 959.806889,
+  "start_ttfb_ms": 959.581869,
+  "clock": {
+    "start_sent": "2026-10-30T13:01:44.620Z",
+    "start_received": "2026-10-30T13:01:45.579Z",
+    "start_date_header": "2026-10-30T13:01:45.000Z",
+    "last_delivery": "2026-10-30T13:01:47.071Z",
+    "submit_sent": "2026-10-30T13:01:47.071Z",
+    "submit_received": "2026-10-30T13:01:49.511Z",
+    "submit_date_header": "2026-10-30T13:01:49.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "layered_protections.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1257.214893,
+      "total_ms": 1490.635066,
+      "done_at_ms": 2450.6143209999996,
+      "analyse_ms": 0.306948
+    }
+  ]
+}
