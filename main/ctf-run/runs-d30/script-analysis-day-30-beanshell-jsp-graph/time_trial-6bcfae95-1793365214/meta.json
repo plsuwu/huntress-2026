@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-30-beanshell-jsp-graph/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "6bcfae95-4883-4b44-a152-a93770971011",
+  "started_at": "2026-10-30T13:00:17.323Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 3500.570874,
+  "start_ttfb_ms": 3493.274125,
+  "clock": {
+    "start_sent": "2026-10-30T13:00:14.240Z",
+    "start_received": "2026-10-30T13:00:17.741Z",
+    "start_date_header": "2026-10-30T13:00:17.000Z",
+    "last_delivery": "2026-10-30T13:00:19.824Z",
+    "submit_sent": "2026-10-30T13:00:19.844Z",
+    "submit_received": "2026-10-30T13:00:22.970Z",
+    "submit_date_header": "2026-10-30T13:00:22.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 182480,
+      "wire": 182480,
+      "ttfb_ms": 1795.454138,
+      "total_ms": 2048.729667,
+      "done_at_ms": 5549.517035,
+      "analyse_ms": 34.493651
+    }
+  ]
+}

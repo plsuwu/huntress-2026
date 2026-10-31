@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-30-beanshell-jsp-graph/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "2f03576f-8d9c-42e4-a361-e2c60ad1f0f0",
+  "started_at": "2026-10-30T13:00:25.658Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1827.022394,
+  "start_ttfb_ms": 1745.4901220000002,
+  "clock": {
+    "start_sent": "2026-10-30T13:00:24.734Z",
+    "start_received": "2026-10-30T13:00:26.562Z",
+    "start_date_header": "2026-10-30T13:00:26.000Z",
+    "last_delivery": "2026-10-30T13:00:29.271Z",
+    "submit_sent": "2026-10-30T13:00:29.954Z",
+    "submit_received": "2026-10-30T13:00:34.920Z",
+    "submit_date_header": "2026-10-30T13:00:34.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "script-analysis-day-30-beanshell-jsp-graph-mastery.zip",
+      "bytes": 2580668,
+      "wire": 2580668,
+      "ttfb_ms": 1678.635927,
+      "total_ms": 2439.184208,
+      "done_at_ms": 4266.297893,
+      "analyse_ms": 269.871103
+    }
+  ]
+}

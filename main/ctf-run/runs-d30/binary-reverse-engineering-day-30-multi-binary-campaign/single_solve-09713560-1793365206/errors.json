@@ -1,0 +1,13 @@
+{
+  "d30_analysis_config_capsule_format": "unknown field \"analysis_capsule_format\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_library_format": "no graded label known for container Some(Other) (format Some(\"enum\"): \"\")",
+  "d30_analysis_loader_format": "no graded label known for container Some(Other) (format Some(\"enum\"): \"\")",
+  "d30_analysis_config_campaign": "unknown field \"analysis_campaign\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_capsule_graph_config_campaign": "unknown field \"analysis_capsule_graph_config_campaign\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_capsule_graph_config_domain": "unknown field \"analysis_capsule_graph_config_domain\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_capsule_graph_config_mutex": "unknown field \"analysis_capsule_graph_config_mutex\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_capsule_graph_config_url": "unknown field \"analysis_capsule_graph_config_url\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_domain": "unknown field \"analysis_domain\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_mutex": "unknown field \"analysis_mutex\" for d30--sample-config.n (Some(Other))",
+  "d30_analysis_config_url": "unknown field \"analysis_url\" for d30--sample-config.n (Some(Other))"
+}

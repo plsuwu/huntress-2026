@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-30-multi-binary-campaign",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "09713560-cfee-4482-aae9-7639aab1c7be",
+  "started_at": "2026-10-30T13:00:07.904Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1979.70969,
+  "start_ttfb_ms": 1975.885471,
+  "clock": {
+    "start_sent": "2026-10-30T13:00:06.274Z",
+    "start_received": "2026-10-30T13:00:08.253Z",
+    "start_date_header": "2026-10-30T13:00:08.000Z",
+    "last_delivery": "2026-10-30T13:00:12.975Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 35982918,
+      "wire": 35982918,
+      "ttfb_ms": 1555.9809209999999,
+      "total_ms": 4719.457402999999,
+      "done_at_ms": 6699.526143,
+      "analyse_ms": 1.953072
+    }
+  ]
+}
