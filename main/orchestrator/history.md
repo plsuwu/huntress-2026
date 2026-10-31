@@ -396,3 +396,11 @@ here after every release night.
   lane's main challenge. It's a hand-made anti-analysis Rust Windows exe (encrypted strings, debugger/VM checks, ~36 KB
   encrypted blob, maybe a small VM). The binary agent paused on it after its done marker; the coordinator told it to keep
   going statically (no execution), marker `done-binary-hulud`.
+
+## 2026-10-31: Day 31 release night (last day)
+
+- **Pre-rush:** the binary worktree still had an unmerged SHA1-Hulud WIP commit on `day30/binary` (7b2a532: notes and a
+  `.xsobf` string decoder, no done marker). The user had it **deleted and SHA1-Hulud set aside** ("ignore this
+  challenge for now - concentrate on new challenges for the main lanes"). Day 30 run dirs committed to `master` (656dc67).
+- **Rush:** `rush.py all` started 22:40 (driver tee'd to `runs-d31/rush/driver.log`); prep ~3 min, agents up 22:43.
+  VPN/jumpbox unreachable again (ssh timeout, `10.200.0.1` no ping): no deploy for now.
