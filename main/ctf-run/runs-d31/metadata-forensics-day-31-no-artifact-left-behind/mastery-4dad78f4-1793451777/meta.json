@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-31-no-artifact-left-behind/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "4dad78f4-c231-4053-ac4a-cb3a9e4cb715",
+  "started_at": "2026-10-31T13:02:59.114Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2507.246128,
+  "start_ttfb_ms": 2500.521141,
+  "clock": {
+    "start_sent": "2026-10-31T13:02:57.126Z",
+    "start_received": "2026-10-31T13:02:59.633Z",
+    "start_date_header": "2026-10-31T13:02:59.000Z",
+    "last_delivery": "2026-10-31T13:03:01.841Z",
+    "submit_sent": "2026-10-31T13:03:01.910Z",
+    "submit_received": "2026-10-31T13:03:03.577Z",
+    "submit_date_header": "2026-10-31T13:03:03.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-forensics-day-31-no-artifact-left-behind-mastery.zip",
+      "bytes": 10206129,
+      "wire": 10206129,
+      "ttfb_ms": 1476.407631,
+      "total_ms": 2115.142276,
+      "done_at_ms": 4622.630252999999,
+      "analyse_ms": 92.22129799999999
+    }
+  ]
+}
