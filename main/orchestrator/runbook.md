@@ -88,6 +88,9 @@ cd ctf-run && tools/rush/merge.sh N --deploy   # ... and ships the static binary
 - **Merging early:** finished lanes can merge while others are still working. The replay will then report a few
   failing cases: these are the unfinished lanes' new day-N fixtures, shared through the `fixtures` symlink. This is
   expected; the merges are already committed. Deploy only once the replay is fully clean.
+- **"Untracked working tree files would be overwritten":** a lane branch committed run dirs that also sit untracked in
+  the main repo. Compare each with `git show day31/<lane>:<f> | cmp -s - <f>` and `rm` only the identical ones, then
+  rerun `merge.sh` (2026-10-31, warmups). Use `--diff-filter=A master...<branch>` to list the branch's added files.
 - **Timing:** deploy between campaigns. Since 2026-10-26 `deploy.sh` swaps the binary atomically (`ctf-run.new` ->
   `ctf-run`, old one kept as `ctf-run.prev`), but it still replaces `tools/` and a mid-campaign swap changes the
   binary between runs.

@@ -404,3 +404,16 @@ here after every release night.
   challenge for now - concentrate on new challenges for the main lanes"). Day 30 run dirs committed to `master` (656dc67).
 - **Rush:** `rush.py all` started 22:40 (driver tee'd to `runs-d31/rush/driver.log`); prep ~3 min, agents up 22:43.
   VPN/jumpbox unreachable again (ssh timeout, `10.200.0.1` no ping): no deploy for now.
+- Released 23:00:01; every lane had its routes within ~4.1 s. Web-exploitation days 30-31 listed; ignored per policy.
+- **Lanes (all untimed, every ranked pool untouched), done markers / merged:**
+  - mobile 23:01:18 `mobile-arena-gauntlet`: first pass COMPLETE; notes only.
+  - script 23:01:30 `xslt-final-gauntlet`: first pass COMPLETE; notes only.
+  - warmups 23:01:54 `warmups-day-31` ("One More Thing"): base64 -> gzip -> base32 rows, `T::GzB32`. The first-pass
+    mastery run left an `errors.json` (untracked `mastery-…1793451621`); the agent's later run was CORRECT.
+  - metadata 23:03:41 `no-artifact-left-behind`: artifact-graph execution chain, new `formats/chain.rs`.
+  - binary 23:09:42 `reversing-gauntlet`: generic `HG??` record reader (HGAU container), `formats/hcfg.rs`.
+- All merged by ~23:11; 88 tests, replay clean (binary_re 84, metadata 85, mobile 133, script 93, warmups 90). GM
+  shows all 15 routes CORRECT. Not deployed (jumpbox down).
+- **Merge snag:** `merge.sh` aborted on warmups with "untracked working tree files would be overwritten": the agent
+  had committed run dirs that the first pass had also written, untracked, into the main repo. The copies were
+  byte-identical; removing the untracked ones (after a `cmp` against the branch) let the merge through. See runbook.
