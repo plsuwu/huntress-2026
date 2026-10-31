@@ -124,8 +124,9 @@ pub struct Spec {
     pub packing_keys: Option<(u8, u8)>,
     /// Which `NEEDLES` occur in the file bytes: (as Latin-1, as UTF-16LE).
     pub needles: BTreeMap<&'static str, (bool, bool)>,
-    /// Last CRC-valid `HGRF` campaign-graph record (HCFG layout, whole JSON object; Day 30).
-    pub graph: Option<hcfg::Hcfg>,
+    /// Last CRC-valid record per `HG??` magic (HCFG layout, whole JSON object): `HGRF` campaign graph (Day 30),
+    /// `HGAU` gauntlet (Day 31).
+    pub records: BTreeMap<String, hcfg::Hcfg>,
 }
 
 /// Texts the "true exactly when the final bytes contain X" predicates name (Day 28); a predicate naming
@@ -344,7 +345,7 @@ fn analyse_specimen_body(name: &str, d: &[u8], lap: &mut impl FnMut(&str)) -> Sp
     if let (Some(h), Some(e)) = (&s.hcfg, (s.container == Some(Container::Elf)).then(|| elf::Elf::parse(d)).flatten()) {
         s.hcfg_section = e.sections.iter().find(|x| x.kind != 8 && x.size > 0 && (x.offset..x.offset + x.size).contains(&(h.offset as u64))).map(|x| x.name.clone());
     }
-    s.graph = hcfg::last_record(d, b"HGRF");
+    s.records = hcfg::last_hg_records(d).into_iter().map(|(m, h)| (String::from_utf8_lossy(&m).into_owned(), h)).collect();
     lap("hcfg");
     s
 }
@@ -1074,6 +1075,66 @@ fn answer_dropping(rest: &str, s: &Spec, q: &Question) -> Result<String, String>
     r
 }
 
+/// A JSON path segment whose keys may themselves be joined by `_` (`trace_branch` -> `trace.branch`, Day 31).
+fn lookup<'a>(v: &'a Value, seg: &str) -> Option<&'a Value> {
+    if let Some(x) = v.get(seg) {
+        return Some(x);
+    }
+    seg.match_indices('_').find_map(|(i, _)| lookup(v.get(&seg[..i])?, &seg[i + 1..]))
+}
+
+/// Questions on a record with the HCFG layout under an `HG??` magic (d30 `HGRF`, d31 `HGAU`): "Locate the unique
+/// CRC32-valid HGAU record ..." plus a JSON path ("at loader.n decoded HGRF JSON property graph.config.url",
+/// "the exact gauntlet.trace_branch token") or a header field (`*_crc32_hex`, `*_xor_key_hex`). The path's
+/// leading root name (`graph`, `gauntlet`) is dropped when the JSON has no such key. `None`: not such a question.
+fn record_answer(q: &Question, field: &str, day: &str, spec: &Spec, others: &[Spec]) -> Option<Result<String, String>> {
+    let magic = crate::re!(r"\b(HG[A-Z0-9]{2})\b").search(&q.question)?.g(1).to_string();
+    let prop = crate::re!(r"at (?:(\S+) )?decoded HG[A-Z0-9]{2} JSON property ([A-Za-z0-9_.]+?)[,.]?(?:\s|$)").search(&q.question);
+    let path = prop.as_ref().map(|m| m.g(2)).or_else(|| crate::re!(r"exact ([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+) token").search(&q.question).map(|m| m.g(1)));
+    let header = ["crc32_hex", "xor_key_hex"].into_iter().find(|h| field.ends_with(h));
+    if path.is_none() && header.is_none() {
+        return None;
+    }
+    Some((|| {
+        let members: Vec<&Spec> = std::iter::once(spec).chain(others).collect();
+        let named = prop.as_ref().and_then(|m| m.group(1)).map(str::to_string).or_else(|| named_member(&q.question, day));
+        let pick: Vec<&Spec> = match &named {
+            Some(n) => members.iter().copied().filter(|s| member_matches(&s.name, n)).collect(),
+            None => members.iter().copied().filter(|s| s.records.contains_key(&magic)).collect(),
+        };
+        let [s] = pick.as_slice() else { return Err(format!("{day}: {} members for the {magic} record (named {named:?})", pick.len())) };
+        let g = s.records.get(&magic).ok_or_else(|| format!("{}: no CRC-valid {magic} record", s.name))?;
+        // "after confirming all three canonical campaign graphs match when this_role is omitted" (d30).
+        if q.question.contains("graphs match when this_role is omitted") {
+            let canon = |s: &Spec| {
+                s.records.get(&magic).map(|g| match &g.config {
+                    Value::Obj(kv) => Value::Obj(kv.iter().filter(|(k, _)| k != "this_role").cloned().collect()).to_json(),
+                    v => v.to_json(),
+                })
+            };
+            let all: Vec<Option<String>> = members.iter().filter(|s| !s.name.ends_with(".json")).map(|s| canon(s)).collect();
+            if all.iter().any(|c| c.is_none() || *c != all[0]) {
+                return Err(format!("{day}: {magic} records differ (this_role omitted) or are missing"));
+            }
+        }
+        let Some(path) = path else {
+            return Ok(match header {
+                Some("crc32_hex") => format!("0x{:08x}", g.crc),
+                _ => format!("0x{:02x}", g.key),
+            });
+        };
+        let mut segs: Vec<&str> = path.split('.').collect();
+        if segs.len() > 1 && lookup(&g.config, segs[0]).is_none() {
+            segs.remove(0);
+        }
+        let mut v = &g.config;
+        for k in &segs {
+            v = lookup(v, k).ok_or_else(|| format!("{}: {magic} JSON has no {path:?}", s.name))?;
+        }
+        Ok(config_value(v))
+    })())
+}
+
 fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, String> {
     {
         let (day, field) = q.key.split_once('_').ok_or_else(|| format!("unexpected id {:?}", q.key))?;
@@ -1100,37 +1161,8 @@ fn answer_any(q: &Question, done: &Analysed, _: &RunCtx) -> Result<String, Strin
                 other => Err(format!("unknown structural field {other:?} for {day}")),
             };
         }
-        // "Submit the exact JSON string at loader.n decoded HGRF JSON property graph.config.url" (Day 30): the path is
-        // read from the named member's graph record (`graph` = the record's JSON root).
-        if let Some(m) = crate::re!(r"at (\S+) decoded HGRF JSON property ([A-Za-z0-9_.]+?)[,.]?(?:\s|$)").search(&q.question) {
-            let members: Vec<&Spec> = std::iter::once(spec).chain(others).collect();
-            let s = match members.iter().filter(|s| member_matches(&s.name, m.g(1))).collect::<Vec<_>>().as_slice() {
-                [one] => **one,
-                hits => return Err(format!("{day}: {} matches {} members", m.g(1), hits.len())),
-            };
-            let g = s.graph.as_ref().ok_or_else(|| format!("{}: no CRC-valid HGRF record", s.name))?;
-            // "after confirming all three canonical campaign graphs match when this_role is omitted".
-            if q.question.contains("graphs match when this_role is omitted") {
-                let canon = |s: &Spec| {
-                    s.graph.as_ref().map(|g| match &g.config {
-                        Value::Obj(kv) => Value::Obj(kv.iter().filter(|(k, _)| k != "this_role").cloned().collect()).to_json(),
-                        v => v.to_json(),
-                    })
-                };
-                let all: Vec<Option<String>> = members.iter().filter(|s| !s.name.ends_with(".json")).map(|s| canon(s)).collect();
-                if all.iter().any(|c| c.is_none() || *c != all[0]) {
-                    return Err(format!("{day}: campaign graphs differ (this_role omitted) or are missing"));
-                }
-            }
-            let mut path: Vec<&str> = m.g(2).split('.').collect();
-            if path.first() == Some(&"graph") && g.config.get("graph").is_none() {
-                path.remove(0);
-            }
-            let mut v = &g.config;
-            for k in &path {
-                v = v.get(k).ok_or_else(|| format!("{}: HGRF JSON has no {:?}", s.name, m.g(2)))?;
-            }
-            return Ok(config_value(v));
+        if let Some(r) = record_answer(q, field, day, spec, others) {
+            return r;
         }
         // `analysis_<variant>_<field>` addresses the specimen whose name carries `-<variant>`
         // (d15: `-stripped` / `-symbolized`; d28: `-false-friend` -> `false_friend_`). The longest tag wins.
