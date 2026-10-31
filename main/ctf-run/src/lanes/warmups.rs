@@ -48,6 +48,7 @@ pub enum T {
     Ook,
     RevHex,
     RotB64,
+    GzB32,
 }
 
 impl T {
@@ -81,6 +82,8 @@ impl T {
             T::RevHex => codec::text_any(&codec::hex(&codec::reverse(t))?),
             // Day 29 "Rotten Base": ROT13 over base64 text ("Sixty-four invited thirteen over").
             T::RotB64 => codec::text_any(&codec::base64(&codec::rot(t, 13))?),
+            // Day 31: base64 of gzip of base32 text (the d21 wrapper around a d10 layer).
+            T::GzB32 => codec::text_any(&codec::base32(T::Gz.apply(t)?.trim())?),
             T::Bin => {
                 let c: String = t.chars().filter(|c| !c.is_whitespace()).collect();
                 if c.is_empty() || c.len() % 8 != 0 || !c.bytes().all(|b| b == b'0' || b == b'1') {
@@ -138,6 +141,7 @@ fn fixed_codec(row: u32) -> Option<T> {
         27 => T::Ook, // "Monkey Business": Ook! pairs -> Brainfuck ("Ook. Ook? Ook! Someone seems chatty.")
         28 => T::RevHex, // "Back in Sixteen": hex, reversed character-wise ("our sixteen-fingered friend is walking backwards")
         29 => T::RotB64, // "Rotten Base": base64, then ROT13 over its letters ("Sixty-four invited thirteen over. Things got scrambled.")
+        31 => T::GzB32, // base64 of gzip of base32 (`H4sI...` -> `NQWTGNA=`)
         _ => return None,
     })
 }
@@ -195,7 +199,7 @@ fn structured(frag: &str) -> Option<(T, String)> {
     }
     let b64ish = v.bytes().all(|b| b.is_ascii_alphanumeric() || b"+/_-=".contains(&b));
     if b64ish && v.bytes().any(|b| b.is_ascii_uppercase() || b.is_ascii_digit() || b"=+/_".contains(&b)) {
-        return try_(T::Gz).or_else(|| try_(T::B64));
+        return try_(T::GzB32).or_else(|| try_(T::Gz)).or_else(|| try_(T::B64));
     }
     None
 }
