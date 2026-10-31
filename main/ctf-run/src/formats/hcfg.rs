@@ -31,6 +31,23 @@ pub fn last_record(d: &[u8], magic: &[u8; 4]) -> Option<Hcfg> {
     find_all(d, magic).into_iter().rev().find_map(|i| record_at(d, i, magic))
 }
 
+/// Every `HG??` record magic (`HGRF` Day 30, `HGAU` Day 31: HCFG layout, 2 uppercase/digit bytes after `HG`)
+/// with its last CRC-valid record, scanning backward from the end.
+pub fn last_hg_records(d: &[u8]) -> Vec<([u8; 4], Hcfg)> {
+    let mut out: Vec<([u8; 4], Hcfg)> = Vec::new();
+    for i in find_all(d, b"HG").into_iter().rev() {
+        let Some(m) = d.get(i..i + 4) else { continue };
+        if !m[2..].iter().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) || out.iter().any(|(k, _)| k == m) {
+            continue;
+        }
+        let magic: [u8; 4] = m.try_into().unwrap();
+        if let Some(h) = record_at(d, i, &magic) {
+            out.push((magic, h));
+        }
+    }
+    out
+}
+
 /// A record with the HCFG layout whose 4-byte `magic` starts at `i`.
 pub fn record_at(d: &[u8], i: usize, magic: &[u8; 4]) -> Option<Hcfg> {
     if d.get(i..i + 4)? != magic || *d.get(i + 4)? != 1 {

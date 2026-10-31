@@ -1,0 +1,32 @@
+{
+  "challenge": "binary-reverse-engineering-day-31-reversing-gauntlet",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "0d3913e8-510e-4781-b92d-b5533d79f8ae",
+  "started_at": "2026-10-31T13:00:07.454Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 959.048496,
+  "start_ttfb_ms": 953.524019,
+  "clock": {
+    "start_sent": "2026-10-31T13:03:19.748Z",
+    "start_received": "2026-10-31T13:03:20.707Z",
+    "start_date_header": "2026-10-31T13:03:20.000Z",
+    "last_delivery": "2026-10-31T13:03:26.806Z",
+    "submit_sent": "2026-10-31T13:03:26.863Z",
+    "submit_received": "2026-10-31T13:03:28.532Z",
+    "submit_date_header": "2026-10-31T13:03:28.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 36185026,
+      "wire": 36185026,
+      "ttfb_ms": 1221.845138,
+      "total_ms": 3036.937606,
+      "done_at_ms": 3996.111195,
+      "analyse_ms": 3062.225577
+    }
+  ]
+}
