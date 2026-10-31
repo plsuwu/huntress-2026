@@ -8,7 +8,7 @@ use super::{Analysed, Analysis, Lane};
 use crate::crypto::{md5::md5, sha1::sha1, sha256::sha256};
 use crate::evidence::Registry;
 use crate::formats::bytes::{find, hex, u32le};
-use crate::formats::{apk, audio, cfb, cluster, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, x509, zip};
+use crate::formats::{apk, audio, cfb, chain, cluster, disk, dotnet, elf, email, evtx, jar, lnk, macho, media, ooxml, pcap, pe, prefetch, regf, sqlite, video, x509, zip};
 use crate::json::Value;
 use crate::model::{Delivery, Question, RunCtx};
 
@@ -711,6 +711,31 @@ fn relation_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
     }))
 }
 
+/// `...-graph-<field>` -> a relation over an artifact graph (artifacts pointing at each other through primary
+/// metadata; see `formats/chain.rs`). d31 graded `execution-chain-artifact-ids`: the acyclic root-to-end walk,
+/// compact JSON in chain order. Other fields are unverified guesses; an unknown field fails with graph facts.
+fn graph_answer(key: &str, b: &[u8]) -> Option<Result<String, String>> {
+    let i = key.rfind("-graph-")?;
+    let want = &key[i + 7..];
+    if want.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let Some(g) = chain::Graph::parse(b) else { return Some(Err(format!("no artifact graph; {}", facts("graph", b)))) };
+    let chain = || g.execution_chain().map_err(|e| format!("{e}; {}", g.facts()));
+    Some(match want {
+        "execution-chain-artifact-ids" | "execution-chain" | "chain-artifact-ids" | "delivery-chain-artifact-ids" => chain().map(|c| compact_json(&c)),
+        "execution-chain-length" | "chain-length" => chain().map(|c| c.len().to_string()),
+        "root-artifact-id" | "entry-artifact-id" | "first-artifact-id" => chain().map(|c| c[0].clone()),
+        "final-artifact-id" | "terminal-artifact-id" | "last-artifact-id" => chain().map(|c| c[c.len() - 1].clone()),
+        "cycle-artifact-ids" | "decoy-cycle-artifact-ids" => {
+            let mut c = g.cycle_ids();
+            c.sort();
+            Ok(compact_json(&c))
+        }
+        _ => Err(format!("unknown graph field {want:?}; {}", g.facts())),
+    })
+}
+
 fn cluster_facts(c: &cluster::Cluster) -> String {
     let a: Vec<String> = c
         .artifacts
@@ -1161,6 +1186,9 @@ impl Lane for Metadata {
             return r;
         }
         if let Some(r) = relation_answer(&key, data) {
+            return r;
+        }
+        if let Some(r) = graph_answer(&key, data) {
             return r;
         }
         for (suffix, h) in HANDLERS {
