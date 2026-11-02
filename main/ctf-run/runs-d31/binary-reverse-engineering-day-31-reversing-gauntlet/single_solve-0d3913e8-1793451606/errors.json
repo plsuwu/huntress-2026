@@ -1,0 +1,9 @@
+{
+  "d31_analysis_gauntlet_config_campaign": "unknown field \"analysis_gauntlet_config_campaign\" for d31--sample.elf (Some(Elf))",
+  "d31_analysis_gauntlet_config_domain": "unknown field \"analysis_gauntlet_config_domain\" for d31--sample.elf (Some(Elf))",
+  "d31_analysis_gauntlet_config_mutex": "unknown field \"analysis_gauntlet_config_mutex\" for d31--sample.elf (Some(Elf))",
+  "d31_analysis_gauntlet_config_url": "unknown field \"analysis_gauntlet_config_url\" for d31--sample.elf (Some(Elf))",
+  "d31_analysis_gauntlet_crc32_hex": "unknown field \"analysis_gauntlet_crc32_hex\" for d31--sample.elf (Some(Elf))",
+  "d31_analysis_xor_key_hex": "d31--sample.elf: no HCFG blob found",
+  "d31_analysis_gauntlet_trace_branch": "unknown field \"analysis_gauntlet_trace_branch\" for d31--sample.elf (Some(Elf))"
+}

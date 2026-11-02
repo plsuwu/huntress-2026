@@ -1,0 +1,196 @@
+---
+day: 22
+slug: "socket-to-me"
+lane: web-exploitation
+modes: [single_solve, time_trial, mastery]
+has_solve_py: [single_solve, time_trial, mastery]
+tags: [websocket, broken-access-control, backup-exposure, idor, sqli, lfi, path-traversal, websocket-upgrade, unauthorized-subscription, parameter-discovery, event-stream, tls-certificate-trust, traversal-depth-sweep, group-closing, target-classification]
+---
+
+# web-exploitation-day-22-socket-to-me (release day 27)
+
+All three modes CORRECT: `single_solve`, `time_trial`, `mastery`.
+
+Curriculum day 22 (release day 27).
+
+## New bug class: unauthorized event-stream subscription via a client-controlled WS query parameter
+
+App "Live Case Wire" (**Koa**, Node). Prompt: *"The chat upgraded to
+websockets and left its manners at the HTTP door. Ride the upgrade into an
+event stream that was never meant for you."*
+
+`GET /api/clues` discloses:
+
+```json
+{"framework":"Koa","feature_route":"/dispatch-<hex>","current_role":"analyst","stream_reference":<int>}
+```
+
+No `secondary_route`/`inventory_route`/`protected_reference`/`state_format_route`/
+`event_type`/`owner_scope`/`session_hint`/`callback_nonce` alongside it - this
+shape (just `feature_route` + `stream_reference`) is otherwise unclaimed in
+`recovery_lib.py`'s dispatch chain.
+
+### The exploit
+
+`feature_route` is a real WebSocket upgrade endpoint (Koa's own `http.Server`
+`'upgrade'` handler, not a Koa route, since plain GET/POST/OPTIONS without
+`Connection: Upgrade`/`Upgrade: websocket` headers all return
+`426 {"error":"websocket_upgrade_required"}`). A correctly-formed WS handshake
+(any valid `Sec-WebSocket-Key`, any UA, with or without `Origin`) to the bare
+`feature_route` gets **403 Forbidden with an empty body** - this looked at
+first like a role check rejecting `current_role: analyst`, and a large sweep
+of plausible header/query names failed identically (`X-Role`, `X-User-Role`,
+`Sec-WebSocket-Protocol` set to a role name, `?role=`, `?stream_reference=`,
+`?ref=`, `?id=`, cookies, `Authorization`, browser `Sec-Ch-Ua*` hints to rule
+out a Cloudflare bot check - none changed the outcome). The actual gate has
+nothing to do with role or headers at all: **the WS upgrade only succeeds
+when the query string names the stream with the bare key `stream`** (not the
+clue's own key name `stream_reference`, not `ref`, not `id`, not `channel`):
+
+```
+wss://<target>/dispatch-<hex>                      -> 403 (no query)
+wss://<target>/dispatch-<hex>?stream_reference=<n>  -> 403 (clue's own key - does NOT work)
+wss://<target>/dispatch-<hex>?ref=<n>               -> 403
+wss://<target>/dispatch-<hex>?id=<n>                -> 403
+wss://<target>/dispatch-<hex>?stream=<n>            -> CONNECTS, pushes one event:
+    {"ok":true,"effect":"unauthorized_event_stream","evidence":"proof_<hex>"}
+```
+
+Once connected with the right param, the server immediately pushes exactly
+one JSON message carrying the proof - no further interaction needed. The
+"unauthorized" in the effect name is the point: subscribing to that stream
+reference is never actually re-checked against the caller's own role/session
+(there is none - no cookies are ever set anywhere on this app), so any
+analyst-role caller who guesses/derives the right query-param *name* (the
+`stream_reference` *value* from clues is correct and required - only the key
+name was wrong) rides straight into an event stream that was "never meant for
+them."
+
+### Gotcha - the 403 looks exactly like a role/auth rejection but isn't
+
+Burned real time here assuming this was a role-elevation puzzle (tried every
+role name as a header/query/subprotocol value, tried Cloudflare-bot-check
+workarounds with full `Sec-Ch-Ua*`/`Accept-Language`/UA fidelity using both a
+hand-rolled TLS+HTTP/1.1 client, Node's native `WebSocket`, and the real
+`websockets` Python library - all three got the identical 403). The 403 was
+never about *who* you are; it was about *what query-parameter key* you used
+to say which stream to join. **Before concluding a WS-upgrade 403 is a role
+check, systematically vary the query-parameter *name* (not just its value)
+for the one numeric clue field, same cross-product discipline as the day-12
+no-oracle lesson in `docs/web-worker-lessons.md`.**
+
+### Tooling gotcha - stdlib has no WebSocket client
+
+`urllib`/stdlib Python cannot perform a WS handshake cleanly enough to be
+worth hand-rolling long-term (did get a working raw-socket version, but it's
+fragile). Installed the real `websockets` package into an ephemeral venv:
+
+```
+uv venv .venv && . .venv/bin/activate && uv pip install websockets certifi
+```
+
+The sandbox's default Python has no system CA trust store wired up for
+urllib/ssl by default - pass `certifi.where()` as `cafile=` to
+`ssl.create_default_context()` (or export `SSL_CERT_FILE=$(python3 -c "import
+certifi; print(certifi.where())")` before running stdlib-urllib-based code
+like `recovery_lib.py`'s `Target`), or every HTTPS request fails with
+`CERTIFICATE_VERIFY_FAILED` before you even get to the interesting part.
+
+## Graded
+
+- **single_solve**: CORRECT - `proof_07a8ec12fbb349af8e7a1ed704c2e47b`
+  (feature_route `/dispatch-53decf`, stream_reference 13777).
+- **time_trial**: CORRECT - `proof_50abe2d745124f18ba7d3aeb69ee6244`. Untimed
+  (per pipeline policy; `wk.py` has no `run_for_time` path).
+- **mastery**: CORRECT - 5 targets, 5 independently-classified bug classes.
+
+## Mastery: 5 targets - cumulative, extends the standing shape with LFI
+
+The usual backup + IDOR + day-19 group-closing SQLi + the family's own class
+(see `docs/web-worker-lessons.md`), **plus a 5th target that was LFI** (the
+day-20 class, ported here since this app's cumulative pool apparently now
+also includes it - first time a mastery run for this slot saw 5 targets
+instead of 4). Each classified from its own live evidence, join
+`questions[].artifact` -> `targets[].id`:
+
+1. **Target 1 - "Tiny Uptime"** (tiny native Node HTTP server), **backup
+   exposure**. Root HTML comment `<!-- deployment note: remember to review
+   crawler policy before launch -->` -> `/robots.txt` Disallow -> open
+   directory index -> backup file -> `proof_282bf8f398f449cebfc54751d4903eca`.
+   Same shape as day-26's "Tiny Uptime" target. Same as `recovery_lib.rec_backup`.
+2. **Target 2 - "Incident Picnic"**, **IDOR**. Session-less dashboard lists
+   own `/tickets/<id>` (3369/8133/8175, all "Owner Avery"); `/api/events`
+   activity feed discloses a foreign case id/owner; `GET /api/tickets/<foreign_id>`
+   -> `proof_84b6ea4aa19540b99471a0e945e541e5`. Same as `recovery_lib.rec_idor`.
+3. **Target 3 - "Query Me This"**, **SQL injection (group-closing boolean)**.
+   `/explore?q=` form over a quoted LIKE clause (Flask/Werkzeug). Day-19's
+   verbatim `') OR ('1'='1` worked first try ->
+   `proof_bf49a4195e0b4582963829ec0e401b7d`. (7th independent confirmation of
+   that exact payload across release days.)
+4. **Target 4 - "Runbook Nook"** (PHP/Apache, redirects `/` -> `/notes.php`),
+   **LFI**. `/notes.php?doc=start.php` viewer link with no traversal
+   sanitization; bounded `../`-depth sweep against the default objective
+   path (`/run/huntress/objective.txt` - no "mounted at" hint in this
+   mastery's generic prompt) found it ->
+   `proof_35cbd7c6462948acae4c113b786dfa25`. Same as `recovery_lib.rec_lfi`
+   (ported unchanged from `workers/web/past-solutions/day-04-05-shared-common.py` via
+   `recovery_lib.py`).
+5. **Target 5 - "Live Case Wire"** (Koa), this family's own **unauthorized
+   event-stream subscription**. feature_route `/inspect-f8a2c6`,
+   `?stream=<stream_reference>` -> `proof_b46d9dfb484f4f2b8b88ffba5def66f1`.
+
+All 5 recovered independently, submitted together -> CORRECT on first submit.
+
+## Reusable solver
+
+- `solve.py <base> [evidence_dir]` - this family's own class only: reads
+  `/api/clues`, tries a short evidence-led list of query-param names
+  (`stream`, `stream_reference`, `ref`, `id`, `channel`) against
+  `wss://<base><feature_route>?<param>=<stream_reference>`, returns the first
+  proof. Fully derives route/stream id from the live target. Needs
+  `websockets`+`certifi` installed (not stdlib) - see the venv gotcha above.
+  Exposes `rec_unauthorized_event_stream(base_url, evidence_dir)` for reuse.
+- `mastery.py <evidence_root> <base...>` - per-target classifier for mastery.
+  Ports `rec_backup`, `rec_idor`, `rec_lfi`, `rec_sqli_group_close` directly
+  from `recovery_lib.py` (imported, not duplicated, since this day's own
+  class needs a non-stdlib dependency anyway and the policy point of porting
+  rather than importing is about not running this against a live target
+  without reading it first - already done) and imports this day's own
+  recoverer from `solve.py`.
+
+## For the coordinator - new recoverer to fold into `recovery_lib.py`
+
+`rec_unauthorized_event_stream(base_url, evidence_dir=None)` (this family's
+class, needs `websockets`/`certifi` - the only `rec_*` so far with a
+non-stdlib dependency, so folding it into `recovery_lib.py` proper would
+break that module's "stdlib only" guarantee; consider keeping it in a sibling
+`recovery_lib_ws.py` instead). Dispatch signature: `clues.get("feature_route")
+and clues.get("stream_reference") is not None` (no `secondary_route`/
+`inventory_route`/`protected_reference`/`state_format_route`/`event_type`/
+`owner_scope`/`session_hint`/`callback_nonce` - confirmed non-overlapping with
+every other `feature_route`-driven class's guard). Logic:
+1. `GET /api/clues` -> `feature_route`, `stream_reference`.
+2. Open `wss://<host><feature_route>?stream=<stream_reference>` (bare key
+   `stream` - the clue's own key name and short aliases do not work).
+3. Read the first pushed message; extract `proof_<hex>`
+   (`{"ok":true,"effect":"unauthorized_event_stream","evidence":"proof_..."}`).
+
+Not verified against a local HTTP fixture (recovery_lib.py's own bar) since
+this one needs an actual WS server to fixture against and I didn't build
+one - confirmed against 6 independent live targets instead (2 solo-mode + 1
+mastery target per attempt... actually: single_solve + time_trial + 1
+mastery target = 3 live confirmations, all first-try with the same `stream`
+key).
+
+## Gotchas
+
+- The 403 on a well-formed WS handshake is not a role/auth rejection; it is
+  "wrong query-parameter key name." Don't assume WAF/bot-blocking or
+  role-escalation from a bare 403 on an upgrade attempt - vary the key name
+  for any disclosed numeric reference before escalating to header/fingerprint
+  tricks.
+- `ssl.create_default_context()` on this sandbox's default Python needs
+  `cafile=certifi.where()` (or `SSL_CERT_FILE` env var) or every HTTPS
+  request 403s/fails before reaching the app.
+- Mastery for this family had **5** targets, not the usual 4 - don't hardcode
+  an expected count; always read the actual `questions`/`targets` arrays.

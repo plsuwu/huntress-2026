@@ -1,0 +1,32 @@
+{
+  "challenge": "metadata-forensics-day-31-no-artifact-left-behind",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "b72d92f6-735e-466b-9fbf-38e36ec46e81",
+  "started_at": "2026-10-31T13:00:07.310Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 1455.184563,
+  "start_ttfb_ms": 1455.1172829999998,
+  "clock": {
+    "start_sent": "2026-10-31T13:00:06.126Z",
+    "start_received": "2026-10-31T13:00:07.581Z",
+    "start_date_header": "2026-10-31T13:00:07.000Z",
+    "last_delivery": "2026-10-31T13:00:09.522Z",
+    "submit_sent": null,
+    "submit_received": null,
+    "submit_date_header": null
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "metadata-day-31-evidence.zip",
+      "bytes": 6380,
+      "wire": 6380,
+      "ttfb_ms": 1203.117663,
+      "total_ms": 1940.542754,
+      "done_at_ms": 3395.8022469999996,
+      "analyse_ms": 0.322925
+    }
+  ]
+}

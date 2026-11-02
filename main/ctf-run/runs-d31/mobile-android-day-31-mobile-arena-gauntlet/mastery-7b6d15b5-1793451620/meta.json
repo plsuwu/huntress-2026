@@ -1,0 +1,172 @@
+{
+  "challenge": "mobile-android-day-31-mobile-arena-gauntlet/mastery",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7b6d15b5-ef94-4ffb-84f8-22c7957de89b",
+  "started_at": "2026-10-31T13:00:21.243Z",
+  "deadline": null,
+  "shape": "artifacts[15]+downloads[15]",
+  "start_ms": 1314.29601,
+  "start_ttfb_ms": 1313.533342,
+  "clock": {
+    "start_sent": "2026-10-31T13:00:20.144Z",
+    "start_received": "2026-10-31T13:00:21.458Z",
+    "start_date_header": "2026-10-31T13:00:21.000Z",
+    "last_delivery": "2026-10-31T13:00:23.593Z",
+    "submit_sent": "2026-10-31T13:00:23.593Z",
+    "submit_received": "2026-10-31T13:00:25.370Z",
+    "submit_date_header": "2026-10-31T13:00:25.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 10,
+      "name": "mobile_arena_gauntlet_mastery_10.apk",
+      "bytes": 12768,
+      "wire": 12768,
+      "ttfb_ms": 1456.205258,
+      "total_ms": 1717.712625,
+      "done_at_ms": 3032.1924569999996,
+      "analyse_ms": 0.569029
+    },
+    {
+      "delivery": 8,
+      "name": "mobile_arena_gauntlet_mastery_08.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1472.1193910000002,
+      "total_ms": 1746.51328,
+      "done_at_ms": 3060.9696080000003,
+      "analyse_ms": 2.754244
+    },
+    {
+      "delivery": 6,
+      "name": "mobile_arena_gauntlet_mastery_06.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1482.992733,
+      "total_ms": 1781.680629,
+      "done_at_ms": 3096.118722,
+      "analyse_ms": 0.332347
+    },
+    {
+      "delivery": 12,
+      "name": "mobile_arena_gauntlet_mastery_12.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1481.111917,
+      "total_ms": 1785.775702,
+      "done_at_ms": 3100.259628,
+      "analyse_ms": 2.992849
+    },
+    {
+      "delivery": 15,
+      "name": "mobile_arena_gauntlet_mastery_15.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1482.852214,
+      "total_ms": 1785.68975,
+      "done_at_ms": 3100.209675,
+      "analyse_ms": 6.41135
+    },
+    {
+      "delivery": 1,
+      "name": "mobile_arena_gauntlet_mastery_01.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1785.898844,
+      "total_ms": 1975.467103,
+      "done_at_ms": 3289.853347,
+      "analyse_ms": 0.937488
+    },
+    {
+      "delivery": 14,
+      "name": "mobile_arena_gauntlet_mastery_14.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1799.822609,
+      "total_ms": 2017.0619780000002,
+      "done_at_ms": 3331.570244,
+      "analyse_ms": 0.305266
+    },
+    {
+      "delivery": 4,
+      "name": "mobile_arena_gauntlet_mastery_04.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1797.777363,
+      "total_ms": 2018.9237320000002,
+      "done_at_ms": 3333.3283800000004,
+      "analyse_ms": 1.91646
+    },
+    {
+      "delivery": 7,
+      "name": "mobile_arena_gauntlet_mastery_07.apk",
+      "bytes": 12772,
+      "wire": 12772,
+      "ttfb_ms": 1799.7150589999999,
+      "total_ms": 2022.411929,
+      "done_at_ms": 3336.856779,
+      "analyse_ms": 0.40871199999999996
+    },
+    {
+      "delivery": 11,
+      "name": "mobile_arena_gauntlet_mastery_11.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1811.2896950000002,
+      "total_ms": 2026.2403450000002,
+      "done_at_ms": 3340.719724,
+      "analyse_ms": 3.303732
+    },
+    {
+      "delivery": 5,
+      "name": "mobile_arena_gauntlet_mastery_05.apk",
+      "bytes": 12845,
+      "wire": 12845,
+      "ttfb_ms": 1820.936623,
+      "total_ms": 2074.053907,
+      "done_at_ms": 3388.474158,
+      "analyse_ms": 2.618446
+    },
+    {
+      "delivery": 2,
+      "name": "mobile_arena_gauntlet_mastery_02.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1842.632874,
+      "total_ms": 2089.9763660000003,
+      "done_at_ms": 3404.370235,
+      "analyse_ms": 1.152007
+    },
+    {
+      "delivery": 13,
+      "name": "mobile_arena_gauntlet_mastery_13.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1844.775239,
+      "total_ms": 2099.396992,
+      "done_at_ms": 3413.900514,
+      "analyse_ms": 2.385872
+    },
+    {
+      "delivery": 9,
+      "name": "mobile_arena_gauntlet_mastery_09.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1873.649979,
+      "total_ms": 2127.493421,
+      "done_at_ms": 3441.9581190000004,
+      "analyse_ms": 0.431396
+    },
+    {
+      "delivery": 3,
+      "name": "mobile_arena_gauntlet_mastery_03.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1880.912234,
+      "total_ms": 2133.8470979999997,
+      "done_at_ms": 3448.252911,
+      "analyse_ms": 0.31101399999999996
+    }
+  ]
+}

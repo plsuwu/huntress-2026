@@ -1,0 +1,32 @@
+{
+  "challenge": "script-analysis-day-31-xslt-final-gauntlet/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "3465a03d-5c12-4dc3-bc9c-77e07e292aed",
+  "started_at": "2026-10-31T13:00:16.087Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2398.8180429999998,
+  "start_ttfb_ms": 2386.028894,
+  "clock": {
+    "start_sent": "2026-10-31T13:00:14.145Z",
+    "start_received": "2026-10-31T13:00:16.544Z",
+    "start_date_header": "2026-10-31T13:00:16.000Z",
+    "last_delivery": "2026-10-31T13:00:18.267Z",
+    "submit_sent": "2026-10-31T13:00:18.284Z",
+    "submit_received": "2026-10-31T13:00:21.085Z",
+    "submit_date_header": "2026-10-31T13:00:21.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "evidence.zip",
+      "bytes": 189114,
+      "wire": 189114,
+      "ttfb_ms": 1443.231538,
+      "total_ms": 1692.601416,
+      "done_at_ms": 4091.750191,
+      "analyse_ms": 29.541175
+    }
+  ]
+}

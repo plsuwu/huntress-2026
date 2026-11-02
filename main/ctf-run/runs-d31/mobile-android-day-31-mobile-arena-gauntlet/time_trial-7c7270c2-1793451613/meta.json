@@ -1,0 +1,32 @@
+{
+  "challenge": "mobile-android-day-31-mobile-arena-gauntlet/time_trial",
+  "op": "start",
+  "run_for_time": false,
+  "attempt_id": "7c7270c2-72e3-4962-b328-329fabcd0b20",
+  "started_at": "2026-10-31T13:00:15.240Z",
+  "deadline": null,
+  "shape": "artifacts[1]+download",
+  "start_ms": 2307.28402,
+  "start_ttfb_ms": 2307.143768,
+  "clock": {
+    "start_sent": "2026-10-31T13:00:13.263Z",
+    "start_received": "2026-10-31T13:00:15.571Z",
+    "start_date_header": "2026-10-31T13:00:15.000Z",
+    "last_delivery": "2026-10-31T13:00:17.334Z",
+    "submit_sent": "2026-10-31T13:00:17.334Z",
+    "submit_received": "2026-10-31T13:00:19.118Z",
+    "submit_date_header": "2026-10-31T13:00:19.000Z"
+  },
+  "downloads": [
+    {
+      "delivery": 1,
+      "name": "mobile_arena_gauntlet_time_trial.apk",
+      "bytes": 12704,
+      "wire": 12704,
+      "ttfb_ms": 1502.8962729999998,
+      "total_ms": 1760.9532620000002,
+      "done_at_ms": 4068.5190599999996,
+      "analyse_ms": 2.368958
+    }
+  ]
+}

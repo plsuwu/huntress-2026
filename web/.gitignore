@@ -1,0 +1,14 @@
+.direnv/
+__pycache__/
+*.py[cod]
+
+# Local secrets and runtime configuration
+.env
+*-id_ed25519
+*.ovpn
+
+# Payload exclusions and metadata-only runtime tracking are defined at the monorepo root.
+# Keep local routing state and prewarmed worker slots out of version control.
+workers/web/routes-d*.json
+workers/web/.slot-*/
+.pytest_cache/
