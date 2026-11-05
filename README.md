@@ -7,7 +7,7 @@ Prospective employers: I really would like a job and I have experience with this
 Realistically: **I would consider nothing here to be worth looking at in any meaningful capacity**. Its mostly LLM-generated, 
 and its mostly here for reference purposes; I would consider it closer to an artifact at a museum, perhaps. 
 
-A little opinion piece should be available at [plsuwu.com](https://plsuwu.com/post/2026/10/5) in the near future 
+A little opinion piece should be available at [plsuwu.com](https://plsuwu.com/post/2026/10/4) in the near future 
 (if u even care).
 
 ---
